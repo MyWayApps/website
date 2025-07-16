@@ -1,0 +1,89 @@
+1. Prepare Audio Files
+Place audio files for each letter (e.g., a.mp3, aa.mp3, etc.) in a public folder, such as /public/audio/telugu-letters/.
+Name each file to match the letter or its transliteration (e.g., a.mp3 for "అ", aa.mp3 for "ఆ", etc.).
+======
+
+"use client"
+
+import { useState, useRef } from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { ArrowLeft, ArrowRight, Volume2 } from "lucide-react"
+import Link from "next/link"
+
+// Telugu letters and their audio file names (transliteration)
+const teluguLetters = [
+  { letter: "అ", audio: "a.mp3" },
+  { letter: "ఆ", audio: "aa.mp3" },
+  { letter: "ఇ", audio: "i.mp3" },
+  { letter: "ఈ", audio: "ii.mp3" },
+  { letter: "ఉ", audio: "u.mp3" },
+  { letter: "ఊ", audio: "uu.mp3" },
+  { letter: "ఋ", audio: "ru.mp3" },
+  { letter: "ఎ", audio: "e.mp3" },
+  { letter: "ఏ", audio: "ee.mp3" },
+  { letter: "ఐ", audio: "ai.mp3" },
+  { letter: "ఒ", audio: "o.mp3" },
+  { letter: "ఓ", audio: "oo.mp3" },
+  { letter: "ఔ", audio: "au.mp3" },
+  // ...add the rest similarly
+]
+
+export default function TeluguFlashCards() {
+  const [index, setIndex] = useState(0)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  const playAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0
+      audioRef.current.play()
+    }
+  }
+
+  const prev = () => {
+    setIndex((i) => {
+      const newIndex = i === 0 ? teluguLetters.length - 1 : i - 1
+      setTimeout(playAudio, 100) // Play after state updates
+      return newIndex
+    })
+  }
+  const next = () => {
+    setIndex((i) => {
+      const newIndex = i === teluguLetters.length - 1 ? 0 : i + 1
+      setTimeout(playAudio, 100)
+      return newIndex
+    })
+  }
+
+  // Play audio when index changes
+  // (Optional: useEffect(() => { playAudio() }, [index]))
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-teal-300 to-green-500">
+      <Card className="w-80 h-80 flex flex-col items-center justify-center shadow-2xl">
+        <CardContent className="flex flex-col items-center justify-center h-full">
+          <div className="text-8xl font-bold mb-4">{teluguLetters[index].letter}</div>
+          <audio
+            ref={audioRef}
+            src={`/audio/telugu-letters/${teluguLetters[index].audio}`}
+            preload="auto"
+          />
+          <div className="flex space-x-4 mt-4">
+            <Button onClick={prev} variant="outline">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Button onClick={playAudio} variant="outline">
+              <Volume2 className="h-5 w-5" />
+            </Button>
+            <Button onClick={next} variant="outline">
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      <Link href="/" className="mt-8 text-white underline">
+        ← Back to Home
+      </Link>
+    </div>
+  )
+}
