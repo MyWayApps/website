@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { User, LogIn, UserPlus, Users, Loader2 } from "lucide-react"
+import { createUserInSupabase, findUserInSupabase, testSupabaseConnection } from "@/lib/database-safe"
+import { updateUser } from "@/lib/database-safe"
 
 // Offline user type
 interface OfflineUser {
@@ -123,7 +125,7 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
       setLoadingUsers(false)
     }
   }
-
+/*
   const handleLogin = () => {
     if (!formData.name.trim()) {
       setError("Please enter your name")
@@ -151,7 +153,92 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
       setLoading(false)
     }
   }
+*/
 
+
+const handleLogin = async () => {
+  console.log("🔍 handleLogin: Enter")
+  if (!formData.name.trim()) {
+    setError("")
+    console.log("🔍 handleLogin")
+    return
+  }
+
+  setLoading(true)
+  setError("")
+
+  try {
+    console.log("🔍 Attempting login for:", formData.name)
+    
+    testSupabaseConnection()
+
+    // Search in Supabase first, then fallback to offline
+    const user = await findUserInSupabase(formData.name)
+
+    if (user) {
+      console.log("✅ User found, logging in:", user.name)
+      onUserLogin(user)
+    } else {
+      console.log("❌ User not found:", formData.name)
+      setError("User not found. Would you like to create a new account?")
+    }
+  } catch (error) {
+    console.error("❌ Login error:", error)
+    setError("Error logging in. Please try again.")
+  } finally {
+    setLoading(false)
+  }
+}
+
+const handleSignup = async () => {
+  console.log("🔍 handleSignup: name not found")
+  if (!formData.name.trim()) {
+    setError("Please enter your name")
+    console.log("🔍 handleSignup: name not found")
+    return
+  }
+
+  if (!formData.email.trim()) {
+    setError("Please enter your email")
+    return
+  }
+
+  setLoading(true)
+  setError("")
+
+  console.log("🔍 handleSignup:", formData.name)
+  try {
+    console.log("🔍 Creating new user:", formData.name)
+
+    const userData = {
+      name: formData.name,
+      email: formData.email,
+      age: formData.age ? parseInt(formData.age) : undefined,
+      grade: formData.grade || undefined,
+    }
+
+    // Create user in Supabase first, then fallback to offline
+    const newUser = await createUserInSupabase(userData)
+
+    if (newUser) {
+      console.log("✅ User created successfully:", newUser.name)
+      
+      // Refresh the user list
+      loadUsers()
+      
+      // Log the user in
+      onUserLogin(newUser)
+    } else {
+      setError("Failed to create user. Please try again.")
+    }
+  } catch (error) {
+    console.error("❌ Signup error:", error)
+    setError("Error creating account. Please try again.")
+  } finally {
+    setLoading(false)
+  }
+}
+/*
   const handleSignup = () => {
     if (!formData.name.trim()) {
       setError("Please enter your name")
@@ -194,6 +281,7 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
       setLoading(false)
     }
   }
+    */
 
   const handleSuggestionClick = (user: OfflineUser) => {
     setFormData({ ...formData, name: user.name })
@@ -203,6 +291,41 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
   const handleQuickLogin = (user: OfflineUser) => {
     console.log("📱 Quick login for:", user.name)
     onUserLogin(user)
+  }
+
+  const handleSave = async () => {
+    if (!user) return
+
+    try {
+      const updatedData = {
+        name: formData.name,
+        age: formData.age ? parseInt(formData.age) : undefined,
+        grade: formData.grade,
+      }
+
+      // Update in Supabase first, then fallback to local
+      const updatedUser = await updateUser(user.id, updatedData)
+      
+      if (updatedUser) {
+        onUpdateUser(updatedData)
+        setIsEditing(false)
+        console.log("✅ User updated successfully")
+      } else {
+        // Fallback to local update
+        onUpdateUser(updatedData)
+        setIsEditing(false)
+        console.log("📱 User updated locally")
+      }
+    } catch (error) {
+      console.error("❌ Error updating user:", error)
+      // Still allow local update
+      onUpdateUser({
+        name: formData.name,
+        age: formData.age ? parseInt(formData.age) : undefined,
+        grade: formData.grade,
+      })
+      setIsEditing(false)
+    }
   }
 
   // Create a demo user and login directly
@@ -437,7 +560,7 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
               setFormData({ name: "", email: "", age: "", grade: "" })
             }}
             variant="outline"
-            className="border-white text-white hover:bg-white/10"
+            className="border-white text-indigo-600 hover:bg-white/10"
             disabled={loading}
           >
             Back

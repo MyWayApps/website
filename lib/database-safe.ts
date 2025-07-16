@@ -45,6 +45,17 @@ const fallbackApplications: Application[] = [
   },
   {
     id: "4",
+    name: "Telugu Letters Game",
+    category: "Education",
+    subcategory: "Telugu",
+    description: "Learn Telugu letters with a fun game",
+    icon_emoji: "అ",
+    color_scheme: "from-pink-300 to-purple-500",
+    route: "/telugu-letters-game",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "5",
     name: "English Phonics",
     category: "Education",
     subcategory: "English",
@@ -55,7 +66,7 @@ const fallbackApplications: Application[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "5",
+    id: "6",
     name: "Shape Puzzle",
     category: "Puzzles",
     subcategory: "Geometry",
@@ -66,7 +77,7 @@ const fallbackApplications: Application[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "6",
+    id: "7",
     name: "Memory Game",
     category: "Games",
     subcategory: "Memory",
@@ -429,4 +440,147 @@ export async function getUserStats(userId: string) {
       timeSpent: 0,
     },
   )
+}
+
+// Enhanced user creation with Supabase
+export async function createUserInSupabase(userData: Omit<User, "id" | "created_at" | "updated_at">): Promise<User | null> {
+  return safeDbOperation(async (): Promise<User | null> => {
+    if (!supabase) {
+      console.warn("⚠️ Supabase not available, creating user locally")
+      return createOfflineUser(userData)
+    }
+
+    console.log("🔍 Creating user in Supabase:", userData.name)
+    
+    // Handle Demo User special case
+    const finalUserData = {
+      ...userData,
+      name: userData.name.toLowerCase().includes("demo") ? "Demo User" : userData.name,
+      email: userData.name.toLowerCase().includes("demo") && !userData.email.includes("@") 
+        ? "demo@mywayapps.com" 
+        : userData.email
+    }
+
+    const { data, error } = await supabase
+      .from("mywayapps-user")
+      .insert([finalUserData])
+      .select()
+      .single()
+
+    if (error) {
+      console.error("❌ Error creating user in Supabase:", error)
+      // Fallback to offline creation
+      return createOfflineUser(userData)
+    }
+
+    console.log("✅ User created in Supabase successfully:", data.name)
+    return data as User
+  }, createOfflineUser(userData))
+}
+
+// Enhanced user login with Supabase
+export async function findUserInSupabase(name: string): Promise<User | null> {
+  return safeDbOperation(async (): Promise<User | null> => {
+    if (!supabase) {
+      console.warn("⚠️ Supabase not available, searching locally")
+      return findOfflineUser(name)
+    }
+
+    console.log("🔍 Searching user in Supabase:", name)
+    
+    // Handle Demo User special case
+    const searchName = name.toLowerCase().includes("demo") ? "Demo User" : name
+
+    const { data, error } = await supabase
+      .from("mywayapps-user")
+      .select("*")
+      .ilike("name", searchName)
+      .single()
+
+    if (error && error.code !== "PGRST116") {
+      console.error("❌ Error finding user in Supabase:", error)
+      // Fallback to offline search
+      return findOfflineUser(name)
+    }
+
+    if (data) {
+      console.log("✅ User found in Supabase:", data.name)
+      return data as User
+    } else {
+      console.log("❌ User not found in Supabase:", searchName)
+      // Also check offline storage
+      return findOfflineUser(name)
+    }
+  }, findOfflineUser(name))
+}
+
+// Helper functions for offline fallback
+function createOfflineUser(userData: Omit<User, "id" | "created_at" | "updated_at">): User {
+  const newUser: User = {
+    ...userData,
+    id: `offline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+
+  // Save to localStorage
+  const offlineUsers = JSON.parse(localStorage.getItem("mywayapps_offline_users") || "[]")
+  offlineUsers.push(newUser)
+  localStorage.setItem("mywayapps_offline_users", JSON.stringify(offlineUsers))
+  
+  console.log("📱 User created offline:", newUser.name)
+  return newUser
+}
+
+function findOfflineUser(name: string): User | null {
+  try {
+    const offlineUsers = JSON.parse(localStorage.getItem("mywayapps_offline_users") || "[]")
+    const searchName = name.toLowerCase().includes("demo") ? "Demo User" : name
+    const found = offlineUsers.find((u: User) => u.name.toLowerCase() === searchName.toLowerCase())
+    console.log("📱 Offline search result:", found ? "Found" : "Not found")
+    return found || null
+  } catch (error) {
+    console.error("❌ Error searching offline users:", error)
+    return null
+  }
+}
+
+export async function getUserByName(name: string) {
+  const { data, error } = await supabase
+    .from("mywayapps-user")
+    .select("*")
+    .ilike("name", name) // case-insensitive match
+    .limit(1)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
+// TEST FUNCTION 
+export async function testSupabaseConnection(): Promise<void> {
+  console.log("🧪 Testing Supabase connection...")
+  
+  try {
+    // Test connection
+    const isConnected = await testConnection()
+    console.log("Connection status:", isConnected ? "✅ Connected" : "❌ Failed")
+    
+    // Test user creation
+    if (isConnected) {
+      const testUser = await createUserInSupabase({
+        name: "Test User",
+        email: "test@example.com",
+        age: 25,
+        grade: "Adult"
+      })
+      console.log("Test user creation:", testUser ? "✅ Success" : "❌ Failed")
+      
+      // Test user search
+      const foundUser = await findUserInSupabase("Test User")
+      console.log("Test user search:", foundUser ? "✅ Found" : "❌ Not found")
+    }
+  } catch (error) {
+    console.error("❌ Test failed:", error)
+  }
 }

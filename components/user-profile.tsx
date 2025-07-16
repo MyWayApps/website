@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { User, Settings, Trophy, Clock } from "lucide-react"
+import { createUserInSupabase, updateUser } from "@/lib/database-safe"
 
 interface UserType {
   id: string
@@ -31,6 +32,7 @@ interface UserProfileProps {
 }
 
 export function UserProfile({ user, onUpdateUser, userStats }: UserProfileProps) {
+  console.log("UserProfile rendered. user:", user)
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -38,23 +40,127 @@ export function UserProfile({ user, onUpdateUser, userStats }: UserProfileProps)
     grade: user?.grade || "",
   })
 
-  const handleSave = () => {
-    onUpdateUser({
-      name: formData.name,
-      age: formData.age ? Number.parseInt(formData.age) : undefined,
-      grade: formData.grade,
-    })
-    setIsEditing(false)
+  const handleSave = async () => {
+    console.log("🔍 handleSave: Creating new user from profile:" )
+    if (!user) {
+      // This is creating a new user
+      console.log("🔍 handleSave: Creating new user from profile:" )
+      if (!formData.name.trim()) {
+        alert("Please enter your name")
+        return
+      }
+
+      try {
+        console.log("🔍 Creating new user from profile:", formData.name)
+
+        const userData = {
+          name: formData.name,
+          email: formData.name.toLowerCase().includes("demo")
+            ? "demo@mywayapps.com"
+            : `${formData.name.toLowerCase().replace(/\s+/g, "")}@mywayapps.com`,
+          age: formData.age ? Number.parseInt(formData.age) : undefined,
+          grade: formData.grade || undefined,
+        }
+
+        // Create user in Supabase
+        const newUser = await createUserInSupabase(userData)
+
+        if (newUser) {
+          console.log("✅ User created successfully from profile:", newUser.name)
+          onUpdateUser(newUser) // This will set the user in the parent component
+          setIsEditing(false)
+        } else {
+          alert("Failed to create user. Please try again.")
+        }
+      } catch (error) {
+        console.error("❌ Error creating user from profile:", error)
+        alert("Error creating user. Please try again.")
+      }
+    } else {
+      // This is updating an existing user
+      try {
+        const updatedData = {
+          name: formData.name,
+          age: formData.age ? Number.parseInt(formData.age) : undefined,
+          grade: formData.grade,
+        }
+
+        // Update in Supabase first, then fallback to local
+        const updatedUser = await updateUser(user.id, updatedData)
+
+        if (updatedUser) {
+          onUpdateUser(updatedData)
+          setIsEditing(false)
+          console.log("✅ User updated successfully")
+        } else {
+          // Fallback to local update
+          onUpdateUser(updatedData)
+          setIsEditing(false)
+          console.log("📱 User updated locally")
+        }
+      } catch (error) {
+        console.error("❌ Error updating user:", error)
+        // Still allow local update
+        onUpdateUser({
+          name: formData.name,
+          age: formData.age ? Number.parseInt(formData.age) : undefined,
+          grade: formData.grade,
+        })
+        setIsEditing(false)
+      }
+    }
   }
 
   if (!user) {
     return (
-      <Card className="bg-gradient-to-br from-purple-300 to-pink-400 border-4 border-white shadow-lg">
-        <CardContent className="p-6 text-center">
+      <Card className="bg-gradient-to-br from-amber-200 to-orange-300 border-4 border-white shadow-lg">
+        <CardHeader className="text-center">
           <User className="h-16 w-16 mx-auto mb-4 text-white" />
-          <h3 className="text-xl font-bold text-white mb-2">Welcome to MyWayApps!</h3>
-          <p className="text-white/80 mb-4">Create your profile to track your progress</p>
-          <Button onClick={() => setIsEditing(true)} className="bg-white text-purple-600 hover:bg-gray-100">
+          <CardTitle className="text-2xl font-bold text-white">Create Your Profile</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="name" className="text-white font-medium">
+              Name *
+            </Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="bg-white/20 border-white/30 text-white placeholder-white/60"
+              placeholder="Enter your name"
+            />
+          </div>
+          <div>
+            <Label htmlFor="age" className="text-white font-medium">
+              Age (optional)
+            </Label>
+            <Input
+              id="age"
+              type="number"
+              value={formData.age}
+              onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+              className="bg-white/20 border-white/30 text-white placeholder-white/60"
+              placeholder="Enter your age"
+            />
+          </div>
+          <div>
+            <Label htmlFor="grade" className="text-white font-medium">
+              Grade (optional)
+            </Label>
+            <Input
+              id="grade"
+              value={formData.grade}
+              onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
+              className="bg-white/20 border-white/30 text-white placeholder-white/60"
+              placeholder="Enter your grade"
+            />
+          </div>
+          <Button
+            onClick={handleSave}
+            className="w-full bg-white text-purple-600 hover:bg-gray-100"
+            disabled={!formData.name.trim()}
+          >
             Create Profile
           </Button>
         </CardContent>
@@ -63,7 +169,7 @@ export function UserProfile({ user, onUpdateUser, userStats }: UserProfileProps)
   }
 
   return (
-    <Card className="bg-gradient-to-br from-indigo-300 to-purple-400 border-4 border-white shadow-lg">
+    <Card className="bg-gradient-to-br from-emerald-200 to-teal-300 border-4 border-white shadow-lg">
       <CardHeader className="text-center">
         <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
           <User className="h-12 w-12 text-indigo-600" />

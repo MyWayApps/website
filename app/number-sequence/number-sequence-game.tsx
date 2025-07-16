@@ -133,8 +133,8 @@ export default function NumberSequenceGame({ onGameComplete, onBackToHome }: Num
 
     setCurrentSequence(sequence)
     setAvailableNumbers(available)
-    setFilledPositions([false, false, false, false, false])
-    setCurrentPosition(0)
+    setFilledPositions([true, false, false, false, false])
+    setCurrentPosition(1)
     setGameStartTime(Date.now())
   }
 
@@ -286,7 +286,7 @@ export default function NumberSequenceGame({ onGameComplete, onBackToHome }: Num
                     >
                       <div className="flex flex-col items-center gap-2">
                         <ArrowUp className="h-8 w-8" />
-                        <span>Ascending (1, 2, 3...)</span>
+                        <span>Forward Counting (1, 2, 3...)</span>
                       </div>
                     </Button>
 
@@ -301,7 +301,7 @@ export default function NumberSequenceGame({ onGameComplete, onBackToHome }: Num
                     >
                       <div className="flex flex-col items-center gap-2">
                         <ArrowDown className="h-8 w-8" />
-                        <span>Descending (10, 9, 8...)</span>
+                        <span>Backward Counting (10, 9, 8...)</span>
                       </div>
                     </Button>
                   </div>

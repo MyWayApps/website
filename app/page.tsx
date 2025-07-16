@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { CategorySection } from "@/components/category-section"
-import { UserProfile } from "@/components/user-profile"
+import { UserProfile } from "@/components/user-profile-orig"
 import { UserAuth } from "@/components/user-auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -69,7 +69,7 @@ const fallbackApplications = [
     name: "Number Sequence",
     category: "Education",
     subcategory: "Math",
-    description: "Practice ascending and descending number patterns",
+    description: "Practice forward and backward counting",
     icon_emoji: "📈",
     color_scheme: "from-blue-300 to-indigo-500",
     route: "/number-sequence",
@@ -77,17 +77,28 @@ const fallbackApplications = [
   },
   {
     id: "3",
-    name: "Telugu Letters",
+    name: "Telugu Letters Flashcards",
     category: "Education",
     subcategory: "Telugu",
-    description: "Learn Telugu alphabet with interactive games",
+    description: "Learn Telugu alphabet with flash cards",
     icon_emoji: "అ",
     color_scheme: "from-green-300 to-teal-500",
-    route: "/telugu-letters",
+    route: "/telugu-letters-flashcards",
     created_at: new Date().toISOString(),
   },
   {
     id: "4",
+    name: "Telugu Letters Game",
+    category: "Education",
+    subcategory: "Telugu",
+    description: "Learn Telugu letters with a fun game",
+    icon_emoji: "అ",
+    color_scheme: "from-pink-300 to-purple-500",
+    route: "/telugu-letters-game",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "5",
     name: "English Phonics",
     category: "Education",
     subcategory: "English",
@@ -98,7 +109,7 @@ const fallbackApplications = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "5",
+    id: "6",
     name: "Shape Puzzle",
     category: "Puzzles",
     subcategory: "Geometry",
@@ -109,7 +120,7 @@ const fallbackApplications = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "6",
+    id: "7",
     name: "Memory Game",
     category: "Games",
     subcategory: "Memory",
@@ -120,7 +131,7 @@ const fallbackApplications = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "7",
+    id: "8",
     name: "Counting Game",
     category: "Games",
     subcategory: "Counting",
@@ -275,6 +286,105 @@ export default function HomePage() {
     }
   }
 
+   const handleUpdateUser = (userData: Partial<User> | User) => {
+    try {
+      console.log("📱 Updating/Creating user:", userData)
+
+      if ("id" in userData && userData.id) {
+        // This is a complete user object (new user created)
+        const newUser = userData as User
+
+        // Update in offline users list
+        const offlineUsers = JSON.parse(localStorage.getItem("mywayapps_offline_users") || "[]")
+        const existingIndex = offlineUsers.findIndex((u: User) => u.email === newUser.email)
+
+        if (existingIndex >= 0) {
+          offlineUsers[existingIndex] = newUser
+        } else {
+          offlineUsers.push(newUser)
+        }
+
+        localStorage.setItem("mywayapps_offline_users", JSON.stringify(offlineUsers))
+        localStorage.setItem("mywayapps_current_user", JSON.stringify(newUser))
+
+        setUser(newUser)
+        console.log("✅ New user created and set:", newUser.name)
+      } else if (user) {
+        // This is a partial update to existing user
+        const updatedUser = {
+          ...user,
+          ...userData,
+          updated_at: new Date().toISOString(),
+        }
+
+        // Update in offline users list
+        const offlineUsers = JSON.parse(localStorage.getItem("mywayapps_offline_users") || "[]")
+        const userIndex = offlineUsers.findIndex((u: User) => u.id === user.id)
+        if (userIndex >= 0) {
+          offlineUsers[userIndex] = updatedUser
+          localStorage.setItem("mywayapps_offline_users", JSON.stringify(offlineUsers))
+        }
+
+        setUser(updatedUser)
+        localStorage.setItem("mywayapps_current_user", JSON.stringify(updatedUser))
+        console.log("✅ User updated successfully")
+      }
+    } catch (error) {
+      console.error("❌ Error updating user:", error)
+      setError("Failed to update profile. Please try again.")
+    }
+  }
+  /*
+  const handleUpdateUser = (userData: Partial<User> | User) => {
+    try {
+      console.log("📱 Updating/Creating user:", userData)
+
+      if ("id" in userData && userData.id) {
+        // This is a complete user object (new user created)
+        const newUser = userData as User
+
+        // Update in offline users list
+        const offlineUsers = JSON.parse(localStorage.getItem("mywayapps_offline_users") || "[]")
+        const existingIndex = offlineUsers.findIndex((u: User) => u.email === newUser.email)
+
+        if (existingIndex >= 0) {
+          offlineUsers[existingIndex] = newUser
+        } else {
+          offlineUsers.push(newUser)
+        }
+
+        localStorage.setItem("mywayapps_offline_users", JSON.stringify(offlineUsers))
+        localStorage.setItem("mywayapps_current_user", JSON.stringify(newUser))
+
+        setUser(newUser)
+        console.log("✅ New user created and set:", newUser.name)
+      } else if (user) {
+        // This is a partial update to existing user
+        const updatedUser = {
+          ...user,
+          ...userData,
+          updated_at: new Date().toISOString(),
+        }
+
+        // Update in offline users list
+        const offlineUsers = JSON.parse(localStorage.getItem("mywayapps_offline_users") || "[]")
+        const userIndex = offlineUsers.findIndex((u: User) => u.id === user.id)
+        if (userIndex >= 0) {
+          offlineUsers[userIndex] = updatedUser
+          localStorage.setItem("mywayapps_offline_users", JSON.stringify(offlineUsers))
+        }
+
+        setUser(updatedUser)
+        localStorage.setItem("mywayapps_current_user", JSON.stringify(updatedUser))
+        console.log("✅ User updated successfully")
+      }
+    } catch (error) {
+      console.error("❌ Error updating user:", error)
+      setError("Failed to update profile. Please try again.")
+    }
+  }
+    */
+  /*
   const handleUpdateUser = (userData: Partial<User>) => {
     if (user) {
       try {
@@ -304,7 +414,7 @@ export default function HomePage() {
         setError("Failed to update profile. Please try again.")
       }
     }
-  }
+  }*/
 
   const categories = ["Education", "Games", "Puzzles"]
 
@@ -383,7 +493,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* User Profile Sidebar */}
           <div className="lg:col-span-1">
-            <UserProfile user={user} onUpdateUser={handleUpdateUser} userStats={userStats} />
+            <UserProfile user={null} onUpdateUser={handleUpdateUser} userStats={userStats} />
 
             {/* Contact Info */}
             {showContact && (
@@ -393,11 +503,11 @@ export default function HomePage() {
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3">
                       <Mail className="h-5 w-5" />
-                      <span>support@mywayapps.com</span>
+                      <span>mywayapps10@gmail.com</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <Phone className="h-5 w-5" />
-                      <span>+1 (555) 123-4567</span>
+                      <span>(+91) XXXXX XXXXX</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <MapPin className="h-5 w-5" />
