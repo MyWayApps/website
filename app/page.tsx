@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { CategorySection } from "@/components/category-section"
-import { UserProfile } from "@/components/user-profile-orig"
+import { UserProfile } from "@/components/user-profile"
 import { UserAuth } from "@/components/user-auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
