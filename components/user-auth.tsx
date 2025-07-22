@@ -294,7 +294,7 @@ const handleSignup = async () => {
   }
 
   const handleSave = async () => {
-    if (!user) return
+    //if (!user) return
 
     try {
       const updatedData = {
