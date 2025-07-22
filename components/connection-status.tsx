@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, RefreshCw } from "lucide-react"
-import { testConnection } from "@/lib/database-safe"
+import { testConnection } from "@/lib/database-supabase"
 
 export function ConnectionStatus() {
   const [isConnected, setIsConnected] = useState<boolean | null>(null)

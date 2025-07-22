@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { User, Settings, Trophy, Clock } from "lucide-react"
-import { createUserInSupabase, updateUser } from "@/lib/database-safe"
+import { createUserInSupabase, updateUser } from "@/lib/database-supabase"
 
 interface UserType {
   id: string

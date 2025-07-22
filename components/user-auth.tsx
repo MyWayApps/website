@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { User, LogIn, UserPlus, Users, Loader2 } from "lucide-react"
-import { createUserInSupabase, findUserInSupabase, testSupabaseConnection } from "@/lib/database-safe"
-import { updateUser } from "@/lib/database-safe"
+import { createUserInSupabase, findUserInSupabase, testSupabaseConnection } from "@/lib/database-supabase"
+import { updateUser } from "@/lib/database-supabase"
+import type { User as UserType } from "@/lib/database-supabase"
 
 // Offline user type
 interface OfflineUser {
@@ -22,8 +23,15 @@ interface OfflineUser {
   updated_at: string
 }
 
+//interface UserAuthProps {
+//  onUserLogin: (user: OfflineUser) => void
+//  user?: OfflineUser
+//}
+
 interface UserAuthProps {
-  onUserLogin: (user: OfflineUser) => void
+  onUserLogin: (user: UserType) => void
+  user?: UserType // Add this if you need to pass an existing user
+  onUpdateUser?: (updated: Partial<UserType>) => void
 }
 
 // Local storage functions for offline mode
@@ -291,41 +299,6 @@ const handleSignup = async () => {
   const handleQuickLogin = (user: OfflineUser) => {
     console.log("📱 Quick login for:", user.name)
     onUserLogin(user)
-  }
-
-  const handleSave = async () => {
-    //if (!user) return
-
-    try {
-      const updatedData = {
-        name: formData.name,
-        age: formData.age ? parseInt(formData.age) : undefined,
-        grade: formData.grade,
-      }
-
-      // Update in Supabase first, then fallback to local
-      const updatedUser = await updateUser(user.id, updatedData)
-      
-      if (updatedUser) {
-        onUpdateUser(updatedData)
-        setIsEditing(false)
-        console.log("✅ User updated successfully")
-      } else {
-        // Fallback to local update
-        onUpdateUser(updatedData)
-        setIsEditing(false)
-        console.log("📱 User updated locally")
-      }
-    } catch (error) {
-      console.error("❌ Error updating user:", error)
-      // Still allow local update
-      onUpdateUser({
-        name: formData.name,
-        age: formData.age ? parseInt(formData.age) : undefined,
-        grade: formData.grade,
-      })
-      setIsEditing(false)
-    }
   }
 
   // Create a demo user and login directly
