@@ -77,6 +77,17 @@ const fallbackApplications = [
   },
   {
     id: "3",
+    name: "Clock Reading",
+    category: "Education",
+    subcategory: "Math",
+    description: "Learn to read clocks with interactive games",
+    icon_emoji: "🕰️",
+    color_scheme: "from-purple-300 to-pink-500",
+    route: "/clock-reading",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "4",
     name: "Telugu Letters Flashcards",
     category: "Education",
     subcategory: "Telugu",
@@ -87,7 +98,7 @@ const fallbackApplications = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "4",
+    id: "5",
     name: "Telugu Letters Game",
     category: "Education",
     subcategory: "Telugu",
@@ -98,7 +109,7 @@ const fallbackApplications = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "5",
+    id: "6",
     name: "English Phonics",
     category: "Education",
     subcategory: "English",
@@ -109,7 +120,7 @@ const fallbackApplications = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "6",
+    id: "7",
     name: "Shape Puzzle",
     category: "Puzzles",
     subcategory: "Geometry",
@@ -120,7 +131,7 @@ const fallbackApplications = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "7",
+    id: "8",
     name: "Memory Game",
     category: "Games",
     subcategory: "Memory",
@@ -131,7 +142,7 @@ const fallbackApplications = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "8",
+    id: "9",
     name: "Counting Game",
     category: "Games",
     subcategory: "Counting",
