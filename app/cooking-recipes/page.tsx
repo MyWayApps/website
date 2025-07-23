@@ -1,0 +1,153 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import CookingRecipesApp from "./cooking-recipes-app"
+import { findOrCreateUser, getApplicationByName, saveUserScore, testConnection } from "@/lib/database-supabase"
+import type { User, Application } from "@/lib/database-supabase"
+
+type CookingGameData = {
+  mode?: string
+  recipeCompleted?: string
+  completionTime?: number
+  [key: string]: unknown
+}
+
+// Remove the props interface and make this a standard Next.js page component
+export default function CookingRecipesPage() {
+  const [user, setUser] = useState<User | null>(null)
+  const [app, setApp] = useState<Application | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    initializeData()
+  }, [])
+
+  const initializeData = async () => {
+    try {
+      const connected = await testConnection()
+      setIsConnected(connected)
+
+      if (connected) {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        let currentUser: User | null = null
+
+        if (userData) {
+          const parsedUser = JSON.parse(userData)
+          currentUser = await findOrCreateUser({
+            name: parsedUser.name,
+            email: parsedUser.email,
+            age: parsedUser.age,
+            grade: parsedUser.grade,
+          })
+        } else {
+          currentUser = await findOrCreateUser({
+            name: "Demo User",
+            email: "demo@mywayapps.com",
+            age: 8,
+            grade: "3rd Grade",
+          })
+        }
+
+        const application = await getApplicationByName("Cooking Recipes")
+        setUser(currentUser)
+        setApp(application)
+        console.log("✅ Initialized - User:", currentUser?.name, "App:", application?.name)
+      } else {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        const appData = localStorage.getItem("mywayapps_current_app")
+
+        if (userData) setUser(JSON.parse(userData))
+        if (appData) setApp(JSON.parse(appData))
+        console.log("⚠️ Using offline mode")
+      }
+    } catch (error) {
+      console.error("❌ Error initializing data:", error)
+    }
+  }
+
+  const handleRecipeComplete = (recipeName: string, stepsCompleted: number, gameData: CookingGameData) => {
+    if (!user || !app) {
+      console.error("❌ Missing user or app data")
+      return
+    }
+
+    setTimeout(async () => {
+      try {
+        if (isConnected) {
+          const scoreData = {
+            user_id: user.id,
+            application_id: app.id,
+            score: stepsCompleted,
+            max_score: stepsCompleted,
+            completion_time: gameData.completionTime
+              ? Math.floor((Date.now() - gameData.completionTime) / 1000)
+              : undefined,
+            difficulty_level: recipeName,
+            game_data: {
+              mode: gameData.mode || "cooking-recipes",
+              recipeCompleted: gameData.recipeCompleted || recipeName,
+              completionTime: gameData.completionTime || Date.now(),
+            } as any,
+          }
+
+          const savedScore = await saveUserScore(scoreData)
+          if (savedScore) {
+            console.log("✅ Recipe completion saved to Supabase!")
+          } else {
+            console.error("❌ Failed to save to Supabase")
+            saveScoreLocally(recipeName, stepsCompleted, gameData)
+          }
+        } else {
+          saveScoreLocally(recipeName, stepsCompleted, gameData)
+        }
+      } catch (error) {
+        console.error("❌ Error saving recipe completion:", error)
+        saveScoreLocally(recipeName, stepsCompleted, gameData)
+      }
+    }, 0)
+  }
+
+  const saveScoreLocally = (recipeName: string, stepsCompleted: number, gameData: CookingGameData) => {
+    try {
+      const scoreData = {
+        user_id: user?.id,
+        application_id: app?.id,
+        score: stepsCompleted,
+        max_score: stepsCompleted,
+        completion_time: gameData.completionTime
+          ? Math.floor((Date.now() - gameData.completionTime) / 1000)
+          : undefined,
+        difficulty_level: recipeName,
+        game_data: gameData,
+        created_at: new Date().toISOString(),
+      }
+
+      const existingScores = JSON.parse(localStorage.getItem("mywayapps_offline_scores") || "[]")
+      existingScores.push(scoreData)
+      localStorage.setItem("mywayapps_offline_scores", JSON.stringify(existingScores))
+      console.log("💾 Recipe completion saved locally:", scoreData)
+    } catch (error) {
+      console.error("❌ Error saving locally:", error)
+    }
+  }
+
+  return (
+    <div>
+      <div className="fixed top-4 right-4 z-50">
+        <div
+          className={`px-3 py-1 rounded-full text-sm font-medium ${
+            isConnected
+              ? "bg-green-100 text-green-800 border border-green-300"
+              : "bg-yellow-100 text-yellow-800 border border-yellow-300"
+          }`}
+        >
+          {isConnected ? "🟢 Connected to Database" : "🟡 Offline Mode"}
+        </div>
+      </div>
+
+      <CookingRecipesApp user={user} onRecipeComplete={handleRecipeComplete} onBackToHome={() => router.push("/")} />
+    </div>
+  )
+}

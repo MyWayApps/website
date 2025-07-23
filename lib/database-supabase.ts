@@ -13,6 +13,17 @@ interface GameData {
 // Fallback data for offline mode
 const fallbackApplications = [
   {
+    id: "0",
+    name: "Cooking Recipes",
+    category: "Education",
+    subcategory: "Life Skills",
+    description: "Learn cooking skills with fun recipes!",
+    icon_emoji: "🍳",
+    color_scheme: "from-yellow-300 to-amber-500",
+    route: "/cooking-recipes",
+    created_at: new Date().toISOString(),
+  },
+  {
     id: "1",
     name: "Skip Counting Game",
     category: "Education",

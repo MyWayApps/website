@@ -567,7 +567,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
   const isGameComplete = currentQuestionIndex >= questions.length
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-300 via-yellow-400 to-amber-500 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-rose-300 via-pink-400 to-purple-500 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
