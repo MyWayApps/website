@@ -14,17 +14,6 @@ interface GameData {
 const fallbackApplications = [
   {
     id: "0",
-    name: "Cooking Recipes",
-    category: "Education",
-    subcategory: "Life Skills",
-    description: "Learn cooking skills with fun recipes!",
-    icon_emoji: "🍳",
-    color_scheme: "from-yellow-300 to-amber-500",
-    route: "/cooking-recipes",
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "1",
     name: "Skip Counting Game",
     category: "Education",
     subcategory: "Math",
@@ -35,7 +24,7 @@ const fallbackApplications = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "2",
+    id: "1",
     name: "Number Sequence",
     category: "Education",
     subcategory: "Math",
@@ -46,7 +35,7 @@ const fallbackApplications = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "3",
+    id: "2",
     name: "Clock Reading",
     category: "Education",
     subcategory: "Math",
@@ -54,6 +43,17 @@ const fallbackApplications = [
     icon_emoji: "🕰️",
     color_scheme: "from-purple-300 to-pink-500",
     route: "/clock-reading",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "3",
+    name: "Even and Odd",
+    category: "Education",
+    subcategory: "Math",
+    description: "Learn even and odd numbers with drag & select games",
+    icon_emoji: "🔢",
+    color_scheme: "from-pink-300 to-purple-500",
+    route: "/even-odd",
     created_at: new Date().toISOString(),
   },
   {
@@ -98,6 +98,17 @@ const fallbackApplications = [
     icon_emoji: "🧠",
     color_scheme: "from-cyan-300 to-blue-500",
     route: "/memory-game",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "8",
+    name: "Cooking Recipes",
+    category: "Education",
+    subcategory: "Life Skills",
+    description: "Learn cooking skills with fun recipes!",
+    icon_emoji: "🍳",
+    color_scheme: "from-yellow-300 to-amber-500",
+    route: "/cooking-recipes",
     created_at: new Date().toISOString(),
   },
 ]

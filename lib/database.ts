@@ -10,17 +10,7 @@ interface GameData {
 
 // Fallback data in case database is not available
 const fallbackApplications: Application[] = [
-  {
-    id: "0",
-    name: "Cooking Recipes",
-    category: "Education",
-    subcategory: "Life Skills",
-    description: "Learn cooking skills with fun recipes!",
-    icon_emoji: "🍳",
-    color_scheme: "from-yellow-300 to-amber-500",
-    route: "/cooking-recipes",
-    created_at: new Date().toISOString(),
-  },
+
   {
     id: "1",
     name: "Skip Counting Game",
@@ -56,6 +46,17 @@ const fallbackApplications: Application[] = [
   },
   {
     id: "4",
+    name: "Even and Odd",
+    category: "Education",
+    subcategory: "Math",
+    description: "Learn even and odd numbers with drag & select games",
+    icon_emoji: "🔢",
+    color_scheme: "from-pink-300 to-purple-500",
+    route: "/even-odd",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "5",
     name: "Telugu Letters",
     category: "Education",
     subcategory: "Telugu",
@@ -66,7 +67,7 @@ const fallbackApplications: Application[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "5",
+    id: "6",
     name: "Telugu Letters Game",
     category: "Education",
     subcategory: "Telugu",
@@ -77,7 +78,7 @@ const fallbackApplications: Application[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "6",
+    id: "7",
     name: "English Phonics",
     category: "Education",
     subcategory: "English",
@@ -88,7 +89,7 @@ const fallbackApplications: Application[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "7",
+    id: "8",
     name: "Shape Puzzle",
     category: "Puzzles",
     subcategory: "Geometry",
@@ -99,7 +100,7 @@ const fallbackApplications: Application[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "8",
+    id: "9",
     name: "Memory Game",
     category: "Games",
     subcategory: "Memory",
@@ -107,6 +108,17 @@ const fallbackApplications: Application[] = [
     icon_emoji: "🧠",
     color_scheme: "from-cyan-300 to-blue-500",
     route: "/memory-game",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "0",
+    name: "Cooking Recipes",
+    category: "Education",
+    subcategory: "Life Skills",
+    description: "Learn cooking skills with fun recipes!",
+    icon_emoji: "🍳",
+    color_scheme: "from-yellow-300 to-amber-500",
+    route: "/cooking-recipes",
     created_at: new Date().toISOString(),
   },
 ]

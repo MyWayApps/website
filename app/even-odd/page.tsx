@@ -1,0 +1,131 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import EvenOddGame from "./even-odd-game"
+import { findOrCreateUser, getApplicationByName, saveUserScore, testConnection } from "@/lib/database-supabase"
+import type { User, Application } from "@/lib/database-supabase"
+
+type GameData = {
+  mode?: string
+  gameType?: string
+  rangeMax?: number
+  completionTime?: number
+  [key: string]: unknown
+}
+
+export default function EvenOddPage() {
+  const [user, setUser] = useState<User | null>(null)
+  const [app, setApp] = useState<Application | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    initializeData()
+  }, [])
+
+  const initializeData = async () => {
+    try {
+      const connected = await testConnection()
+      setIsConnected(connected)
+
+      if (connected) {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        let currentUser: User | null = null
+
+        if (userData) {
+          const parsedUser = JSON.parse(userData)
+          currentUser = await findOrCreateUser({
+            name: parsedUser.name,
+            email: parsedUser.email,
+            age: parsedUser.age,
+            grade: parsedUser.grade,
+          })
+        } else {
+          currentUser = await findOrCreateUser({
+            name: "Demo User",
+            email: "demo@mywayapps.com",
+            age: 8,
+            grade: "3rd Grade",
+          })
+        }
+
+        const application = await getApplicationByName("Even and Odd")
+        setUser(currentUser)
+        setApp(application)
+      } else {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        const appData = localStorage.getItem("mywayapps_current_app")
+        if (userData) setUser(JSON.parse(userData))
+        if (appData) setApp(JSON.parse(appData))
+      }
+    } catch (error) {
+      console.error("Error initializing Even & Odd:", error)
+    }
+  }
+
+  const handleGameComplete = async (_score: number, _maxScore: number, data: GameData) => {
+    if (!user || !app) return
+    try {
+      if (isConnected) {
+        const scoreData = {
+          user_id: user.id,
+          application_id: app.id,
+          score: 1,
+          max_score: 1,
+          completion_time: data.completionTime ? Math.floor((Date.now() - data.completionTime) / 1000) : undefined,
+          difficulty_level: `${data.gameType || "unknown"}-${data.rangeMax || ""}`,
+          game_data: {
+            ...data,
+            mode: data.mode || "even-odd",
+          } as any,
+        }
+        const saved = await saveUserScore(scoreData)
+        if (!saved) {
+          saveScoreLocally(data)
+        }
+      } else {
+        saveScoreLocally(data)
+      }
+    } catch (e) {
+      console.error("Error saving score:", e)
+      saveScoreLocally(data)
+    }
+  }
+
+  const saveScoreLocally = (data: GameData) => {
+    if (!user || !app) return
+    const scoreData = {
+      user_id: user.id,
+      application_id: app.id,
+      score: 1,
+      max_score: 1,
+      completion_time: data.completionTime ? Math.floor((Date.now() - data.completionTime) / 1000) : undefined,
+      difficulty_level: `${data.gameType || "unknown"}-${data.rangeMax || ""}`,
+      game_data: data,
+      created_at: new Date().toISOString(),
+    }
+    const existing = JSON.parse(localStorage.getItem("mywayapps_offline_scores") || "[]")
+    existing.push(scoreData)
+    localStorage.setItem("mywayapps_offline_scores", JSON.stringify(existing))
+  }
+
+  return (
+    <div>
+      {/* Connection Status */}
+      <div className="fixed top-4 right-4 z-50">
+        <div
+          className={`px-3 py-1 rounded-full text-sm font-medium ${
+            isConnected
+              ? "bg-green-100 text-green-800 border border-green-300"
+              : "bg-yellow-100 text-yellow-800 border border-yellow-300"
+          }`}
+        >
+          {isConnected ? "🟢 Connected to Database" : "🟡 Offline Mode"}
+        </div>
+      </div>
+
+      <EvenOddGame user={user} onGameComplete={handleGameComplete} onBackToHome={() => router.push("/")} />
+    </div>
+  )
+}

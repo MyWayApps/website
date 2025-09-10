@@ -53,17 +53,6 @@ interface UserStats {
 
 // Fallback applications for offline mode
 const fallbackApplications = [
-    {
-    id: "0",
-    name: "Cooking Recipes",
-    category: "Education",
-    subcategory: "Life Skills",
-    description: "Learn cooking skills with fun recipes!",
-    icon_emoji: "🍳",
-    color_scheme: "from-yellow-300 to-amber-500",
-    route: "/cooking-recipes",
-    created_at: new Date().toISOString(),
-  },
   {
     id: "1",
     name: "Skip Counting Game",
@@ -161,6 +150,29 @@ const fallbackApplications = [
     icon_emoji: "🐰",
     color_scheme: "from-orange-300 to-pink-500",
     route: "/counting-game",
+    created_at: new Date().toISOString(),
+  },
+  // Add to your fallbackApplications array
+  {
+    id: "10", // Use the next available ID
+    name: "Even & Odd Numbers",
+    category: "Education",
+    subcategory: "Math",
+    description: "Learn even and odd numbers with fun sorting games!",
+    icon_emoji: "🔢",
+    color_scheme: "from-indigo-300 to-purple-500",
+    route: "/even-odd",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "0",
+    name: "Cooking Recipes",
+    category: "Education",
+    subcategory: "Life Skills",
+    description: "Learn cooking skills with fun recipes!",
+    icon_emoji: "🍳",
+    color_scheme: "from-yellow-300 to-amber-500",
+    route: "/cooking-recipes",
     created_at: new Date().toISOString(),
   },
 ]
