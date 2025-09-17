@@ -175,6 +175,17 @@ const fallbackApplications = [
     route: "/cooking-recipes",
     created_at: new Date().toISOString(),
   },
+  {
+    id: "11",
+    name: "Spelling Game Suite",
+    category: "Education",
+    subcategory: "English",
+    description: "Master spelling with 10 fun interactive games!",
+    icon_emoji: "✨",
+    color_scheme: "from-purple-300 to-pink-500",
+    route: "/spelling-game-suite",
+    created_at: new Date().toISOString(),
+  },
 ]
 
 export default function HomePage() {
@@ -489,8 +500,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="text-4xl font-bold text-white">🎓 MyWayApps.com</div>
-              <div className="text-white/80">Welcome back, {user.name}!</div>
+              <div className="text-2xl font-bold text-white">Welcome back, {user.name}!</div>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -556,19 +566,30 @@ export default function HomePage() {
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-12">
             <div className="text-center">
-              <h1 className="text-5xl font-bold text-white mb-4">Welcome to MyWayApps! 🌟</h1>
+              <div className="flex items-center justify-center space-x-4 mb-4">
+                <img 
+                  src="/mywayapps-logo.png" 
+                  alt="MyWayApps Logo" 
+                  className="h-16 w-16 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = '/mywayapps-logo.svg';
+                  }}
+                />
+                <h1 className="text-5xl font-bold text-white">Welcome to MyWayApps! 🌟</h1>
+              </div>
               <p className="text-xl text-white/90 mb-8">Fun and Educational Games for Kids</p>
             </div>
 
             {/* Categories */}
             {categories.map((category) => (
-              <CategorySection
-                key={category}
-                category={category}
-                apps={applications}
-                userProgress={userProgress}
-                onPlayApp={handlePlayApp}
-              />
+              <div key={category} id={`${category.toLowerCase()}-section`}>
+                <CategorySection
+                  category={category}
+                  apps={applications}
+                  userProgress={userProgress}
+                  onPlayApp={handlePlayApp}
+                />
+              </div>
             ))}
           </div>
         </div>
