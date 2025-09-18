@@ -102,7 +102,7 @@ const recipes: Recipe[] = [
         id: 6,
         title: "Cook on pan",
         description: "Cook each chapati on a hot pan for 1-2 minutes on each side.",
-        emoji: "🍳",
+        emoji: "🥗",
         tip: "Ask an adult to help with the hot pan!",
       },
     ],
@@ -409,7 +409,7 @@ const recipes: Recipe[] = [
         id: 5,
         title: "Heat the pan",
         description: "Ask an adult to heat a non-stick pan on medium heat.",
-        emoji: "🍳",
+        emoji: "🥗",
         tip: "The pan is ready when a drop of water sizzles!",
       },
       {
@@ -476,9 +476,28 @@ export default function CookingRecipesApp({ onRecipeComplete, onBackToHome }: Co
 
   if (currentMode === "menu") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-300 via-purple-400 to-indigo-500 p-4 flex items-center justify-center">
-        <Card className="w-full max-w-4xl bg-white/90 backdrop-blur-sm shadow-2xl border-0">
-          <CardContent className="p-8">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-200 via-amber-300 to-amber-400 p-4">
+        <div className="max-w-4xl mx-auto">
+          {/* Header with Back to Home Button - Aligned with card */}
+          <div className="flex items-center justify-between mb-6">
+            {onBackToHome && (
+              <Button
+                onClick={onBackToHome}
+                className="bg-white/20 hover:bg-white/30 text-amber-800 border-2 border-white font-bold text-lg px-6 py-3"
+                variant="outline"
+              >
+                <ArrowLeft className="mr-2 h-5 w-5" />
+                Back to Home
+              </Button>
+            )}
+            <div className="flex items-center gap-2 text-amber-800 font-bold">
+              <Star className="h-5 w-5" />
+              <span>Score: 0</span>
+            </div>
+          </div>
+          
+          <Card className="w-full bg-white/90 backdrop-blur-sm shadow-2xl border-0">
+            <CardContent className="p-8">
             <div className="text-center mb-8">
               <h1 className="text-5xl font-bold text-purple-800 mb-4 font-sans tracking-tight">
                 👨‍🍳 Kids Cooking Corner
@@ -490,10 +509,10 @@ export default function CookingRecipesApp({ onRecipeComplete, onBackToHome }: Co
             <div className="flex justify-center">
               <Button
                 onClick={() => setCurrentMode("recipe-list")}
-                className="h-32 text-2xl font-bold bg-gradient-to-r from-pink-400 to-purple-600 hover:from-pink-500 hover:to-purple-700 hover:scale-105 transform transition-all duration-300 text-white border-4 border-white shadow-lg hover:shadow-xl px-12"
+                className="h-32 text-2xl font-bold bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 hover:scale-105 transform transition-all duration-300 text-white border-4 border-white shadow-lg hover:shadow-xl px-12"
               >
                 <div className="flex flex-col items-center gap-3">
-                  <span className="text-4xl">🍳</span>
+                  <span className="text-4xl">🥗</span>
                   <span className="font-sans">Start Cooking!</span>
                   <span className="text-sm font-normal">Choose a recipe</span>
                 </div>
@@ -522,6 +541,7 @@ export default function CookingRecipesApp({ onRecipeComplete, onBackToHome }: Co
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     )
   }
@@ -530,7 +550,7 @@ export default function CookingRecipesApp({ onRecipeComplete, onBackToHome }: Co
   const englishRecipes = recipes.filter((r) => r.category === "english")
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-300 via-purple-400 to-indigo-500 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-200 via-amber-300 to-amber-400 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

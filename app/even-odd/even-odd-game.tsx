@@ -212,35 +212,55 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
 
   if (currentMode === "menu") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-300 via-purple-400 to-indigo-500 p-4 flex items-center justify-center">
-        <Card className="w-full max-w-4xl bg-white/90 backdrop-blur-sm shadow-2xl border-0">
-          <CardContent className="p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-5xl font-bold text-purple-800 mb-4 font-sans tracking-tight">🔢 Even & Odd</h1>
-              <p className="text-xl text-purple-700 font-medium">Learn even and odd numbers through play!</p>
-              <p className="text-sm text-purple-600 mt-2">Pick a range and a game, then start!</p>
-            </div>
-            <div className="flex justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-200 via-teal-300 to-teal-500 p-4">
+        <div className="max-w-4xl mx-auto">
+          {/* Header with Back to Home Button - Aligned with card */}
+          <div className="flex items-center justify-between mb-6">
+            {onBackToHome && (
               <Button
-                onClick={() => setCurrentMode("setup")}
-                className="h-32 text-2xl font-bold bg-gradient-to-r from-pink-400 to-purple-600 hover:from-pink-500 hover:to-purple-700 hover:scale-105 transform transition-all duration-300 text-white border-4 border-white shadow-lg hover:shadow-xl px-12"
+                onClick={onBackToHome}
+                className="bg-white/20 hover:bg-white/30 text-teal-800 border-2 border-white font-bold text-lg px-6 py-3"
+                variant="outline"
               >
-                <div className="flex flex-col items-center gap-3">
-                  <span className="text-4xl">🚀</span>
-                  <span className="font-sans">Start</span>
-                  <span className="text-sm font-normal">Choose your options</span>
-                </div>
+                <ArrowLeft className="mr-2 h-5 w-5" />
+                Back to Home
               </Button>
+            )}
+            <div className="flex items-center gap-2 text-teal-800 font-bold">
+              <Star className="h-5 w-5" />
+              <span>Score: 0</span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          
+          <Card className="w-full bg-white/90 backdrop-blur-sm shadow-2xl border-0">
+            <CardContent className="p-8">
+              <div className="text-center mb-8">
+                <h1 className="text-5xl font-bold text-purple-800 mb-4 font-sans tracking-tight">🔢 Even & Odd</h1>
+                <p className="text-xl text-purple-700 font-medium">Learn even and odd numbers through play!</p>
+                <p className="text-sm text-purple-600 mt-2">Pick a range and a game, then start!</p>
+              </div>
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => setCurrentMode("setup")}
+                  className="h-32 text-2xl font-bold bg-gradient-to-r from-green-400 to-teal-500 hover:from-green-500 hover:to-teal-600 hover:scale-105 transform transition-all duration-300 text-white border-4 border-white shadow-lg hover:shadow-xl px-12"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <span className="text-4xl">🚀</span>
+                    <span className="font-sans">Start</span>
+                    <span className="text-sm font-normal">Choose your options</span>
+                  </div>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
 
   if (currentMode === "setup") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-300 via-purple-400 to-indigo-500 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-green-300 via-teal-400 to-teal-500 p-4">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -328,7 +348,7 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
                       onClick={() => setGameType("select-odd")}
                       className={`h-28 text-lg font-bold border-4 transition-all duration-300 ${
                         gameType === "select-odd"
-                          ? "bg-gradient-to-r from-pink-400 to-rose-500 text-white border-white shadow-lg scale-105"
+                          ? "bg-gradient-to-r from-green-400 to-teal-500 text-white border-white shadow-lg scale-105"
                           : "bg-white/20 text-gray-700 border-gray-300 hover:bg-white/30"
                       }`}
                       variant="outline"
@@ -360,7 +380,7 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
 
   // PLAYING
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-300 via-purple-400 to-indigo-500 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-300 via-teal-400 to-teal-500 p-4">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -443,11 +463,11 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
                   <div
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={() => onDropTo("odd")}
-                    className="min-h-[160px] rounded-2xl border-4 border-pink-300 bg-gradient-to-r from-pink-100 to-rose-100 p-4"
+                    className="min-h-[160px] rounded-2xl border-4 border-teal-300 bg-gradient-to-r from-green-100 to-teal-100 p-4"
                     aria-label="Odd basket dropzone"
                     role="region"
                   >
-                    <div className="flex items-center gap-2 text-pink-800 font-bold mb-2">
+                    <div className="flex items-center gap-2 text-teal-800 font-bold mb-2">
                       <span className="text-2xl">🧺</span> Odd Basket
                     </div>
                     <div className="flex flex-wrap gap-2">

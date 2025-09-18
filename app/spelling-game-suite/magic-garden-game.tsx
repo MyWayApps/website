@@ -292,7 +292,7 @@ export default function MagicGardenGame({ wordList, onGameComplete, onBackToGame
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-300 via-emerald-400 to-teal-500 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-indigo-300 to-indigo-400 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

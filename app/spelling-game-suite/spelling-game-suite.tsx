@@ -8,6 +8,12 @@ import { ArrowLeft, Star, Volume2, BookOpen, Edit3, Sparkles, Brain } from "luci
 import BalloonPopGame from "./balloon-pop-game"
 import WordRocketGame from "./word-rocket-game"
 import TreasureHuntGame from "./treasure-hunt-game"
+import TypingRaceGame from "./typing-race-game"
+import PuzzleBuilderGame from "./puzzle-builder-game"
+import SpellingBeeGame from "./spelling-bee-game"
+import FallingLettersGame from "./falling-letters-game"
+import MemoryMatchGame from "./memory-match-game"
+import MonsterMunchGame from "./monster-munch-game"
 import MagicGardenGame from "./magic-garden-game"
 import { generateWords, generateWordsLocal } from "@/lib/word-generator"
 
@@ -391,7 +397,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
 
   if (currentMode === "menu") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-200 via-rose-200 to-pink-300 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-indigo-300 to-indigo-400 p-4">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -423,7 +429,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
               <div className="text-center">
                 <Button
                   onClick={handleStartGame}
-                  className="h-32 text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-600 hover:from-purple-500 hover:to-pink-700 hover:scale-105 transform transition-all duration-300 text-white border-4 border-white shadow-lg hover:shadow-xl px-12"
+                  className="h-32 text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 hover:scale-105 transform transition-all duration-300 text-white border-4 border-white shadow-lg hover:shadow-xl px-12"
                 >
                   <div className="flex flex-col items-center gap-3">
                     <span className="text-4xl">🎮</span>
@@ -440,7 +446,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
 
   if (currentMode === "word-selection") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-200 via-rose-200 to-pink-300 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-indigo-300 to-indigo-400 p-4">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -722,7 +728,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
 
   if (currentMode === "game-selection") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-200 via-rose-200 to-pink-300 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-indigo-300 to-indigo-400 p-4">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -819,9 +825,8 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
     if (selectedGame === "treasure-hunt") {
       return (
         <TreasureHuntGame
-          wordList={currentWordList}
-          onGameComplete={handleGameComplete}
           onBackToGames={() => setCurrentMode("game-selection")}
+          onBackToHome={onBackToHome}
         />
       )
     }
@@ -837,9 +842,69 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
       )
     }
 
+    // Render Typing Race Game
+    if (selectedGame === "typing-race") {
+      return (
+        <TypingRaceGame
+          onBackToGames={() => setCurrentMode("game-selection")}
+          onBackToHome={onBackToHome}
+        />
+      )
+    }
+
+    // Render Puzzle Builder Game
+    if (selectedGame === "puzzle-builder") {
+      return (
+        <PuzzleBuilderGame
+          onBackToGames={() => setCurrentMode("game-selection")}
+          onBackToHome={onBackToHome}
+        />
+      )
+    }
+
+    // Render Spelling Bee Game
+    if (selectedGame === "spelling-bee") {
+      return (
+        <SpellingBeeGame
+          onBackToGames={() => setCurrentMode("game-selection")}
+          onBackToHome={onBackToHome}
+        />
+      )
+    }
+
+    // Render Falling Letters Game
+    if (selectedGame === "falling-letters") {
+      return (
+        <FallingLettersGame
+          onBackToGames={() => setCurrentMode("game-selection")}
+          onBackToHome={onBackToHome}
+        />
+      )
+    }
+
+    // Render Memory Match Game
+    if (selectedGame === "memory-match") {
+      return (
+        <MemoryMatchGame
+          onBackToGames={() => setCurrentMode("game-selection")}
+          onBackToHome={onBackToHome}
+        />
+      )
+    }
+
+    // Render Monster Munch Game
+    if (selectedGame === "monster-munch") {
+      return (
+        <MonsterMunchGame
+          onBackToGames={() => setCurrentMode("game-selection")}
+          onBackToHome={onBackToHome}
+        />
+      )
+    }
+
     // Placeholder for other games
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-200 via-rose-200 to-pink-300 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-indigo-300 to-indigo-400 p-4">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">

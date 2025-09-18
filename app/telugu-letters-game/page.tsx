@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star } from "lucide-react"
-import Link from "next/link"
 
 // Telugu letters and their audio file names
 const teluguLetters = [
@@ -98,60 +97,52 @@ export default function TeluguLettersGame() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-teal-300 to-green-500">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 w-full max-w-lg">
-        <div />
+    <div className="min-h-screen bg-gradient-to-br from-yellow-200 to-amber-400 p-4 flex flex-col items-center justify-center">
+      {/* Header with Back to Home Button and Score - Aligned with card */}
+      <div className="w-1/2 min-w-[500px] max-w-[800px] flex items-center justify-between mb-6">
+        <Button
+          onClick={handleBackToHome}
+          className="bg-white/20 hover:bg-white/30 text-amber-800 border-2 border-white font-bold text-lg px-6 py-3"
+          variant="outline"
+        >
+          <ArrowLeft className="mr-2 h-5 w-5" />
+          Back to Home
+        </Button>
         <div className="flex items-center gap-4 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
           <Star className="h-6 w-6 text-yellow-600" />
-          <span className="text-xl font-bold text-indigo-800">Score: {score}</span>
-          <Button
-            onClick={handleBackToHome}
-            className="bg-white/20 hover:bg-white/30 text-indigo-800 border-2 border-white font-bold text-lg px-6 py-3"
-            variant="outline"
-          >
-            <ArrowLeft className="mr-2 h-5 w-5" />
-            Back to Home
-          </Button>
+          <span className="text-xl font-bold text-amber-800">Score: {score}</span>
         </div>
       </div>
-
-      <audio
-        ref={audioRef}
-        src={`/audio/${teluguLetters[correctIdx].audio}`}
-        preload="auto"
-      />
-      <audio ref={goodJobRef} src={GOOD_JOB_AUDIO} preload="auto" />
-
-      <Card className="w-full max-w-lg min-h-[320px] flex flex-col items-center justify-center shadow-2xl">
-        <CardContent className="flex flex-col items-center justify-center h-full w-full">
+      
+      <Card className="w-1/2 min-w-[500px] max-w-[800px] bg-white/90 backdrop-blur-sm shadow-2xl border-0">
+          <CardContent className="p-8">
           {gameOver ? (
             <div className="flex flex-col items-center justify-center w-full">
               <div className="text-3xl font-bold text-green-800 mb-4">Game Over!</div>
-              <div className="text-2xl text-indigo-900 mb-2">Your Score: {score} / 10</div>
-              <Button onClick={handleRestart} className="mt-4" variant="outline">
+              <div className="text-2xl text-amber-900 mb-2">Your Score: {score} / 10</div>
+              <Button onClick={handleRestart} className="mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3" variant="outline">
                 Play Again
               </Button>
             </div>
           ) : (
             <>
-              <div className="mb-4 flex flex-col items-center">
-                <div className="text-lg text-indigo-900 font-semibold mb-2">
+              <div className="mb-6 flex flex-col items-center">
+                <div className="text-xl text-amber-900 font-semibold mb-3">
                   Round {round} of 10
                 </div>
                 <Button
                   onClick={handleReplayAudio}
-                  className="bg-white/30 hover:bg-white/40 text-indigo-800 border-white font-bold text-lg px-4 py-2"
+                  className="bg-white/30 hover:bg-white/40 text-amber-800 border-white font-bold text-lg px-6 py-3"
                   variant="outline"
                 >
                   🔊 Hear the Letter
                 </Button>
               </div>
-              <div className="flex flex-row gap-8 mt-2">
+              <div className="flex flex-row gap-6 mt-4 justify-center">
                 {choices.map((letterIdx, idx) => (
                   <Card
                     key={idx}
-                    className={`w-28 h-36 flex items-center justify-center text-6xl font-bold cursor-pointer transition-all duration-200 ${
+                    className={`w-36 h-44 flex items-center justify-center text-7xl font-bold cursor-pointer transition-all duration-200 ${
                       showResult && choices[idx] === correctIdx && showResult === "correct"
                         ? "bg-green-200 border-green-500 scale-110"
                         : showResult && idx === choices.findIndex(i => i === correctIdx) && showResult === "wrong"
@@ -172,8 +163,15 @@ export default function TeluguLettersGame() {
               )}
             </>
           )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+      <audio
+        ref={audioRef}
+        src={`/audio/${teluguLetters[correctIdx].audio}`}
+        preload="auto"
+      />
+      <audio ref={goodJobRef} src={GOOD_JOB_AUDIO} preload="auto" />
     </div>
   )
 }

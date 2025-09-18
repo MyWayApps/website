@@ -407,7 +407,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
 
   if (currentMode === "menu") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rose-300 via-pink-400 to-purple-500 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-purple-200 via-pink-300 to-pink-500 p-4">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -547,7 +547,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
                 <div className="text-center">
                   <Button
                     onClick={handleStartGame}
-                    className="h-16 text-2xl font-bold bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white px-12 py-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                    className="h-16 text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white px-12 py-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-3xl">🚀</span>
@@ -567,7 +567,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
   const isGameComplete = currentQuestionIndex >= questions.length
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-300 via-pink-400 to-purple-500 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-300 via-pink-400 to-pink-500 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -663,7 +663,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
                     <Button
                       onClick={handleTextInputSubmit}
                       disabled={!userInput.hours || !userInput.minutes || showFeedback}
-                      className="bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white font-bold text-xl px-8 py-3 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                      className="bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white font-bold text-xl px-8 py-3 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                     >
                       Submit ✨
                     </Button>

@@ -10,20 +10,8 @@ interface GameData {
 
 // Fallback data in case database is not available
 const fallbackApplications: Application[] = [
-
   {
     id: "1",
-    name: "Skip Counting Game",
-    category: "Education",
-    subcategory: "Math",
-    description: "Learn skip counting by 2, 3, 5, and 10 with fun pictures!",
-    icon_emoji: "🔢",
-    color_scheme: "from-yellow-300 to-amber-500",
-    route: "/skip-counting",
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "2",
     name: "Number Sequence",
     category: "Education",
     subcategory: "Math",
@@ -34,7 +22,7 @@ const fallbackApplications: Application[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "3",
+    id: "2",
     name: "Clock Reading",
     category: "Education",
     subcategory: "Math",
@@ -45,25 +33,36 @@ const fallbackApplications: Application[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "4",
-    name: "Even and Odd",
+    id: "3", // Use the next available ID
+    name: "Even & Odd Numbers",
     category: "Education",
     subcategory: "Math",
-    description: "Learn even and odd numbers with drag & select games",
+    description: "Learn even and odd numbers with fun sorting games!",
     icon_emoji: "🔢",
-    color_scheme: "from-pink-300 to-purple-500",
+    color_scheme: "from-indigo-300 to-purple-500",
     route: "/even-odd",
     created_at: new Date().toISOString(),
   },
   {
+    id: "4",
+    name: "Skip Counting Game",
+    category: "Education",
+    subcategory: "Math",
+    description: "Learn skip counting by 2, 3, 5, and 10 with fun pictures!",
+    icon_emoji: "🔢",
+    color_scheme: "from-yellow-200 to-amber-400",
+    route: "/skip-counting",
+    created_at: new Date().toISOString(),
+  },
+  {
     id: "5",
-    name: "Telugu Letters",
+    name: "Telugu Letters Flashcards",
     category: "Education",
     subcategory: "Telugu",
-    description: "Learn Telugu alphabet with interactive games",
+    description: "Learn Telugu alphabet with flash cards",
     icon_emoji: "అ",
     color_scheme: "from-green-300 to-teal-500",
-    route: "/telugu-letters",
+    route: "/telugu-letters-flashcards",
     created_at: new Date().toISOString(),
   },
   {
@@ -111,16 +110,38 @@ const fallbackApplications: Application[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "0",
+    id: "10",
+    name: "Counting Game",
+    category: "Games",
+    subcategory: "Counting",
+    description: "Click the animals to score points!",
+    icon_emoji: "🐰",
+    color_scheme: "from-orange-300 to-pink-500",
+    route: "/counting-game",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "11",
     name: "Cooking Recipes",
     category: "Education",
     subcategory: "Life Skills",
     description: "Learn cooking skills with fun recipes!",
-    icon_emoji: "🍳",
-    color_scheme: "from-yellow-300 to-amber-500",
+    icon_emoji: "🥗",
+    color_scheme: "from-yellow-200 to-amber-400",
     route: "/cooking-recipes",
     created_at: new Date().toISOString(),
   },
+  {
+    id: "12",
+    name: "Spelling Game Suite",
+    category: "Education",
+    subcategory: "English",
+    description: "Master spelling with 10 fun interactive games!",
+    icon_emoji: "✨",
+    color_scheme: "from-purple-300 to-pink-500",
+    route: "/spelling-game-suite",
+    created_at: new Date().toISOString(),
+  }
 ]
 
 // Test Supabase connection

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
+import { ArrowLeft, Star } from "lucide-react"
 
 interface Animal {
   id: number
@@ -45,71 +46,74 @@ export default function RabbitGame() {
 
   // Create audio context for click sound
   const playClickSound = useCallback(() => {
-    // Create a simple beep sound using Web Audio API
-    //const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
     const audioContext = new (window.AudioContext ?? (window as Window & typeof globalThis & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
-
+    
     const oscillator = audioContext.createOscillator()
     const gainNode = audioContext.createGain()
-
+    
     oscillator.connect(gainNode)
     gainNode.connect(audioContext.destination)
-
+    
     oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
-    oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1)
-
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+    oscillator.type = "sine"
+    
+    gainNode.gain.setValueAtTime(0, audioContext.currentTime)
+    gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01)
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1)
-
+    
     oscillator.start(audioContext.currentTime)
     oscillator.stop(audioContext.currentTime + 0.1)
   }, [])
 
   const spawnAnimal = useCallback(() => {
-    // Determine available animal types based on current level
-    //const availableTypes = Object.entries(animalConfig).filter(([_, config]) => config.minLevel <= level)
-    const availableTypes = Object.entries(animalConfig).filter(([, config]) => config.minLevel <= level)
-
-    const [animalType, config] = availableTypes[Math.floor(Math.random() * availableTypes.length)]
-
+    const availableTypes: Array<keyof typeof animalConfig> = []
+    if (level >= animalConfig.rabbit.minLevel) availableTypes.push("rabbit")
+    if (level >= animalConfig.lion.minLevel) availableTypes.push("lion")
+    if (level >= animalConfig.tiger.minLevel) availableTypes.push("tiger")
+    
+    const animalType = availableTypes[Math.floor(Math.random() * availableTypes.length)]
+    const config = animalConfig[animalType]
+    
+    // Define the game area rectangle (centered on screen)
+    const gameAreaWidth = Math.min(window.innerWidth - 40, window.innerWidth - 40) // Leave 20px margin on each side
+    const gameAreaHeight = Math.min(window.innerHeight - 120, window.innerHeight - 120) // Leave space for buttons
+    const gameAreaX = 20 // 20px from left edge
+    const gameAreaY = 80 // Start below the top buttons
+    
     const newAnimal: Animal = {
       id: animalIdCounter,
-      x: Math.random() * (window.innerWidth - 100),
-      y: Math.random() * (window.innerHeight - 200) + 100,
+      x: gameAreaX + Math.random() * gameAreaWidth,
+      y: gameAreaY + Math.random() * gameAreaHeight,
       color: config.colors[Math.floor(Math.random() * config.colors.length)],
-      size: Math.random() * 30 + 40,
-      type: animalType as "rabbit" | "lion" | "tiger",
+      size: Math.random() * 20 + 30,
+      type: animalType,
       points: config.points,
     }
-
+    
     setAnimals((prev) => [...prev, newAnimal])
     setAnimalIdCounter((prev) => prev + 1)
-
-    // Remove animal after 3 seconds if not clicked (tigers disappear faster)
-    const disappearTime = animalType === "tiger" ? 2000 : 3000
+    
+    // Remove animal after some time
     setTimeout(() => {
       setAnimals((prev) => prev.filter((animal) => animal.id !== newAnimal.id))
-    }, disappearTime)
+    }, 3000)
   }, [animalIdCounter, level])
 
-  const clickAnimal = useCallback(
-    (animalId: number) => {
-      const clickedAnimal = animals.find((animal) => animal.id === animalId)
-      if (clickedAnimal) {
-        setAnimals((prev) => prev.filter((animal) => animal.id !== animalId))
-        setScore((prev) => prev + clickedAnimal.points)
-        playClickSound()
-      }
-    },
-    [animals, playClickSound],
-  )
+  const clickAnimal = (animalId: number) => {
+    const animal = animals.find((a) => a.id === animalId)
+    if (animal) {
+      setScore((prev) => prev + animal.points)
+      setAnimals((prev) => prev.filter((a) => a.id !== animalId))
+      playClickSound()
+    }
+  }
 
   const startGame = () => {
     setGameActive(true)
     setScore(0)
+    setTimeLeft(60)
     setLevel(1)
     setTargetScore(10)
-    setTimeLeft(60)
     setAnimals([])
   }
 
@@ -121,9 +125,7 @@ export default function RabbitGame() {
   // Game timer
   useEffect(() => {
     if (gameActive && timeLeft > 0) {
-      const timer = setTimeout(() => {
-        setTimeLeft((prev) => prev - 1)
-      }, 1000)
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000)
       return () => clearTimeout(timer)
     } else if (timeLeft === 0) {
       endGame()
@@ -141,7 +143,7 @@ export default function RabbitGame() {
           }
         },
         Math.max(800 - level * 100, 400),
-      ) // Faster spawning at higher levels
+      )
       return () => clearInterval(spawnInterval)
     }
   }, [gameActive, spawnAnimal, level])
@@ -150,34 +152,13 @@ export default function RabbitGame() {
   useEffect(() => {
     if (score >= targetScore && gameActive) {
       setLevel((prev) => prev + 1)
-      setTargetScore((prev) => prev + 15) // Increase target score for next level
-      setTimeLeft((prev) => prev + 10) // Bonus time for reaching next level
+      setTargetScore((prev) => prev + 15)
+      setTimeLeft((prev) => prev + 10)
     }
   }, [score, targetScore, gameActive])
 
   return (
-    <div
-      className="relative w-full h-screen overflow-hidden cursor-crosshair"
-      style={{ backgroundColor: "#FF8C00" }} // Orange background
-    >
-      {/* Game UI */}
-      <div className="absolute top-4 left-4 z-10 bg-white/90 rounded-lg p-4 shadow-lg">
-        <div className="text-2xl font-bold text-orange-800 mb-2">Score: {score}</div>
-        <div className="text-lg font-semibold text-purple-700 mb-1">Level: {level}</div>
-        <div className="text-sm text-gray-600 mb-2">Target: {targetScore}</div>
-        {gameActive && <div className="text-lg font-semibold text-orange-700">Time: {timeLeft}s</div>}
-      </div>
-
-      {/* Start/Restart Button */}
-      <div className="absolute top-4 right-4 z-10">
-        <Button
-          onClick={startGame}
-          className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg"
-        >
-          {gameActive ? "Restart Game" : "Start Game"}
-        </Button>
-      </div>
-
+    <div className="relative w-full h-screen overflow-hidden cursor-crosshair bg-gradient-to-br from-purple-200 to-pink-500">
       {/* Game Over Screen */}
       {!gameActive && score > 0 && (
         <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/50">
@@ -196,23 +177,91 @@ export default function RabbitGame() {
 
       {/* Instructions */}
       {!gameActive && score === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center z-10">
-          <div className="bg-white/90 rounded-lg p-8 text-center shadow-2xl max-w-md">
-            <h1 className="text-3xl font-bold text-orange-800 mb-4">🐰 Animal Hunt!</h1>
-            <p className="text-lg text-gray-700 mb-2">Click on animals to score points!</p>
-            <div className="text-sm text-gray-600 mb-4 space-y-1">
-              <p>🐰 Rabbits: 1 point (Level 1+)</p>
-              <p>🦁 Lions: 3 points (Level 2+)</p>
-              <p>🐅 Tigers: 5 points (Level 3+)</p>
-            </div>
-            <p className="text-md text-gray-600 mb-6">Reach the target score to advance levels!</p>
+        <div className="absolute inset-0 z-10 p-4">
+          {/* Header with Back to Home Button - Aligned with white rectangle */}
+          <div className="flex items-center justify-between mb-6 max-w-md mx-auto">
             <Button
-              onClick={startGame}
-              className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg text-lg"
+              onClick={() => window.history.back()}
+              className="bg-white/20 hover:bg-white/30 text-purple-800 border-2 border-white font-bold text-lg px-6 py-3"
+              variant="outline"
             >
-              Start Hunting! 🎯
+              <ArrowLeft className="mr-2 h-5 w-5" />
+              Back to Home
+            </Button>
+            <div className="flex items-center gap-2 text-purple-800 font-bold">
+              <Star className="h-5 w-5" />
+              <span>Score: 0</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-center">
+            <div className="bg-white/90 rounded-lg p-8 text-center shadow-2xl max-w-md">
+              <h1 className="text-3xl font-bold text-orange-800 mb-4">🐰 Animal Hunt!</h1>
+              <p className="text-lg text-gray-700 mb-2">Click on animals to score points!</p>
+              <div className="text-sm text-gray-600 mb-4 space-y-1">
+                <p>🐰 Rabbits: 1 point (Level 1+)</p>
+                <p>🦁 Lions: 3 points (Level 2+)</p>
+                <p>🐅 Tigers: 5 points (Level 3+)</p>
+              </div>
+              <p className="text-md text-gray-600 mb-6">Reach the target score to advance levels!</p>
+              <Button
+                onClick={startGame}
+                className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg text-lg"
+              >
+                Start Hunting! 🎯
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Game UI - Only show when game is active */}
+      {gameActive && (
+        <>
+          {/* Back to Home Button */}
+          <div className="absolute top-4 left-4 z-10">
+            <Button
+              onClick={() => window.history.back()}
+              className="bg-white/20 hover:bg-white/30 text-purple-800 border-2 border-white font-bold text-lg px-6 py-3"
+              variant="outline"
+            >
+              <ArrowLeft className="mr-2 h-5 w-5" />
+              Back to Home
             </Button>
           </div>
+
+          {/* Game UI - Score Window */}
+          <div className="absolute top-20 left-4 z-10 bg-white/90 rounded-lg p-4 shadow-lg">
+            <div className="text-2xl font-bold text-orange-800 mb-2">Score: {score}</div>
+            <div className="text-lg font-semibold text-purple-700 mb-1">Level: {level}</div>
+            <div className="text-sm text-gray-600 mb-2">Target: {targetScore}</div>
+            <div className="text-lg font-semibold text-orange-700">Time: {timeLeft}s</div>
+          </div>
+
+          {/* Start/Restart Button */}
+          <div className="absolute top-4 right-4 z-10">
+            <Button
+              onClick={startGame}
+              className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg"
+            >
+              Restart Game
+            </Button>
+          </div>
+        </>
+      )}
+
+      {/* Game Area Rectangle */}
+      {gameActive && (
+        <div 
+          className="absolute border-4 border-white/30 rounded-lg shadow-lg"
+          style={{
+            left: '20px',
+            top: '80px',
+            width: window.innerWidth - 40,
+            height: window.innerHeight - 120,
+          }}
+        >
+          <div className="w-full h-full bg-white/10 rounded-lg backdrop-blur-sm"></div>
         </div>
       )}
 
@@ -247,7 +296,7 @@ export default function RabbitGame() {
 
       {/* Decorative elements */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white/30 text-sm">
-        Click the rabbits to score points! 🎯
+        Click the animals in the rectangle to score points! 🎯
       </div>
     </div>
   )

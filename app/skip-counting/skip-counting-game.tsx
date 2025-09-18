@@ -267,15 +267,35 @@ export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipC
 
   if (currentMode === "menu") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 p-4 flex items-center justify-center">
-        <Card className="w-full max-w-4xl bg-white/90 backdrop-blur-sm shadow-2xl border-0">
-          <CardContent className="p-8">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-200 via-amber-300 to-amber-400 p-4">
+        <div className="max-w-4xl mx-auto">
+          {/* Header with Back to Home Button - Aligned with card */}
+          <div className="flex items-center justify-between mb-6">
+            {onBackToHome && (
+              <Button
+                onClick={onBackToHome}
+                className="bg-white/20 hover:bg-white/30 text-amber-800 border-2 border-white font-bold text-lg px-6 py-3"
+                variant="outline"
+              >
+                <ArrowLeft className="mr-2 h-5 w-5" />
+                Back to Home
+              </Button>
+            )}
+            <div className="flex items-center gap-2 text-amber-800 font-bold">
+              <Star className="h-5 w-5" />
+              <span>Score: 0</span>
+            </div>
+          </div>
+          
+          <Card className="w-full bg-white/90 backdrop-blur-sm shadow-2xl border-0">
+            <CardContent className="p-8">
             <div className="text-center mb-8">
               <h1 className="text-5xl font-bold text-amber-800 mb-4 font-sans tracking-tight">
                 🎯 Skip Counting Adventure
               </h1>
               <p className="text-xl text-amber-700 font-medium">Choose your counting challenge!</p>
               <p className="text-sm text-amber-600 mt-2">Each time you play, you&apos;ll see different pictures!</p>
+              
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -302,6 +322,7 @@ export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipC
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     )
   }
@@ -311,7 +332,7 @@ export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipC
   const isGameComplete = currentIndex >= currentGame.sequence.length
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-200 via-amber-300 to-amber-400 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
