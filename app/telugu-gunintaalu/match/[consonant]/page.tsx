@@ -36,7 +36,7 @@ export default function MatchPairGame() {
   const [questions, setQuestions] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [draggedItem, setDraggedItem] = useState<any>(null)
-  const [matchedPairs, setMatchedPairs] = useState<{[key: string]: any}>({})
+  const [matchedPairs, setMatchedPairs] = useState<Record<string, any>>({})
   const [showConfetti, setShowConfetti] = useState(false)
   
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -164,7 +164,7 @@ export default function MatchPairGame() {
       if (Object.keys(newMatchedPairs).length === currentQ.leftOptions.length) {
         // All pairs are matched, now check if all are correct
         const allCorrect = currentQ.leftOptions.every((option: any) => {
-          const matchedAnswer = newMatchedPairs[option.id]
+          const matchedAnswer = newMatchedPairs[option.id as string]
           return matchedAnswer && option.matra === matchedAnswer.matra
         })
         
