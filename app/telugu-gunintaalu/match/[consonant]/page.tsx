@@ -32,7 +32,7 @@ export default function MatchPairGame() {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [score, setScore] = useState(0)
   const [gameOver, setGameOver] = useState(false)
-  const [showResult, setShowResult] = useState<"correct" | "wrong" | null>(null)
+  const [showResult, setShowResult] = useState<"correct" | "wrong" | "question-complete" | null>(null)
   const [questions, setQuestions] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [draggedItem, setDraggedItem] = useState<any>(null)
@@ -157,7 +157,7 @@ export default function MatchPairGame() {
     
     if (draggedItem && !matchedPairs[leftOption.id]) {
       // Always allow the drop, don't check correctness yet
-      const newMatchedPairs = { ...matchedPairs, [leftOption.id]: draggedItem }
+      const newMatchedPairs: Record<string, any> = { ...matchedPairs, [leftOption.id]: draggedItem }
       setMatchedPairs(newMatchedPairs)
       
       // Check if all pairs are matched, then validate
