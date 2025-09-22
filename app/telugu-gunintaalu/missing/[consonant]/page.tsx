@@ -68,7 +68,7 @@ export default function MissingLettersGame() {
       )
       
       // Create options (correct answers + wrong ones)
-      const wrongOptions = []
+      const wrongOptions: string[] = []
       const numWrongOptions = i < 2 ? 2 : 3 // 3 options for single missing, 5 options for double missing
       while (wrongOptions.length < numWrongOptions) {
         const randomIndex = Math.floor(Math.random() * totalMatras)

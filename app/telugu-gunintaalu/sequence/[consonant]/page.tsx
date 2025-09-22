@@ -45,7 +45,7 @@ export default function SequenceGame() {
       const correctAnswers = questionSequence.map(mat => consonant + mat)
       
       // Create options (correct answers + 2 random wrong ones)
-      const wrongOptions = []
+      const wrongOptions: string[] = []
       while (wrongOptions.length < 2) {
         const randomIndex = Math.floor(Math.random() * totalMatras)
         const wrongMat = matraSequence[randomIndex]
