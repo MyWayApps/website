@@ -9,21 +9,80 @@ import { ArrowLeft, Star } from "lucide-react"
 const teluguLetters = [
   { letter: "అ", audio: "telugu-a.mp3" },
   { letter: "ఆ", audio: "telugu-aa.mp3" },
-  { letter: "ఇ", audio: "telugu-i.mp3" },
-  { letter: "ఈ", audio: "telugu-ii.mp3" },
+  { letter: "ఇ", audio: "telugu-e.mp3" },
+  { letter: "ఈ", audio: "telugu-ee.mp3" },
   { letter: "ఉ", audio: "telugu-u.mp3" },
   { letter: "ఊ", audio: "telugu-uu.mp3" },
-  { letter: "ఋ", audio: "telugu-ru.mp3" },
-  { letter: "ఎ", audio: "telugu-e.mp3" },
-  { letter: "ఏ", audio: "telugu-ee.mp3" },
-  { letter: "ఐ", audio: "telugu-ai.mp3" },
+  //{ letter: "ఋ", audio: "telugu-sequence.mp3" },
+  //{ letter: "ౠ", audio: "telugu-sequence.mp3" },
+  { letter: "ఎ", audio: "telugu-ae.mp3" },
+  { letter: "ఏ", audio: "telugu-aee.mp3" },
+  { letter: "ఐ", audio: "telugu-aeee.mp3" },
   { letter: "ఒ", audio: "telugu-o.mp3" },
   { letter: "ఓ", audio: "telugu-oo.mp3" },
-  { letter: "ఔ", audio: "telugu-au.mp3" },
-  // ...add more as needed
+  //{ letter: "ఔ", audio: "telugu-sequence.mp3" },
+  { letter: "అం", audio: "telugu-am.mp3" },
+  { letter: "అః", audio: "telugu-aha.mp3" },
+  { letter: "క", audio: "telugu-ka.mp3" },
+  { letter: "ఖ", audio: "telugu-kha.mp3" },
+  { letter: "గ", audio: "telugu-ga.mp3" },
+  { letter: "ఘ", audio: "telugu-gha.mp3" },
+  //{ letter: "ఙ", audio: "telugu-sequence.mp3" },
+  { letter: "చ", audio: "telugu-cha.mp3" },
+  { letter: "ఛ", audio: "telugu-chcha.mp3" },
+  { letter: "జ", audio: "telugu-ja.mp3" },
+  { letter: "ఝ", audio: "telugu-jha.mp3" },
+  //{ letter: "ఞ", audio: "telugu-sequence.mp3" },
+  { letter: "ట", audio: "telugu-tta.mp3" },
+  { letter: "ఠ", audio: "telugu-ttha.mp3" },
+  { letter: "డ", audio: "telugu-dda.mp3" },
+  { letter: "ఢ", audio: "telugu-ddha.mp3" },
+  //{ letter: "ణ", audio: "telugu-sequence.mp3" },
+  { letter: "త", audio: "telugu-ta.mp3" },
+  { letter: "థ", audio: "telugu-thha.mp3" },
+  { letter: "ద", audio: "telugu-da.mp3" },
+  { letter: "ధ", audio: "telugu-dhha.mp3" },
+  { letter: "న", audio: "telugu-na.mp3" },
+  { letter: "ప", audio: "telugu-pa.mp3" },
+  { letter: "ఫ", audio: "telugu-pha.mp3" },
+  { letter: "బ", audio: "telugu-ba.mp3" },
+  { letter: "భ", audio: "telugu-bha.mp3" },
+  { letter: "మ", audio: "telugu-ma.mp3" },
+  { letter: "య", audio: "telugu-ya.mp3" },
+  { letter: "ర", audio: "telugu-ra.mp3" },
+  { letter: "ల", audio: "telugu-la.mp3" },
+  { letter: "వ", audio: "telugu-va.mp3" },
+  { letter: "శ", audio: "telugu-sha.mp3" },
+  { letter: "ష", audio: "telugu-sha.mp3" },
+  { letter: "స", audio: "telugu-sa.mp3" },
+  { letter: "హ", audio: "telugu-ha.mp3" },
+  { letter: "ళ", audio: "telugu-llaa.mp3" },
+  { letter: "క్ష", audio: "telugu-ksha.mp3" },
+  //{ letter: "ఱ", audio: "telugu-sequence.mp3" }
 ]
 
-const GOOD_JOB_AUDIO = "/audio/good-job.mp3" // Place a "good job" mp3 in public/audio/
+const GOOD_JOB_AUDIO = "/audio/happy_tune.mp3"
+const BUZZ_AUDIO = "/audio/buzz_audio.mp3"
+const HAPPY_TUNE_AUDIO = "/audio/happy_tune.mp3" 
+
+// Success messages array
+const successMessages = [
+  "Good job!",
+  "Excellent!",
+  "Amazing work!",
+  "Fantastic!",
+  "Outstanding!",
+  "Brilliant!",
+  "Perfect!",
+  "Wonderful!",
+  "Great job!",
+  "Superb!",
+  "Terrific!",
+  "Awesome!",
+  "Incredible!",
+  "Magnificent!",
+  "Splendid!"
+]
 
 function getRandomInt(max: number) {
   return Math.floor(Math.random() * max)
@@ -50,8 +109,12 @@ export default function TeluguLettersGame() {
   const [correctIdx, setCorrectIdx] = useState(0)
   const [showResult, setShowResult] = useState<null | "correct" | "wrong">(null)
   const [gameOver, setGameOver] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [currentMessage, setCurrentMessage] = useState("Good job!")
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const goodJobRef = useRef<HTMLAudioElement | null>(null)
+  const buzzRef = useRef<HTMLAudioElement | null>(null)
+  const happyTuneRef = useRef<HTMLAudioElement | null>(null)
 
   // Setup new round
   useEffect(() => {
@@ -74,17 +137,41 @@ export default function TeluguLettersGame() {
     if (choices[idx] === correctIdx) {
       setShowResult("correct")
       setScore((s) => s + 1)
-      goodJobRef.current?.play()
-      setTimeout(() => setRound((r) => r + 1), 1200)
+      
+      // Show confetti
+      setShowConfetti(true)
+      setTimeout(() => setShowConfetti(false), 2000)
+      
+      // Play happy tune and good job audio
+      console.log("Playing success audio...")
+      if (happyTuneRef.current) {
+        happyTuneRef.current.currentTime = 0
+        happyTuneRef.current.play().catch(e => console.error("Happy tune play failed:", e))
+      }
+      if (goodJobRef.current) {
+        goodJobRef.current.currentTime = 0
+        goodJobRef.current.play().catch(e => console.error("Good job audio play failed:", e))
+      }
+      
+      // Set random success message
+      setCurrentMessage(successMessages[Math.floor(Math.random() * successMessages.length)])
+      
+      setTimeout(() => setRound((r) => r + 1), 2500)
     } else {
       setShowResult("wrong")
-      setTimeout(() => setShowResult(null), 900)
+      console.log("Playing wrong answer audio...")
+      if (buzzRef.current) {
+        buzzRef.current.currentTime = 0
+        buzzRef.current.play().catch(e => console.error("Buzz audio play failed:", e))
+      }
+      setTimeout(() => setShowResult(null), 1500)
     }
   }
 
   const handleReplayAudio = () => {
     audioRef.current?.play()
   }
+
 
   const handleBackToHome = () => {
     window.location.href = "/"
@@ -128,7 +215,7 @@ export default function TeluguLettersGame() {
             <>
               <div className="mb-6 flex flex-col items-center">
                 <div className="text-xl text-amber-900 font-semibold mb-3">
-                  Round {round} of 10
+                  Question {round} of 10
                 </div>
                 <Button
                   onClick={handleReplayAudio}
@@ -156,7 +243,9 @@ export default function TeluguLettersGame() {
                 ))}
               </div>
               {showResult === "correct" && (
-                <div className="mt-4 text-green-700 font-bold text-xl">Good job!</div>
+                <div className="mt-4 text-green-700 font-bold text-xl animate-bounce">
+                  {currentMessage}
+                </div>
               )}
               {showResult === "wrong" && (
                 <div className="mt-4 text-red-700 font-bold text-xl">Try again!</div>
@@ -166,12 +255,86 @@ export default function TeluguLettersGame() {
           </CardContent>
         </Card>
 
+      {/* Confetti Animation */}
+      {showConfetti && (
+        <div className="fixed inset-0 pointer-events-none z-50">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-ping"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${1 + Math.random() * 2}s`
+              }}
+            >
+              <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+            </div>
+          ))}
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={`star-${i}`}
+              className="absolute animate-ping"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${1 + Math.random() * 2}s`
+              }}
+            >
+              <div className="w-2 h-2 bg-red-400 transform rotate-45"></div>
+            </div>
+          ))}
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={`heart-${i}`}
+              className="absolute animate-ping"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${1 + Math.random() * 2}s`
+              }}
+            >
+              <div className="w-4 h-4 bg-pink-400 transform rotate-45"></div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <audio
         ref={audioRef}
         src={`/audio/${teluguLetters[correctIdx].audio}`}
         preload="auto"
+        onError={(e) => console.error("Main audio error:", e)}
+        onLoadStart={() => console.log("Main audio loading...")}
+        onCanPlay={() => console.log("Main audio can play")}
       />
-      <audio ref={goodJobRef} src={GOOD_JOB_AUDIO} preload="auto" />
+      <audio 
+        ref={goodJobRef} 
+        src={GOOD_JOB_AUDIO} 
+        preload="auto"
+        onError={(e) => console.error("Good job audio error:", e)}
+        onLoadStart={() => console.log("Good job audio loading...")}
+        onCanPlay={() => console.log("Good job audio can play")}
+      />
+      <audio 
+        ref={buzzRef} 
+        src={BUZZ_AUDIO} 
+        preload="auto"
+        onError={(e) => console.error("Buzz audio error:", e)}
+        onLoadStart={() => console.log("Buzz audio loading...")}
+        onCanPlay={() => console.log("Buzz audio can play")}
+      />
+      <audio 
+        ref={happyTuneRef} 
+        src={HAPPY_TUNE_AUDIO} 
+        preload="auto"
+        onError={(e) => console.error("Happy tune audio error:", e)}
+        onLoadStart={() => console.log("Happy tune audio loading...")}
+        onCanPlay={() => console.log("Happy tune audio can play")}
+      />
     </div>
   )
 }
