@@ -121,6 +121,17 @@ const fallbackApplications = [
   },
   {
     id: "7",
+    name: "Telugu Gunintaalu",
+    category: "Education",
+    subcategory: "Telugu",
+    description: "Learn Telugu consonant combinations with matras",
+    icon_emoji: "క",
+    color_scheme: "from-blue-200 to-indigo-400",
+    route: "/telugu-gunintaalu",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "8",
     name: "English Phonics",
     category: "Education",
     subcategory: "English",
@@ -131,7 +142,7 @@ const fallbackApplications = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "8",
+    id: "9",
     name: "Shape Puzzle",
     category: "Puzzles",
     subcategory: "Geometry",
@@ -142,7 +153,7 @@ const fallbackApplications = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "9",
+    id: "10",
     name: "Memory Game",
     category: "Games",
     subcategory: "",
