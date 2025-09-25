@@ -162,7 +162,7 @@ export default function RecipeDetail({ recipe, onComplete, onBack, onBackToHome 
 
   if (showIngredients) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-300 via-purple-400 to-indigo-500 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-200 to-amber-400 p-4">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -246,7 +246,7 @@ export default function RecipeDetail({ recipe, onComplete, onBack, onBackToHome 
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-300 via-purple-400 to-indigo-500 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-200 to-amber-400 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
