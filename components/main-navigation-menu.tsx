@@ -48,7 +48,7 @@ const menuItems: MenuItem[] = [
     label: "Puzzles",
     icon: Puzzle,
     href: "#puzzles-section",
-    color: "<text-teal-5></text-teal-5>00"
+    color: "text-teal-500"
   }
 ]
 
@@ -77,7 +77,9 @@ export default function MainNavigationMenu() {
         <div className="flex items-center justify-center gap-6 flex-wrap">
           {menuItems.map((item) => {
             const isTelugu = item.isTelugu || false
-            const Icon = typeof item.icon === 'string' ? null : item.icon
+            const isIconString = typeof item.icon === 'string'
+            const Icon = isIconString ? null : (item.icon as LucideIcon)
+            const teluguIcon = isIconString ? (item.icon as string) : null
             
             return (
               <button
@@ -90,8 +92,8 @@ export default function MainNavigationMenu() {
                 `}
                 style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif', fontSize: '18px' }}
               >
-                {isTelugu ? (
-                  <span className="text-2xl">{item.icon}</span>
+                {isTelugu && teluguIcon ? (
+                  <span className="text-2xl">{teluguIcon}</span>
                 ) : Icon ? (
                   <Icon className="h-5 w-5" />
                 ) : null}
