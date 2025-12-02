@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ArrowRight, RotateCcw, Volume2 } from "lucide-react"
 import { useParams } from "next/navigation"
+import { playTeluguTTS } from "@/lib/telugu-tts"
 
 // Matra mapping data - works for all consonants
 const matraData = [
@@ -30,6 +31,7 @@ export default function GunintaaluDetail() {
   const params = useParams()
   const consonant = decodeURIComponent(params.consonant as string)
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [isPlayingTTS, setIsPlayingTTS] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // Update matra data with the selected consonant
@@ -40,13 +42,25 @@ export default function GunintaaluDetail() {
 
   const currentMatra = updatedMatraData[currentIndex]
 
-  // Play audio for current matra
-  const playAudio = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0
-      audioRef.current.play().catch(error => {
-        console.error("Audio play failed:", error)
-      })
+  // Play audio for current matra using TTS
+  const playAudio = async () => {
+    if (isPlayingTTS) return
+    
+    try {
+      setIsPlayingTTS(true)
+      const textToSpeak = currentMatra.result
+      await playTeluguTTS(textToSpeak)
+    } catch (error) {
+      console.error("TTS play failed:", error)
+      // Fallback to audio file if TTS fails
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0
+        audioRef.current.play().catch(err => {
+          console.error("Audio play failed:", err)
+        })
+      }
+    } finally {
+      setIsPlayingTTS(false)
     }
   }
 
@@ -54,7 +68,7 @@ export default function GunintaaluDetail() {
   useEffect(() => {
     const timer = setTimeout(() => {
       playAudio()
-    }, 100)
+    }, 300)
     return () => clearTimeout(timer)
   }, [currentIndex])
 
@@ -145,11 +159,12 @@ export default function GunintaaluDetail() {
 
               <Button
                 onClick={playAudio}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 border-2 border-gray-400 font-bold text-lg px-6 py-3"
+                disabled={isPlayingTTS}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 border-2 border-gray-400 font-bold text-lg px-6 py-3 disabled:opacity-50"
                 variant="outline"
               >
                 <Volume2 className="mr-2 h-5 w-5" />
-                🔊 Play Audio
+                {isPlayingTTS ? "Playing..." : "🔊 Play Audio"}
               </Button>
 
               <Button

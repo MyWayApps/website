@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react"
 import { useParams } from "next/navigation"
+import { playTeluguTTS } from "@/lib/telugu-tts"
 
 // Matra data with names
 const matraData = [
@@ -116,6 +117,17 @@ export default function MatchPairGame() {
       setShowResult(null)
       setShowConfetti(false)
       setDraggedItem(null)
+      
+      // Play TTS for left side options when question loads
+      setTimeout(() => {
+        const currentQ = questions[currentQuestion]
+        if (currentQ && currentQ.leftOptions) {
+          const optionsText = currentQ.leftOptions.map((opt: any) => opt.result).join(" ")
+          playTeluguTTS(optionsText).catch(err => {
+            console.error("TTS failed:", err)
+          })
+        }
+      }, 500)
     }
   }, [currentQuestion, questions])
 

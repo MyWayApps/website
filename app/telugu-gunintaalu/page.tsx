@@ -12,31 +12,21 @@ export default function TeluguGunintaalu() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-200 to-indigo-400 p-4 flex flex-col items-center justify-center">
-      {/* Header with Back to Home Button */}
-      <div className="w-1/2 min-w-[500px] max-w-[800px] mb-8">
-        <Button
-          onClick={handleBackToHome}
-          className="bg-white/20 hover:bg-white/30 text-indigo-800 border-2 border-white font-bold text-lg px-6 py-3"
-          variant="outline"
-        >
-          <ArrowLeft className="mr-2 h-5 w-5" />
-          Back to Home
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-200 to-indigo-400 p-4">
+      {/* Main Content */}
+      <div className="flex flex-col items-center justify-center">
+        {/* Main Title */}
+        <div className="text-center mb-8">
+          <h1 className="text-6xl font-bold text-indigo-900 mb-4">
+            గుణింతాలు (Gunintaalu)
+          </h1>
+          <p className="text-2xl text-indigo-700 font-semibold">
+            Learn Telugu Consonant Combinations
+          </p>
+        </div>
 
-      {/* Main Title */}
-      <div className="text-center mb-8">
-        <h1 className="text-6xl font-bold text-indigo-900 mb-4">
-          గుణింతాలు (Gunintaalu)
-        </h1>
-        <p className="text-2xl text-indigo-700 font-semibold">
-          Learn Telugu Consonant Combinations
-        </p>
-      </div>
-
-      {/* Game Options */}
-      <Card className="w-1/2 min-w-[500px] max-w-[800px] bg-white/90 backdrop-blur-sm shadow-2xl border-0">
+        {/* Game Options */}
+        <Card className="w-1/2 min-w-[500px] max-w-[800px] bg-white/90 backdrop-blur-sm shadow-2xl border-0">
         <CardContent className="p-8">
           <div className="grid grid-cols-2 gap-6">
             {/* Learn Gunintaalu */}
@@ -101,6 +91,7 @@ export default function TeluguGunintaalu() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

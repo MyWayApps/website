@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react"
 import { useParams } from "next/navigation"
+import { playTeluguTTS } from "@/lib/telugu-tts"
 
 // Matra sequence for all consonants
 const matraSequence = [
@@ -86,6 +87,13 @@ export default function SequenceGame() {
       
       setIsCompleted(false)
       setShowResult(null)
+      
+      // Play TTS for the first letter when question loads
+      setTimeout(() => {
+        playTeluguTTS(currentQ.firstLetter).catch(err => {
+          console.error("TTS failed:", err)
+        })
+      }, 500)
     }
   }, [currentQ])
 

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react"
 import { useParams } from "next/navigation"
+import { playTeluguTTS } from "@/lib/telugu-tts"
 
 // Matra sequence for all consonants
 const matraSequence = [
@@ -115,6 +116,14 @@ export default function MissingLettersGame() {
       setSelectedAnswer(null)
       setShowResult(null)
       setShowConfetti(false)
+      
+      // Play TTS for the full sequence when question loads
+      setTimeout(() => {
+        const fullSequence = currentQ.fullSequence.join("")
+        playTeluguTTS(fullSequence).catch(err => {
+          console.error("TTS failed:", err)
+        })
+      }, 500)
     }
   }, [currentQ])
 
