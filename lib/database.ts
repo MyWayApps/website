@@ -158,7 +158,7 @@ export async function testConnection(): Promise<boolean> {
 // User Management Functions
 export async function getAllUsers(): Promise<User[]> {
   try {
-    const { data, error } = await supabase.from("mywayapps-user").select("*").order("name", { ascending: true })
+    const { data, error } = await supabase.from("mywayapps_user").select("*").order("name", { ascending: true })
 
     if (error) {
       console.error("Supabase error getting users:", error)
@@ -173,7 +173,7 @@ export async function getAllUsers(): Promise<User[]> {
 
 export async function findUserByName(name: string): Promise<User | null> {
   try {
-    const { data, error } = await supabase.from("mywayapps-user").select("*").ilike("name", name).single()
+    const { data, error } = await supabase.from("mywayapps_user").select("*").ilike("name", name).single()
 
     if (error && error.code !== "PGRST116") {
       console.error("Supabase error finding user by name:", error)
@@ -188,7 +188,7 @@ export async function findUserByName(name: string): Promise<User | null> {
 
 export async function findUserByEmail(email: string): Promise<User | null> {
   try {
-    const { data, error } = await supabase.from("mywayapps-user").select("*").eq("email", email).single()
+    const { data, error } = await supabase.from("mywayapps_user").select("*").eq("email", email).single()
 
     if (error && error.code !== "PGRST116") {
       console.error("Supabase error finding user by email:", error)
@@ -204,7 +204,7 @@ export async function findUserByEmail(email: string): Promise<User | null> {
 export async function createUser(userData: Omit<User, "id" | "created_at" | "updated_at">): Promise<User | null> {
   try {
     const { data, error } = await supabase
-      .from("mywayapps-user")
+      .from("mywayapps_user")
       .insert([
         {
           ...userData,
@@ -228,7 +228,7 @@ export async function createUser(userData: Omit<User, "id" | "created_at" | "upd
 export async function updateUser(userId: string, userData: Partial<User>): Promise<User | null> {
   try {
     const { data, error } = await supabase
-      .from("mywayapps-user")
+      .from("mywayapps_user")
       .update({
         ...userData,
         updated_at: new Date().toISOString(),
@@ -251,7 +251,7 @@ export async function updateUser(userId: string, userData: Partial<User>): Promi
 export async function getUsersByNamePattern(pattern: string): Promise<User[]> {
   try {
     const { data, error } = await supabase
-      .from("mywayapps-user")
+      .from("mywayapps_user")
       .select("*")
       .ilike("name", `%${pattern}%`)
       .order("name", { ascending: true })

@@ -159,7 +159,7 @@ export async function getAllUsers() {
     if (!supabase) return []
 
     console.log("🔍 Fetching all users...")
-    const { data, error } = await supabase.from("mywayapps-user").select("*").order("name", { ascending: true })
+    const { data, error } = await supabase.from("mywayapps_user").select("*").order("name", { ascending: true })
 
     if (error) {
       console.error("❌ Error fetching users:", error)
@@ -176,7 +176,7 @@ export async function findUserByName(name: string) {
     if (!supabase) return null
 
     console.log("🔍 Finding user by name:", name)
-    const { data, error } = await supabase.from("mywayapps-user").select("*").ilike("name", name).single()
+    const { data, error } = await supabase.from("mywayapps_user").select("*").ilike("name", name).single()
 
     if (error && error.code !== "PGRST116") {
       console.error("❌ Error finding user:", error)
@@ -193,7 +193,7 @@ export async function findUserByEmail(email: string) {
     if (!supabase) return null
 
     console.log("🔍 Finding user by email:", email)
-    const { data, error } = await supabase.from("mywayapps-user").select("*").eq("email", email).single()
+    const { data, error } = await supabase.from("mywayapps_user").select("*").eq("email", email).single()
 
     if (error && error.code !== "PGRST116") {
       console.error("❌ Error finding user by email:", error)
@@ -205,30 +205,52 @@ export async function findUserByEmail(email: string) {
   }, null)
 }
 
-export async function createUser(userData: { name: string; email: string; age?: number; grade?: string }) {
-  return safeDbOperation(async () => {
-    if (!supabase) return null
+export async function createUser(userData: { name: string; email: string; phone?: string; age?: number; grade?: string }) {
+  console.log("🔍 createUser called with:", JSON.stringify(userData))
+  
+  if (!supabase) {
+    console.error("❌ Supabase client is NULL - check your environment variables!")
+    console.error("   NEXT_PUBLIC_SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "SET" : "NOT SET")
+    console.error("   NEXT_PUBLIC_SUPABASE_ANON_KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "SET" : "NOT SET")
+    return null
+  }
 
-    console.log("🔍 Creating new user:", userData.name)
+  try {
+    console.log("🔍 Inserting user into mywayapps_user table...")
+    
+    const insertData = {
+      name: userData.name,
+      email: userData.email,
+      phone: userData.phone || null,
+      age: userData.age || null,
+      grade: userData.grade || null,
+      updated_at: new Date().toISOString(),
+    }
+    
+    console.log("📦 Insert data:", JSON.stringify(insertData))
+    
     const { data, error } = await supabase
-      .from("mywayapps-user")
-      .insert([
-        {
-          ...userData,
-          updated_at: new Date().toISOString(),
-        },
-      ])
+      .from("mywayapps_user")
+      .insert([insertData])
       .select()
       .single()
 
     if (error) {
-      console.error("❌ Error creating user:", error)
+      console.error("❌ Supabase INSERT error:", error.message)
+      console.error("   Error code:", error.code)
+      console.error("   Error details:", error.details)
+      console.error("   Error hint:", error.hint)
       throw error
     }
 
-    console.log("✅ User created successfully:", data.id)
+    console.log("✅ User created successfully in Supabase!")
+    console.log("   User ID:", data.id)
+    console.log("   User name:", data.name)
     return data
-  }, null)
+  } catch (error: any) {
+    console.error("❌ Exception in createUser:", error?.message || error)
+    throw error // Re-throw so caller knows it failed
+  }
 }
 
 export async function updateUser(
@@ -240,7 +262,7 @@ export async function updateUser(
 
     console.log("🔍 Updating user:", userId)
     const { data, error } = await supabase
-      .from("mywayapps-user")
+      .from("mywayapps_user")
       .update({
         ...userData,
         updated_at: new Date().toISOString(),
@@ -303,7 +325,7 @@ export async function getUsersByNamePattern(pattern: string) {
 
     console.log("🔍 Searching users by pattern:", pattern)
     const { data, error } = await supabase
-      .from("mywayapps-user")
+      .from("mywayapps_user")
       .select("*")
       .ilike("name", `%${pattern}%`)
       .order("name", { ascending: true })
@@ -385,7 +407,7 @@ export async function getUserProgress(userId: string) {
     if (!supabase) return {}
 
     console.log("🔍 Fetching user progress for:", userId)
-    const { data, error } = await supabase.from("mywayapps-user_progress").select("*").eq("user_id", userId)
+    const { data, error } = await supabase.from("mywayapps_user_progress").select("*").eq("user_id", userId)
 
     if (error) {
       console.error("❌ Error fetching user progress:", error)
@@ -418,7 +440,7 @@ export async function saveUserScore(scoreData: {
 
     console.log("🔍 Saving user score...")
     const { data: scoreResult, error: scoreError } = await supabase
-      .from("mywayapps-user_scores")
+      .from("mywayapps_user_scores")
       .insert([scoreData])
       .select()
       .single()
@@ -455,7 +477,7 @@ export async function updateUserProgress(
 
     console.log("🔍 Updating user progress...")
     const { data: currentProgress } = await supabase
-      .from("mywayapps-user_progress")
+      .from("mywayapps_user_progress")
       .select("*")
       .eq("user_id", userId)
       .eq("application_id", applicationId)
@@ -476,7 +498,7 @@ export async function updateUserProgress(
       game_data: { ...currentProgress?.game_data, ...progressData.game_data },
     }
 
-    const { data, error } = await supabase.from("mywayapps-user_progress").upsert([updateData]).select().single()
+    const { data, error } = await supabase.from("mywayapps_user_progress").upsert([updateData]).select().single()
 
     if (error) {
       console.error("❌ Error updating progress:", error)
@@ -501,7 +523,7 @@ export async function getUserStats(userId: string) {
       }
 
       console.log("🔍 Fetching user stats for:", userId)
-      const { data: progress, error } = await supabase.from("mywayapps-user_progress").select("*").eq("user_id", userId)
+      const { data: progress, error } = await supabase.from("mywayapps_user_progress").select("*").eq("user_id", userId)
 
       if (error) {
         console.error("❌ Error fetching user stats:", error)
@@ -579,7 +601,7 @@ export async function findUserInSupabase(name: string): Promise<User | null> {
     const searchName = name.toLowerCase().includes("demo") ? "Demo User" : name
 
     const { data, error } = await supabase
-      .from("mywayapps-user")
+      .from("mywayapps_user")
       .select("*")
       .ilike("name", searchName)
       .single()
@@ -602,30 +624,70 @@ export async function findUserInSupabase(name: string): Promise<User | null> {
 }
 
 export async function testSupabaseConnection(): Promise<void> {
-  console.log("🧪 Testing Supabase connection...")
+  console.log("═══════════════════════════════════════════════════════")
+  console.log("🧪 SUPABASE CONNECTION DIAGNOSTIC")
+  console.log("═══════════════════════════════════════════════════════")
+  
+  // Check environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  console.log("\n📋 Environment Variables:")
+  console.log("   NEXT_PUBLIC_SUPABASE_URL:", supabaseUrl ? `✅ SET (${supabaseUrl.substring(0, 30)}...)` : "❌ NOT SET")
+  console.log("   NEXT_PUBLIC_SUPABASE_ANON_KEY:", supabaseKey ? `✅ SET (${supabaseKey.substring(0, 20)}...)` : "❌ NOT SET")
+  
+  console.log("\n📡 Supabase Client:")
+  console.log("   Client initialized:", supabase ? "✅ YES" : "❌ NO")
+  
+  if (!supabase) {
+    console.log("\n❌ Cannot proceed - Supabase client not initialized")
+    console.log("   Please check your .env.local file has the correct values")
+    console.log("═══════════════════════════════════════════════════════")
+    return
+  }
   
   try {
-    // Test connection
-    const isConnected = await testConnection()
-    console.log("Connection status:", isConnected ? "✅ Connected" : "❌ Failed")
+    // Test connection to user table
+    console.log("\n🔍 Testing connection to mywayapps_user table...")
+    const { data: users, error: userError } = await supabase
+      .from("mywayapps_user")
+      .select("*")
+      .limit(1)
     
-    // Test user creation
-    if (isConnected) {
-      const testUser = await createUserInSupabase({
-        name: "Test User",
-        email: "test@example.com",
-        age: 25,
-        grade: "Adult"
-      })
-      console.log("Test user creation:", testUser ? "✅ Success" : "❌ Failed")
+    if (userError) {
+      console.log("   ❌ User table error:", userError.message)
+      console.log("   Error code:", userError.code)
+      console.log("   Hint:", userError.hint || "None")
       
-      // Test user search
-      const foundUser = await findUserInSupabase("Test User")
-      console.log("Test user search:", foundUser ? "✅ Found" : "❌ Not found")
+      if (userError.code === "PGRST301" || userError.message.includes("does not exist")) {
+        console.log("\n   💡 The table 'mywayapps_user' may not exist in your Supabase database.")
+        console.log("   Please create it with columns: id, name, email, phone, age, grade, avatar_url, created_at, updated_at")
+      }
+      if (userError.code === "42501" || userError.message.includes("permission")) {
+        console.log("\n   💡 Row Level Security (RLS) may be blocking access.")
+        console.log("   Try disabling RLS on the table or adding appropriate policies.")
+      }
+    } else {
+      console.log("   ✅ User table accessible! Found", users?.length || 0, "users")
     }
-  } catch (error) {
-    console.error("❌ Test failed:", error)
+    
+    // Test applications table
+    console.log("\n🔍 Testing connection to mywayapps-applications table...")
+    const { error: appError } = await supabase
+      .from("mywayapps-applications")
+      .select("*", { count: "exact", head: true })
+    
+    if (appError) {
+      console.log("   ❌ Applications table error:", appError.message)
+    } else {
+      console.log("   ✅ Applications table accessible!")
+    }
+    
+  } catch (error: any) {
+    console.error("\n❌ Test exception:", error?.message || error)
   }
+  
+  console.log("\n═══════════════════════════════════════════════════════")
 }
 
 // Alias for backward compatibility

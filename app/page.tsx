@@ -596,7 +596,7 @@ export default function HomePage() {
                 />
                 <h1 className="text-5xl font-bold text-white">Welcome to MyWayApps! 🌈</h1>
               </div>
-              <p className="text-xl text-white/90 mb-8">Fun and Educational Games for Kids</p>
+              <p className="text-xl text-white/90 mb-8">A Colorful World of Learning!</p>
             </div>
 
             {/* Categories */}
