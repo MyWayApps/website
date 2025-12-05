@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { CategorySection } from "@/components/category-section"
-import { UserProfile } from "@/components/user-profile"
 import { UserAuth } from "@/components/user-auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -559,37 +558,32 @@ export default function HomePage() {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* User Profile Sidebar */}
-          <div className="lg:col-span-1">
-            <UserProfile user={null} onUpdateUser={handleUpdateUser} userStats={userStats} />
-
-            {/* Contact Info */}
-            {showContact && (
-              <Card className="mt-6 bg-gradient-to-br from-green-300 to-teal-500 border-4 border-white shadow-lg">
-                <CardContent className="p-6 text-white">
-                  <h3 className="text-xl font-bold mb-4 text-center">Contact Us</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <Mail className="h-5 w-5" />
-                      <span>mywayapps10@gmail.com</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Phone className="h-5 w-5" />
-                      <span>(+91) XXXXX XXXXX</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <MapPin className="h-5 w-5" />
-                      <span>Educational Apps Division</span>
-                    </div>
+        <div className="grid grid-cols-1 gap-8">
+          {/* Contact Info */}
+          {showContact && (
+            <Card className="bg-gradient-to-br from-green-300 to-teal-500 border-4 border-white shadow-lg max-w-md mx-auto">
+              <CardContent className="p-6 text-white">
+                <h3 className="text-xl font-bold mb-4 text-center">Contact Us</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <Mail className="h-5 w-5" />
+                    <span>mywayapps10@gmail.com</span>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                  <div className="flex items-center space-x-3">
+                    <Phone className="h-5 w-5" />
+                    <span>(+91) XXXXX XXXXX</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <MapPin className="h-5 w-5" />
+                    <span>Educational Apps Division</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Main Content */}
-          <div className="lg:col-span-3 space-y-12">
+          <div className="space-y-12">
             <div className="text-center">
               <div className="flex items-center justify-center space-x-4 mb-4">
                 <img 
@@ -600,7 +594,7 @@ export default function HomePage() {
                     e.currentTarget.src = '/mywayapps-logo.svg';
                   }}
                 />
-                <h1 className="text-5xl font-bold text-white">Welcome to MyWayApps! 🌟</h1>
+                <h1 className="text-5xl font-bold text-white">Welcome to MyWayApps! 🌈</h1>
               </div>
               <p className="text-xl text-white/90 mb-8">Fun and Educational Games for Kids</p>
             </div>

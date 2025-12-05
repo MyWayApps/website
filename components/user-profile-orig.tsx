@@ -52,7 +52,7 @@ export function UserProfile({ user, onUpdateUser, userStats }: UserProfileProps)
       <Card className="bg-gradient-to-br from-purple-300 to-pink-400 border-4 border-white shadow-lg">
         <CardContent className="p-6 text-center">
           <User className="h-16 w-16 mx-auto mb-4 text-white" />
-          <h3 className="text-xl font-bold text-white mb-2">Welcome to MyWayApps!</h3>
+          <h3 className="text-xl font-bold text-white mb-2">Welcome to MyWayApps! 🌈</h3>
           <p className="text-white/80 mb-4">Create your profile to track your progress</p>
           <Button onClick={() => setIsEditing(true)} className="bg-white text-purple-600 hover:bg-gray-100">
             Create Profile

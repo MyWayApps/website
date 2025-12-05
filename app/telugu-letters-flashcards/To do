@@ -1,6 +1,5 @@
-1. Prepare Audio Files
-Place audio files for each letter (e.g., a.mp3, aa.mp3, etc.) in a public folder, such as /public/audio/telugu-letters/.
-Name each file to match the letter or its transliteration (e.g., a.mp3 for "అ", aa.mp3 for "ఆ", etc.).
+telugu-sequence.mp3 files need to be updated
+
 ======
 
 "use client"

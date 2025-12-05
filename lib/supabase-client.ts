@@ -49,6 +49,7 @@ export type User = {
   id: string
   email: string
   name: string
+  phone?: string
   age?: number
   grade?: string
   avatar_url?: string
