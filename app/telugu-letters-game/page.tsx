@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star } from "lucide-react"
+import { playTeluguTTS } from "@/lib/telugu-tts"
 
 // Telugu letters and their audio file names
 const teluguLetters = [
@@ -111,10 +112,25 @@ export default function TeluguLettersGame() {
   const [gameOver, setGameOver] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [currentMessage, setCurrentMessage] = useState("Good job!")
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [isPlayingTTS, setIsPlayingTTS] = useState(false)
   const goodJobRef = useRef<HTMLAudioElement | null>(null)
   const buzzRef = useRef<HTMLAudioElement | null>(null)
   const happyTuneRef = useRef<HTMLAudioElement | null>(null)
+
+  // Play letter audio using TTS
+  const playLetterAudio = async (letterIdx: number) => {
+    if (isPlayingTTS) return
+    
+    try {
+      setIsPlayingTTS(true)
+      const textToSpeak = teluguLetters[letterIdx].letter
+      await playTeluguTTS(textToSpeak)
+    } catch (error) {
+      console.error("TTS play failed:", error)
+    } finally {
+      setIsPlayingTTS(false)
+    }
+  }
 
   // Setup new round
   useEffect(() => {
@@ -128,7 +144,7 @@ export default function TeluguLettersGame() {
     setShowResult(null)
     // Play the audio after a short delay
     setTimeout(() => {
-      audioRef.current?.play()
+      playLetterAudio(correct)
     }, 400)
   }, [round])
 
@@ -169,12 +185,12 @@ export default function TeluguLettersGame() {
   }
 
   const handleReplayAudio = () => {
-    audioRef.current?.play()
+    playLetterAudio(correctIdx)
   }
 
 
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/telugu-letters"
   }
 
   const handleRestart = () => {
@@ -193,12 +209,19 @@ export default function TeluguLettersGame() {
           variant="outline"
         >
           <ArrowLeft className="mr-2 h-5 w-5" />
-          Back to Home
+          Back to Telugu Letters
         </Button>
         <div className="flex items-center gap-4 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
           <Star className="h-6 w-6 text-yellow-600" />
           <span className="text-xl font-bold text-amber-800">Score: {score}</span>
         </div>
+      </div>
+
+      {/* Title */}
+      <div className="text-center mb-6">
+        <h1 className="text-4xl font-bold text-amber-900">
+          Tap the letter
+        </h1>
       </div>
       
       <Card className="w-1/2 min-w-[500px] max-w-[800px] bg-white/90 backdrop-blur-sm shadow-2xl border-0">
@@ -303,14 +326,6 @@ export default function TeluguLettersGame() {
         </div>
       )}
 
-      <audio
-        ref={audioRef}
-        src={`/audio/${teluguLetters[correctIdx].audio}`}
-        preload="auto"
-        onError={(e) => console.error("Main audio error:", e)}
-        onLoadStart={() => console.log("Main audio loading...")}
-        onCanPlay={() => console.log("Main audio can play")}
-      />
       <audio 
         ref={goodJobRef} 
         src={GOOD_JOB_AUDIO} 

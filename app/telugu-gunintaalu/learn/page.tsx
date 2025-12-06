@@ -39,8 +39,7 @@ const teluguConsonants = [
   { consonant: "ష", name: "ష గుణింతము" },
   { consonant: "స", name: "స గుణింతము" },
   { consonant: "హ", name: "హ గుణింతము" },
-  { consonant: "ళ", name: "ళ గుణింతము" },
-  { consonant: "క్ష", name: "క్ష గుణింతము" }
+  { consonant: "ళ", name: "ళ గుణింతము" }
 ]
 
 export default function LearnGunintaalu() {

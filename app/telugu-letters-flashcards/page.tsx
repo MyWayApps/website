@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ArrowRight, Volume2 } from "lucide-react"
+import { playTeluguTTS } from "@/lib/telugu-tts"
 
 const teluguLetters = [
   { letter: "అ", transliteration: "a", audio: "telugu-a.mp3" },
@@ -75,32 +76,40 @@ export default function TeluguFlashCards() {
   const [index, setIndex] = useState(0)
   const [showWord, setShowWord] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  // Play audio for current letter
-  const playAudio = () => {
-    if (audioRef.current) {
-      console.log("Attempting to play audio:", teluguLetters[index].audio)
-      audioRef.current.currentTime = 0
-      audioRef.current.play().catch(error => {
-        console.error("Audio play failed:", error)
-        // Try to reload the audio element
-        if (audioRef.current) {
-          audioRef.current.load()
-          setTimeout(() => {
-            audioRef.current?.play().catch(e => console.error("Retry failed:", e))
-          }, 100)
-        }
-      })
-    } else {
-      console.log("Audio ref is null")
+  // Play audio for current letter using TTS
+  const playAudio = async () => {
+    if (isPlaying) return
+    
+    try {
+      setIsPlaying(true)
+      const textToSpeak = teluguLetters[index].letter
+      await playTeluguTTS(textToSpeak)
+    } catch (error) {
+      console.error("TTS play failed:", error)
+    } finally {
+      setIsPlaying(false)
     }
   }
 
-  // Handle letter click - replace letter with word, then bounce back
+  // Play word audio using TTS
+  const playWordAudio = async (word: string) => {
+    try {
+      await playTeluguTTS(word)
+    } catch (error) {
+      console.error("TTS play failed for word:", error)
+    }
+  }
+
+  // Handle letter click - replace letter with word, play audio, then bounce back
   const handleLetterClick = () => {
     setShowWord(true)
-    // Don't play audio when showing word (padam)
+    
+    // Play the word audio
+    const word = teluguWords[index]
+    if (word && word !== teluguLetters[index].letter) {
+      playWordAudio(word)
+    }
     
     // Hide word and bounce back to letter after 2.5 seconds
     setTimeout(() => {
@@ -110,20 +119,13 @@ export default function TeluguFlashCards() {
 
   // Auto-play audio when index changes
   useEffect(() => {
-    console.log("Index changed to:", index, "Audio file:", teluguLetters[index].audio)
-    // Small delay to ensure audio element is ready
+    console.log("Index changed to:", index, "Letter:", teluguLetters[index].letter)
+    // Small delay to ensure component is ready
     const timer = setTimeout(() => {
       playAudio()
-    }, 100)
+    }, 300)
     return () => clearTimeout(timer)
   }, [index])
-
-  // Handle audio element load
-  const handleAudioLoad = () => {
-    console.log("Audio loaded for:", teluguLetters[index].letter)
-    // Auto-play when audio is loaded
-    playAudio()
-  }
 
 
   // Add keyboard event listeners for arrow keys
@@ -142,9 +144,9 @@ export default function TeluguFlashCards() {
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [])
 
-  // Go back to home page
+  // Go back to Telugu Letters page
   const onBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/telugu-letters"
   }
 
   // Reset the flashcards game
@@ -169,18 +171,25 @@ export default function TeluguFlashCards() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-teal-300 to-green-500">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-yellow-200 to-amber-400">
       
       {/* Header - Aligned with rectangle */}
       <div className="w-1/2 min-w-[400px] mb-6">
         <Button
           onClick={onBackToHome}
-          className="bg-yellow-200 hover:bg-yellow-300 text-yellow-800 border-2 border-yellow-400 font-bold text-lg px-6 py-3"
+          className="bg-white/20 hover:bg-white/30 text-amber-800 border-2 border-white font-bold text-lg px-6 py-3"
           variant="outline"
         >
           <ArrowLeft className="mr-2 h-5 w-5" />
-          Back to Home
+          Back to Telugu Letters
         </Button>
+      </div>
+
+      {/* Title */}
+      <div className="text-center mb-6">
+        <h1 className="text-4xl font-bold text-amber-900">
+          Tap the letter
+        </h1>
       </div>
 
       <div className="flex items-center justify-center">
@@ -188,22 +197,22 @@ export default function TeluguFlashCards() {
         <Button 
           onClick={prev} 
           variant="outline" 
-          className="bg-yellow-200 hover:bg-yellow-300 text-yellow-800 border-2 border-yellow-400 font-bold text-lg px-6 py-3 mr-8"
+          className="bg-amber-100 hover:bg-amber-200 text-amber-800 border-2 border-amber-400 font-bold text-lg px-6 py-3 mr-8"
         >
           <ArrowLeft className="mr-2 h-5 w-5" />
           Back
         </Button>
         
-        <Card className="w-1/2 h-1/2 min-w-[400px] min-h-[400px] flex flex-col items-center justify-center shadow-2xl">
+        <Card className="w-1/2 h-1/2 min-w-[400px] min-h-[400px] flex flex-col items-center justify-center shadow-2xl bg-white/90 backdrop-blur-sm border-0">
           <CardContent className="flex flex-col items-center justify-center h-full p-8">
             {/* Clickable Telugu Letter/Word Container */}
             <div 
-              className="text-9xl font-bold mb-4 text-indigo-800 cursor-pointer hover:scale-110 transition-all duration-300 select-none min-h-[120px] flex items-center justify-center"
+              className="text-9xl font-bold mb-4 text-amber-800 cursor-pointer hover:scale-110 transition-all duration-300 select-none min-h-[120px] flex items-center justify-center"
               onClick={handleLetterClick}
             >
               {showWord && teluguWords[index] && teluguWords[index] !== teluguLetters[index].letter ? (
-                <div className="text-6xl font-bold text-green-600 text-center bg-teal-300 px-8 py-6 rounded-xl shadow-lg">
-                  <div className="text-2xl text-indigo-600 mb-2">పదం</div>
+                <div className="text-6xl font-bold text-amber-700 text-center bg-yellow-200 px-8 py-6 rounded-xl shadow-lg">
+                  <div className="text-2xl text-amber-600 mb-2">పదం</div>
                   <div>{teluguWords[index]}</div>
                 </div>
               ) : (
@@ -211,27 +220,12 @@ export default function TeluguFlashCards() {
               )}
             </div>
             
-            
-            {/* Hidden audio element */}
-            <audio
-              ref={audioRef}
-              src={`/audio/${teluguLetters[index].audio}`}
-              preload="auto"
-              onLoadedData={handleAudioLoad}
-              onPlay={() => setIsPlaying(true)}
-              onEnded={() => setIsPlaying(false)}
-              onError={(e) => {
-                console.error("Audio error:", e)
-                setIsPlaying(false)
-              }}
-            />
-            
             {/* Volume Button - Center */}
             <div className="flex items-center justify-center w-full px-4">
               <Button 
                 onClick={playAudio} 
                 variant="outline" 
-                className="bg-teal-300 hover:bg-teal-400 text-teal-800 border-2 border-teal-400 px-8 py-6 text-xl font-bold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-70"
+                className="bg-amber-200 hover:bg-amber-300 text-amber-800 border-2 border-amber-400 px-8 py-6 text-xl font-bold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-70"
                 disabled={isPlaying}
               >
                 {isPlaying ? (
@@ -248,7 +242,7 @@ export default function TeluguFlashCards() {
         <Button 
           onClick={next} 
           variant="outline" 
-          className="bg-yellow-200 hover:bg-yellow-300 text-yellow-800 border-2 border-yellow-400 font-bold text-lg px-6 py-3 ml-8"
+          className="bg-amber-100 hover:bg-amber-200 text-amber-800 border-2 border-amber-400 font-bold text-lg px-6 py-3 ml-8"
         >
           <ArrowRight className="mr-2 h-5 w-5" />
           Next

@@ -68,12 +68,6 @@ export function ComingSoon({
                 <h2 className="text-3xl font-bold text-orange-800 mb-4">
                   🚧 Under Construction 🚧
                 </h2>
-                <p className="text-lg text-orange-700 mb-4">
-                  We're working hard to bring you an amazing experience!
-                </p>
-                <p className="text-md text-orange-600">
-                  This feature will be available soon. Check back later for updates!
-                </p>
               </div>
               
               {/* Features Preview */}

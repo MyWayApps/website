@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, Volume2, CheckCircle, XCircle } from "lucide-react"
+import { playTeluguTTS } from "@/lib/telugu-tts"
 
 // All Telugu words data organized by groups
 const teluguWordsData = {
@@ -263,8 +264,8 @@ export default function ListenPointGame() {
   const [masteredWords, setMasteredWords] = useState<string[]>([])
   const [showMasteredTab, setShowMasteredTab] = useState(false)
   const [selectedWords, setSelectedWords] = useState<string[]>([])
+  const [isPlayingTTS, setIsPlayingTTS] = useState(false)
   
-  const audioRef = useRef<HTMLAudioElement | null>(null)
   const goodJobRef = useRef<HTMLAudioElement | null>(null)
   const buzzerRef = useRef<HTMLAudioElement | null>(null)
 
@@ -363,18 +364,24 @@ export default function ListenPointGame() {
       setShowConfetti(false)
       // Auto-play audio when question loads
       setTimeout(() => {
-        playAudio(questions[currentQuestion].correctWord.audio)
+        playWordAudio(questions[currentQuestion].correctWord.word)
       }, 500)
     }
   }, [currentQuestion, questions])
 
   const currentQ = questions[currentQuestion]
 
-  // Play audio
-  const playAudio = (audioFile: string) => {
-    if (audioRef.current) {
-      audioRef.current.src = `/audio/${audioFile}`
-      audioRef.current.play().catch(e => console.error("Audio play failed:", e))
+  // Play word audio using TTS
+  const playWordAudio = async (word: string) => {
+    if (isPlayingTTS) return
+    
+    try {
+      setIsPlayingTTS(true)
+      await playTeluguTTS(word)
+    } catch (error) {
+      console.error("TTS play failed:", error)
+    } finally {
+      setIsPlayingTTS(false)
     }
   }
 
@@ -623,12 +630,13 @@ export default function ListenPointGame() {
             {/* Play Audio Button */}
             <div className="mb-8">
               <Button
-                onClick={() => playAudio(currentQ.correctWord.audio)}
-                className="bg-purple-200 hover:bg-purple-300 text-purple-800 border-2 border-purple-400 font-bold text-xl px-8 py-4"
+                onClick={() => playWordAudio(currentQ.correctWord.word)}
+                disabled={isPlayingTTS}
+                className="bg-purple-200 hover:bg-purple-300 text-purple-800 border-2 border-purple-400 font-bold text-xl px-8 py-4 disabled:opacity-50"
                 variant="outline"
               >
                 <Volume2 className="mr-2 h-6 w-6" />
-                Play Audio
+                {isPlayingTTS ? "Playing..." : "Play Audio"}
               </Button>
             </div>
 
@@ -723,7 +731,6 @@ export default function ListenPointGame() {
       )}
 
       {/* Audio Elements */}
-      <audio ref={audioRef} preload="auto" />
       <audio ref={goodJobRef} src="/audio/happy_tune.mp3" preload="auto" />
       <audio ref={buzzerRef} src="/audio/buzz_audio.mp3" preload="auto" />
     </div>

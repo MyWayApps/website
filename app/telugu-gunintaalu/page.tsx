@@ -15,6 +15,18 @@ export default function TeluguGunintaalu() {
     <div className="min-h-screen bg-gradient-to-br from-blue-200 to-indigo-400 p-4">
       {/* Main Content */}
       <div className="flex flex-col items-center justify-center">
+        {/* Back to Home Button */}
+        <div className="w-1/2 min-w-[500px] max-w-[800px] mb-8">
+          <Button
+            onClick={handleBackToHome}
+            className="bg-white/20 hover:bg-white/30 text-indigo-800 border-2 border-white font-bold text-lg px-6 py-3"
+            variant="outline"
+          >
+            <ArrowLeft className="mr-2 h-5 w-5" />
+            Back to Home
+          </Button>
+        </div>
+
         {/* Main Title */}
         <div className="text-center mb-8">
           <h1 className="text-6xl font-bold text-indigo-900 mb-4">

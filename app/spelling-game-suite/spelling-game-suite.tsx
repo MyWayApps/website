@@ -15,6 +15,9 @@ import FallingLettersGame from "./falling-letters-game"
 import MemoryMatchGame from "./memory-match-game"
 import MonsterMunchGame from "./monster-munch-game"
 import MagicGardenGame from "./magic-garden-game"
+import SpellTheWordGame from "./spell-the-word-game"
+import TypeTheWordGame from "./type-the-word-game"
+import SearchTheWordGame from "./search-the-word-game"
 import { generateWords, generateWordsLocal } from "@/lib/word-generator"
 
 type GameMode = "menu" | "word-selection" | "game-selection" | "playing"
@@ -54,6 +57,30 @@ const WORD_LISTS: Record<LetterCount, string[]> = {
 
 // Game types with descriptions and emojis
 const GAME_TYPES = [
+  {
+    id: "spell-the-word",
+    name: "Spell the Word",
+    emoji: "✨",
+    description: "Listen and tap letters to spell the word!",
+    color: "from-teal-200 to-cyan-300",
+    implemented: true
+  },
+  {
+    id: "type-the-word",
+    name: "Type the Word",
+    emoji: "⌨️",
+    description: "Listen and type the word you hear!",
+    color: "from-purple-200 to-pink-300",
+    implemented: true
+  },
+  {
+    id: "search-the-word",
+    name: "Search the Word",
+    emoji: "🔍",
+    description: "Listen and find the correct word!",
+    color: "from-orange-200 to-amber-300",
+    implemented: true
+  },
   {
     id: "balloon-pop",
     name: "Balloon Pop",
@@ -799,6 +826,39 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
 
   // Playing mode - render individual game components
   if (currentMode === "playing") {
+    // Render Spell the Word Game
+    if (selectedGame === "spell-the-word") {
+      return (
+        <SpellTheWordGame
+          wordList={currentWordList}
+          onGameComplete={handleGameComplete}
+          onBackToGames={() => setCurrentMode("game-selection")}
+        />
+      )
+    }
+
+    // Render Type the Word Game
+    if (selectedGame === "type-the-word") {
+      return (
+        <TypeTheWordGame
+          wordList={currentWordList}
+          onGameComplete={handleGameComplete}
+          onBackToGames={() => setCurrentMode("game-selection")}
+        />
+      )
+    }
+
+    // Render Search the Word Game
+    if (selectedGame === "search-the-word") {
+      return (
+        <SearchTheWordGame
+          wordList={currentWordList}
+          onGameComplete={handleGameComplete}
+          onBackToGames={() => setCurrentMode("game-selection")}
+        />
+      )
+    }
+
     // Render Balloon Pop Game
     if (selectedGame === "balloon-pop") {
       return (

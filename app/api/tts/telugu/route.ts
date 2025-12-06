@@ -8,6 +8,15 @@ import ffmpeg from 'fluent-ffmpeg'
 
 const execAsync = promisify(exec)
 
+// Array of Telugu voice variants to rotate through
+const teluguVoices = ['te+f3', 'te+f4', 'te+m3', 'te+m4']
+
+// Get a random voice from the array
+function getRandomVoice(): string {
+  const randomIndex = Math.floor(Math.random() * teluguVoices.length)
+  return teluguVoices[randomIndex]
+}
+
 // Get ffmpeg path - try ffmpeg-static first, then system ffmpeg
 async function getFfmpegPath(): Promise<string> {
   try {
@@ -64,9 +73,11 @@ export async function POST(request: NextRequest) {
     let ttsCommand: string
     
     try {
-      // Try espeak first (supports Telugu with -v te)
+      // Try espeak first (supports Telugu with rotating voices)
       await execAsync('which espeak')
-      ttsCommand = `espeak -v te "${text}" -w "${tempWavPath}"`
+      const voice = getRandomVoice()
+      console.log(`Using Telugu voice: ${voice}`)
+      ttsCommand = `espeak -v ${voice} "${text}" -w "${tempWavPath}"`
     } catch {
       // Fallback to festival or other TTS
       try {

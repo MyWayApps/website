@@ -141,7 +141,10 @@ export default function GunintaaluDetail() {
             {/* Consonant + Matra Display */}
             <div className="mb-12">
               <div className="text-4xl font-bold text-indigo-800 mb-4 whitespace-nowrap overflow-hidden">
-                {consonant} + {currentMatra.matra} ({currentMatra.name}) = {currentMatra.result}
+                {currentMatra.matra === "" 
+                  ? `${consonant}్ + (${currentMatra.name}) = ${currentMatra.result}`
+                  : `${consonant}్ + ${currentMatra.matra} (${currentMatra.name}) = ${currentMatra.result}`
+                }
               </div>
             </div>
 
