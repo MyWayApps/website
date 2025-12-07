@@ -1,66 +1,12 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star } from "lucide-react"
 import { playTeluguTTS } from "@/lib/telugu-tts"
-
-// Telugu letters and their audio file names
-const teluguLetters = [
-  { letter: "అ", audio: "telugu-a.mp3" },
-  { letter: "ఆ", audio: "telugu-aa.mp3" },
-  { letter: "ఇ", audio: "telugu-e.mp3" },
-  { letter: "ఈ", audio: "telugu-ee.mp3" },
-  { letter: "ఉ", audio: "telugu-u.mp3" },
-  { letter: "ఊ", audio: "telugu-uu.mp3" },
-  //{ letter: "ఋ", audio: "telugu-sequence.mp3" },
-  //{ letter: "ౠ", audio: "telugu-sequence.mp3" },
-  { letter: "ఎ", audio: "telugu-ae.mp3" },
-  { letter: "ఏ", audio: "telugu-aee.mp3" },
-  { letter: "ఐ", audio: "telugu-aeee.mp3" },
-  { letter: "ఒ", audio: "telugu-o.mp3" },
-  { letter: "ఓ", audio: "telugu-oo.mp3" },
-  //{ letter: "ఔ", audio: "telugu-sequence.mp3" },
-  { letter: "అం", audio: "telugu-am.mp3" },
-  { letter: "అః", audio: "telugu-aha.mp3" },
-  { letter: "క", audio: "telugu-ka.mp3" },
-  { letter: "ఖ", audio: "telugu-kha.mp3" },
-  { letter: "గ", audio: "telugu-ga.mp3" },
-  { letter: "ఘ", audio: "telugu-gha.mp3" },
-  //{ letter: "ఙ", audio: "telugu-sequence.mp3" },
-  { letter: "చ", audio: "telugu-cha.mp3" },
-  { letter: "ఛ", audio: "telugu-chcha.mp3" },
-  { letter: "జ", audio: "telugu-ja.mp3" },
-  { letter: "ఝ", audio: "telugu-jha.mp3" },
-  //{ letter: "ఞ", audio: "telugu-sequence.mp3" },
-  { letter: "ట", audio: "telugu-tta.mp3" },
-  { letter: "ఠ", audio: "telugu-ttha.mp3" },
-  { letter: "డ", audio: "telugu-dda.mp3" },
-  { letter: "ఢ", audio: "telugu-ddha.mp3" },
-  //{ letter: "ణ", audio: "telugu-sequence.mp3" },
-  { letter: "త", audio: "telugu-ta.mp3" },
-  { letter: "థ", audio: "telugu-thha.mp3" },
-  { letter: "ద", audio: "telugu-da.mp3" },
-  { letter: "ధ", audio: "telugu-dhha.mp3" },
-  { letter: "న", audio: "telugu-na.mp3" },
-  { letter: "ప", audio: "telugu-pa.mp3" },
-  { letter: "ఫ", audio: "telugu-pha.mp3" },
-  { letter: "బ", audio: "telugu-ba.mp3" },
-  { letter: "భ", audio: "telugu-bha.mp3" },
-  { letter: "మ", audio: "telugu-ma.mp3" },
-  { letter: "య", audio: "telugu-ya.mp3" },
-  { letter: "ర", audio: "telugu-ra.mp3" },
-  { letter: "ల", audio: "telugu-la.mp3" },
-  { letter: "వ", audio: "telugu-va.mp3" },
-  { letter: "శ", audio: "telugu-sha.mp3" },
-  { letter: "ష", audio: "telugu-sha.mp3" },
-  { letter: "స", audio: "telugu-sa.mp3" },
-  { letter: "హ", audio: "telugu-ha.mp3" },
-  { letter: "ళ", audio: "telugu-llaa.mp3" },
-  { letter: "క్ష", audio: "telugu-ksha.mp3" },
-  //{ letter: "ఱ", audio: "telugu-sequence.mp3" }
-]
+import { getLettersByType, getLetterTypeLabel, LetterType, TeluguLetterWithWord } from "@/lib/telugu-letters-data"
 
 const GOOD_JOB_AUDIO = "/audio/happy_tune.mp3"
 const BUZZ_AUDIO = "/audio/buzz_audio.mp3"
@@ -89,10 +35,10 @@ function getRandomInt(max: number) {
   return Math.floor(Math.random() * max)
 }
 
-function getRandomChoices(correctIndex: number) {
+function getRandomChoices(correctIndex: number, totalLetters: number) {
   const indices = [correctIndex]
   while (indices.length < 3) {
-    const idx = getRandomInt(teluguLetters.length)
+    const idx = getRandomInt(totalLetters)
     if (!indices.includes(idx)) indices.push(idx)
   }
   // Shuffle
@@ -104,6 +50,10 @@ function getRandomChoices(correctIndex: number) {
 }
 
 export default function TeluguLettersGame() {
+  const searchParams = useSearchParams()
+  const letterType = (searchParams.get("type") as LetterType) || "vowels"
+  
+  const [letters, setLetters] = useState<TeluguLetterWithWord[]>([])
   const [score, setScore] = useState(0)
   const [round, setRound] = useState(1)
   const [choices, setChoices] = useState<number[]>([])
@@ -113,17 +63,27 @@ export default function TeluguLettersGame() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [currentMessage, setCurrentMessage] = useState("Good job!")
   const [isPlayingTTS, setIsPlayingTTS] = useState(false)
+  const [isReady, setIsReady] = useState(false)
   const goodJobRef = useRef<HTMLAudioElement | null>(null)
   const buzzRef = useRef<HTMLAudioElement | null>(null)
   const happyTuneRef = useRef<HTMLAudioElement | null>(null)
 
+  const typeLabel = getLetterTypeLabel(letterType)
+
+  // Initialize letters based on type
+  useEffect(() => {
+    const letterData = getLettersByType(letterType)
+    setLetters(letterData)
+    setIsReady(true)
+  }, [letterType])
+
   // Play letter audio using TTS
   const playLetterAudio = async (letterIdx: number) => {
-    if (isPlayingTTS) return
+    if (isPlayingTTS || letters.length === 0) return
     
     try {
       setIsPlayingTTS(true)
-      const textToSpeak = teluguLetters[letterIdx].letter
+      const textToSpeak = letters[letterIdx].letter
       await playTeluguTTS(textToSpeak)
     } catch (error) {
       console.error("TTS play failed:", error)
@@ -134,22 +94,24 @@ export default function TeluguLettersGame() {
 
   // Setup new round
   useEffect(() => {
+    if (!isReady || letters.length === 0) return
+    
     if (round > 10) {
       setGameOver(true)
       return
     }
-    const correct = getRandomInt(teluguLetters.length)
+    const correct = getRandomInt(letters.length)
     setCorrectIdx(correct)
-    setChoices(getRandomChoices(correct))
+    setChoices(getRandomChoices(correct, letters.length))
     setShowResult(null)
     // Play the audio after a short delay
     setTimeout(() => {
       playLetterAudio(correct)
     }, 400)
-  }, [round])
+  }, [round, isReady, letters])
 
   const handleCardClick = (idx: number) => {
-    if (showResult || gameOver) return
+    if (showResult || gameOver || letters.length === 0) return
     if (choices[idx] === correctIdx) {
       setShowResult("correct")
       setScore((s) => s + 1)
@@ -199,6 +161,14 @@ export default function TeluguLettersGame() {
     setGameOver(false)
   }
 
+  if (!isReady || letters.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-200 to-amber-400 p-4 flex flex-col items-center justify-center">
+        <div className="text-2xl text-amber-800">Loading...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-200 to-amber-400 p-4 flex flex-col items-center justify-center">
       {/* Header with Back to Home Button and Score - Aligned with card */}
@@ -211,9 +181,14 @@ export default function TeluguLettersGame() {
           <ArrowLeft className="mr-2 h-5 w-5" />
           Back to Telugu Letters
         </Button>
-        <div className="flex items-center gap-4 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
-          <Star className="h-6 w-6 text-yellow-600" />
-          <span className="text-xl font-bold text-amber-800">Score: {score}</span>
+        <div className="flex items-center gap-4">
+          <div className="bg-white/30 px-4 py-2 rounded-full">
+            <span className="text-amber-800 font-bold">{typeLabel.telugu}</span>
+          </div>
+          <div className="flex items-center gap-2 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
+            <Star className="h-6 w-6 text-yellow-600" />
+            <span className="text-xl font-bold text-amber-800">Score: {score}</span>
+          </div>
         </div>
       </div>
 
@@ -261,7 +236,7 @@ export default function TeluguLettersGame() {
                     }`}
                     onClick={() => handleCardClick(idx)}
                   >
-                    {teluguLetters[letterIdx].letter}
+                    {letters[letterIdx].letter}
                   </Card>
                 ))}
               </div>

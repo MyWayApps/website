@@ -130,6 +130,17 @@ const fallbackApplications = [
       route: "/telugu-words",
       created_at: new Date().toISOString(),
     },
+    {
+      id: "13",
+      name: "Telugu Vocabulary",
+      category: "Education",
+      subcategory: "Telugu",
+      description: "Learn Telugu vocabulary - Days, Colours, Animals & more!",
+      icon_emoji: "📚",
+      color_scheme: "from-green-200 to-teal-500",
+      route: "/telugu-vocabulary",
+      created_at: new Date().toISOString(),
+    },
   {
     id: "9",
     name: "English Phonics",

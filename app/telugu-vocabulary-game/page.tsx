@@ -1,0 +1,338 @@
+"use client"
+
+import { useState, useEffect, useRef } from "react"
+import { useSearchParams } from "next/navigation"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { ArrowLeft, Star, Volume2 } from "lucide-react"
+import { getCategoryById, vocabularyCategories, VocabularyItem } from "@/lib/telugu-vocabulary-data"
+
+const HAPPY_TUNE_AUDIO = "/audio/happy_tune.mp3"
+const BUZZ_AUDIO = "/audio/buzz_audio.mp3"
+
+// Function to play English TTS
+const playEnglishTTS = (text: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel()
+      
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.lang = 'en-US'
+      utterance.rate = 0.85
+      utterance.pitch = 1.0
+      utterance.onend = () => resolve()
+      utterance.onerror = (e) => reject(e)
+      window.speechSynthesis.speak(utterance)
+    } else {
+      reject(new Error('Speech synthesis not supported'))
+    }
+  })
+}
+
+// Success messages array
+const successMessages = [
+  "Good job!",
+  "Excellent!",
+  "Amazing work!",
+  "Fantastic!",
+  "Outstanding!",
+  "Brilliant!",
+  "Perfect!",
+  "Wonderful!",
+  "Great job!",
+  "Superb!",
+  "Terrific!",
+  "Awesome!",
+  "Incredible!",
+  "Magnificent!",
+  "Splendid!"
+]
+
+function getRandomInt(max: number) {
+  return Math.floor(Math.random() * max)
+}
+
+function getRandomChoices(correctIndex: number, totalItems: number, numChoices: number = 4): number[] {
+  const indices = [correctIndex]
+  while (indices.length < Math.min(numChoices, totalItems)) {
+    const idx = getRandomInt(totalItems)
+    if (!indices.includes(idx)) indices.push(idx)
+  }
+  // Shuffle
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[indices[i], indices[j]] = [indices[j], indices[i]]
+  }
+  return indices
+}
+
+export default function TeluguVocabularyGame() {
+  const searchParams = useSearchParams()
+  const categoryId = searchParams.get("category") || "days"
+  
+  const [items, setItems] = useState<VocabularyItem[]>([])
+  const [categoryName, setCategoryName] = useState({ telugu: "", english: "" })
+  const [score, setScore] = useState(0)
+  const [round, setRound] = useState(1)
+  const [totalRounds, setTotalRounds] = useState(10)
+  const [choices, setChoices] = useState<number[]>([])
+  const [correctIdx, setCorrectIdx] = useState(0)
+  const [showResult, setShowResult] = useState<null | "correct" | "wrong">(null)
+  const [gameOver, setGameOver] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [currentMessage, setCurrentMessage] = useState("Good job!")
+  const [isPlayingTTS, setIsPlayingTTS] = useState(false)
+  const [isReady, setIsReady] = useState(false)
+  
+  const happyTuneRef = useRef<HTMLAudioElement | null>(null)
+  const buzzRef = useRef<HTMLAudioElement | null>(null)
+
+  // Initialize items based on category
+  useEffect(() => {
+    const category = getCategoryById(categoryId)
+    if (category) {
+      setItems(category.items)
+      setCategoryName({ telugu: category.nameTelugu, english: category.nameEnglish })
+      setTotalRounds(Math.min(10, category.items.length))
+      setIsReady(true)
+    }
+  }, [categoryId])
+
+  // Play English word audio
+  const playWordAudio = async (itemIndex: number) => {
+    if (isPlayingTTS || items.length === 0) return
+    
+    try {
+      setIsPlayingTTS(true)
+      await playEnglishTTS(items[itemIndex].english)
+    } catch (error) {
+      console.error("English TTS play failed:", error)
+    } finally {
+      setIsPlayingTTS(false)
+    }
+  }
+
+  // Setup new round
+  useEffect(() => {
+    if (!isReady || items.length === 0) return
+    
+    if (round > totalRounds) {
+      setGameOver(true)
+      return
+    }
+    
+    const correct = getRandomInt(items.length)
+    setCorrectIdx(correct)
+    setChoices(getRandomChoices(correct, items.length, 4))
+    setShowResult(null)
+    
+    // Play the English word audio after a short delay
+    setTimeout(() => {
+      playWordAudio(correct)
+    }, 500)
+  }, [round, isReady, items])
+
+  const handleCardClick = (idx: number) => {
+    if (showResult || gameOver || items.length === 0) return
+    
+    if (choices[idx] === correctIdx) {
+      setShowResult("correct")
+      setScore((s) => s + 1)
+      
+      // Show confetti
+      setShowConfetti(true)
+      setTimeout(() => setShowConfetti(false), 2000)
+      
+      // Play happy tune
+      if (happyTuneRef.current) {
+        happyTuneRef.current.currentTime = 0
+        happyTuneRef.current.play().catch(e => console.error("Happy tune play failed:", e))
+      }
+      
+      // Set random success message
+      setCurrentMessage(successMessages[Math.floor(Math.random() * successMessages.length)])
+      
+      setTimeout(() => setRound((r) => r + 1), 2000)
+    } else {
+      setShowResult("wrong")
+      if (buzzRef.current) {
+        buzzRef.current.currentTime = 0
+        buzzRef.current.play().catch(e => console.error("Buzz audio play failed:", e))
+      }
+      setTimeout(() => setShowResult(null), 1500)
+    }
+  }
+
+  const handleReplayAudio = () => {
+    playWordAudio(correctIdx)
+  }
+
+  const handleBackToVocabulary = () => {
+    window.location.href = "/telugu-vocabulary"
+  }
+
+  const handleRestart = () => {
+    setScore(0)
+    setRound(1)
+    setGameOver(false)
+  }
+
+  if (!isReady || items.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-200 to-teal-500 p-4 flex flex-col items-center justify-center">
+        <div className="text-2xl text-teal-800">Loading...</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-200 to-teal-500 p-4 flex flex-col items-center justify-center">
+      {/* Header */}
+      <div className="w-full max-w-[800px] flex items-center justify-between mb-6">
+        <Button
+          onClick={handleBackToVocabulary}
+          className="bg-white/20 hover:bg-white/30 text-teal-800 border-2 border-white font-bold text-lg px-6 py-3"
+          variant="outline"
+        >
+          <ArrowLeft className="mr-2 h-5 w-5" />
+          Back
+        </Button>
+        <div className="flex items-center gap-4">
+          <div className="bg-white/30 px-4 py-2 rounded-full">
+            <span className="text-teal-800 font-bold">{categoryName.telugu}</span>
+          </div>
+          <div className="flex items-center gap-2 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
+            <Star className="h-6 w-6 text-yellow-500" />
+            <span className="text-xl font-bold text-teal-800">Score: {score}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Title */}
+      <div className="text-center mb-6">
+        <h1 className="text-3xl font-bold text-teal-900">
+          Listen and find the Telugu word!
+        </h1>
+      </div>
+      
+      <Card className="w-full max-w-[800px] bg-white/90 backdrop-blur-sm shadow-2xl border-0">
+        <CardContent className="p-8">
+          {gameOver ? (
+            <div className="flex flex-col items-center justify-center w-full py-8">
+              <div className="text-4xl font-bold text-green-800 mb-4">🎉 Game Over!</div>
+              <div className="text-2xl text-teal-900 mb-2">Your Score: {score} / {totalRounds}</div>
+              <div className="text-lg text-teal-600 mb-6">
+                {score === totalRounds ? "Perfect! Amazing work!" : 
+                 score >= totalRounds * 0.8 ? "Great job!" : 
+                 score >= totalRounds * 0.6 ? "Good effort!" : "Keep practicing!"}
+              </div>
+              <Button 
+                onClick={handleRestart} 
+                className="bg-teal-500 hover:bg-teal-600 text-white font-bold px-8 py-4 text-lg"
+              >
+                Play Again
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="mb-6 flex flex-col items-center">
+                <div className="text-xl text-teal-900 font-semibold mb-4">
+                  Question {round} of {totalRounds}
+                </div>
+                
+                {/* English Word Display */}
+                <div className="bg-gradient-to-br from-green-100 to-green-200 rounded-xl p-6 mb-4 text-center shadow-lg">
+                  <div className="text-sm text-green-600 mb-1">Listen to the English word:</div>
+                  <div className="text-3xl font-bold text-green-800 mb-3">
+                    {items[correctIdx].english}
+                  </div>
+                  <Button
+                    onClick={handleReplayAudio}
+                    className="bg-green-500 hover:bg-green-600 text-white font-bold text-lg px-6 py-3"
+                    disabled={isPlayingTTS}
+                  >
+                    <Volume2 className={`mr-2 h-5 w-5 ${isPlayingTTS ? 'animate-pulse' : ''}`} />
+                    Hear Again
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Telugu Word Choices */}
+              <div className="text-center mb-4">
+                <div className="text-lg text-teal-700 font-semibold">Select the correct Telugu word:</div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {choices.map((itemIdx, idx) => (
+                  <Card
+                    key={idx}
+                    className={`p-6 flex items-center justify-center text-3xl md:text-4xl font-bold cursor-pointer transition-all duration-200 ${
+                      showResult && choices[idx] === correctIdx && showResult === "correct"
+                        ? "bg-green-200 border-green-500 border-4 scale-105"
+                        : showResult && idx === choices.findIndex(i => i === correctIdx) && showResult === "wrong"
+                        ? "bg-red-100 border-red-400 border-2"
+                        : "bg-white hover:bg-teal-50 border-2 border-teal-200 hover:border-teal-400"
+                    }`}
+                    onClick={() => handleCardClick(idx)}
+                  >
+                    <span className="text-teal-800">{items[itemIdx].telugu}</span>
+                  </Card>
+                ))}
+              </div>
+              
+              {showResult === "correct" && (
+                <div className="mt-6 text-center text-green-700 font-bold text-2xl animate-bounce">
+                  ✨ {currentMessage} ✨
+                </div>
+              )}
+              {showResult === "wrong" && (
+                <div className="mt-6 text-center text-red-600 font-bold text-xl">
+                  Try again! 🤔
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Confetti Animation */}
+      {showConfetti && (
+        <div className="fixed inset-0 pointer-events-none z-50">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-ping"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${1 + Math.random() * 2}s`
+              }}
+            >
+              <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+            </div>
+          ))}
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={`star-${i}`}
+              className="absolute animate-ping"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${1 + Math.random() * 2}s`
+              }}
+            >
+              <div className="w-2 h-2 bg-teal-400 transform rotate-45"></div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <audio ref={happyTuneRef} src={HAPPY_TUNE_AUDIO} preload="auto" />
+      <audio ref={buzzRef} src={BUZZ_AUDIO} preload="auto" />
+    </div>
+  )
+}
+
