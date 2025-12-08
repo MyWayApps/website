@@ -11,7 +11,7 @@ type GameType = "drag-baskets" | "select-even" | "select-odd"
 interface User {
   id: string
   name: string
-  email: string
+  email?: string
 }
 
 interface GameData {
@@ -212,7 +212,13 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
 
   if (currentMode === "menu") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-200 via-teal-300 to-teal-500 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-green-200 via-teal-300 to-teal-500 p-4 relative overflow-hidden">
+        {/* Decorative Character */}
+        <img 
+          src="/characters/zebra.png" 
+          alt="Zebra" 
+          className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+        />
         <div className="max-w-4xl mx-auto">
           {/* Header with Back to Home Button - Aligned with card */}
           <div className="flex items-center justify-between mb-6">
@@ -260,7 +266,13 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
 
   if (currentMode === "setup") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-300 via-teal-400 to-teal-500 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-green-300 via-teal-400 to-teal-500 p-4 relative overflow-hidden">
+        {/* Decorative Character */}
+        <img 
+          src="/characters/zebra.png" 
+          alt="Zebra" 
+          className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+        />
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -380,7 +392,13 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
 
   // PLAYING
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-300 via-teal-400 to-teal-500 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-300 via-teal-400 to-teal-500 p-4 relative overflow-hidden">
+      {/* Decorative Character */}
+      <img 
+        src="/characters/zebra.png" 
+        alt="Zebra" 
+        className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+      />
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

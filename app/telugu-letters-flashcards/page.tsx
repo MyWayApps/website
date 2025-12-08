@@ -70,11 +70,12 @@ export default function TeluguFlashCards() {
   // Auto-play audio when index changes
   useEffect(() => {
     if (letters.length === 0) return
-    console.log("Index changed to:", index, "Letter:", letters[index].letter)
+    if (isPlaying) return // Don't auto-play if already playing
+    
     // Small delay to ensure component is ready
     const timer = setTimeout(() => {
       playAudio()
-    }, 300)
+    }, 400)
     return () => clearTimeout(timer)
   }, [index, letters])
 
@@ -132,7 +133,13 @@ export default function TeluguFlashCards() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-yellow-200 to-amber-400">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-yellow-200 to-amber-400 relative overflow-hidden">
+      {/* Decorative Character */}
+      <img 
+        src="/characters/aligator.png" 
+        alt="Chick" 
+        className="absolute bottom-0 left-30 w-36 h-36 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+      />
       
       {/* Header - Aligned with rectangle */}
       <div className="w-1/2 min-w-[400px] mb-6 flex items-center justify-between">

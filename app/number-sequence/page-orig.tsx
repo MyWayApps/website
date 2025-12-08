@@ -7,7 +7,7 @@ import NumberSequenceGame from "./number-sequence-game"
 interface User {
   id: string
   name: string
-  email: string
+  email?: string
 }
 
 interface Application {

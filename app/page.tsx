@@ -12,7 +12,7 @@ import MainNavigationMenu from "@/components/main-navigation-menu"
 // Offline user type
 interface User {
   id: string
-  email: string
+  email?: string
   name: string
   age?: number
   grade?: string

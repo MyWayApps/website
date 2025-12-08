@@ -19,7 +19,7 @@ export default function TeluguLetters() {
       type: "vowels", 
       telugu: "అచ్చులు", 
       english: "Vowels",
-      description: "అ, ఆ, ఇ, ఈ, ఉ, ఊ, ఋ, ౠ, ఌ, ౡ, ఎ, ఏ, ఐ, ఒ, ఓ, ఔ, అం, అః",
+      description: "అ, ఆ, ఇ, ఈ...",
       note: "Note: ఉభయాక్షరమలు (ఁ ం ః)"
     },
     { 
@@ -31,7 +31,14 @@ export default function TeluguLetters() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-200 to-amber-400 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-200 to-amber-400 p-4 relative overflow-hidden">
+      {/* Decorative Character */}
+      <img 
+        src="/characters/peacock.png" 
+        alt="Peacock" 
+        className="absolute bottom-20 right-20 w-40 h-40 md:w-56 md:h-56 lg:w-64 lg:h-64 object-contain opacity-90 pointer-events-none z-10"
+      />
+      
       {/* Main Content */}
       <div className="flex flex-col items-center justify-center min-h-screen">
         {/* Back to Home Button */}

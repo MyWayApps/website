@@ -11,7 +11,7 @@ import { createUserInSupabase, updateUser } from "@/lib/database-supabase"
 
 interface UserType {
   id: string
-  email: string
+  email?: string
   name: string
   age?: number
   grade?: string

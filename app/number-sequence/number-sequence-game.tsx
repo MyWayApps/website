@@ -11,7 +11,7 @@ type Order = "ascending" | "descending"
 interface User {
   id: string
   name: string
-  email: string
+  email?: string
 }
 
 interface GameData {
@@ -214,7 +214,13 @@ export default function NumberSequenceGame({ onGameComplete, onBackToHome }: Num
 
   if (currentMode === "menu") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-300 via-indigo-400 to-purple-500 p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-300 via-indigo-400 to-purple-500 p-4 flex items-center justify-center relative overflow-hidden">
+        {/* Decorative Character */}
+        <img 
+          src="/characters/giraffe.png" 
+          alt="Giraffe" 
+          className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+        />
         <Card className="w-full max-w-4xl bg-white/90 backdrop-blur-sm shadow-2xl border-0">
           <CardContent className="p-8">
             <div className="text-center mb-8">
@@ -244,7 +250,13 @@ export default function NumberSequenceGame({ onGameComplete, onBackToHome }: Num
 
   if (currentMode === "setup") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-300 via-indigo-400 to-purple-500 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-300 via-indigo-400 to-purple-500 p-4 relative overflow-hidden">
+        {/* Decorative Character */}
+        <img 
+          src="/characters/giraffe.png" 
+          alt="Giraffe" 
+          className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+        />
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -355,7 +367,13 @@ export default function NumberSequenceGame({ onGameComplete, onBackToHome }: Num
   const isSequenceComplete = filledPositions.every((pos) => pos)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-300 via-indigo-400 to-purple-500 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-300 via-indigo-400 to-purple-500 p-4 relative overflow-hidden">
+      {/* Decorative Character */}
+      <img 
+        src="/characters/giraffe.png" 
+        alt="Giraffe" 
+        className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+      />
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

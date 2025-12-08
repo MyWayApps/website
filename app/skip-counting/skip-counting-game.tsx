@@ -12,7 +12,7 @@ type PlayableGameMode = Exclude<GameMode, "menu">
 interface User {
   id: string
   name: string
-  email: string
+  email?: string
 }
 
 interface GameData {
@@ -267,7 +267,13 @@ export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipC
 
   if (currentMode === "menu") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-yellow-200 via-amber-300 to-amber-400 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-200 via-amber-300 to-amber-400 p-4 relative overflow-hidden">
+        {/* Decorative Character */}
+        <img 
+          src="/characters/tiger.png" 
+          alt="Tiger" 
+          className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+        />
         <div className="max-w-4xl mx-auto">
           {/* Header with Back to Home Button - Aligned with card */}
           <div className="flex items-center justify-between mb-6">
@@ -332,7 +338,13 @@ export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipC
   const isGameComplete = currentIndex >= currentGame.sequence.length
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-200 via-amber-300 to-amber-400 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-200 via-amber-300 to-amber-400 p-4 relative overflow-hidden">
+      {/* Decorative Character */}
+      <img 
+        src="/characters/tiger.png" 
+        alt="Tiger" 
+        className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+      />
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

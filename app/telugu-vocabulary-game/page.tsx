@@ -187,7 +187,14 @@ export default function TeluguVocabularyGame() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-200 to-teal-500 p-4 flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-green-200 to-teal-500 p-4 flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Decorative Character */}
+      <img 
+        src="/characters/monkey-1.png" 
+        alt="Monkey" 
+        className="absolute bottom-0 right-0 w-40 h-40 md:w-56 md:h-56 lg:w-64 lg:h-64 object-contain opacity-90 pointer-events-none z-10"
+      />
+      
       {/* Header */}
       <div className="w-full max-w-[800px] flex items-center justify-between mb-6">
         <Button

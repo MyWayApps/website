@@ -7,7 +7,7 @@ import SkipCountingGame from "./skip-counting-game"
 interface User {
   id: string
   name: string
-  email: string
+  email?: string
 }
 
 interface Application {

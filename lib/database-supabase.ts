@@ -205,7 +205,7 @@ export async function findUserByEmail(email: string) {
   }, null)
 }
 
-export async function createUser(userData: { name: string; email: string; phone?: string; age?: number; grade?: string }) {
+export async function createUser(userData: { name: string; email?: string; phone?: string; age?: number; grade?: string }) {
   console.log("🔍 createUser called with:", JSON.stringify(userData))
   
   if (!supabase) {
@@ -282,12 +282,12 @@ export async function updateUser(
 }
 
 // Find or create user (combines find and create)
-export async function findOrCreateUser(userData: { name: string; email: string; age?: number; grade?: string }) {
+export async function findOrCreateUser(userData: { name: string; email?: string; age?: number; grade?: string }) {
   try {
     console.log("🔍 Finding or creating user:", userData.name)
 
-    // First try to find by email
-    let user = await findUserByEmail(userData.email)
+    // First try to find by email (only if email is provided)
+    let user = userData.email ? await findUserByEmail(userData.email) : null
 
     if (user) {
       console.log("✅ User found by email:", user.name)

@@ -47,7 +47,7 @@ export { supabase }
 
 export type User = {
   id: string
-  email: string
+  email?: string
   name: string
   phone?: string
   age?: number

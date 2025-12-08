@@ -12,7 +12,13 @@ export default function TeluguGunintaalu() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-200 to-indigo-400 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-200 to-indigo-400 p-4 relative overflow-hidden">
+      {/* Decorative Character */}
+      <img 
+        src="/characters/bird.png" 
+        alt="Bird" 
+        className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+      />
       {/* Main Content */}
       <div className="flex flex-col items-center justify-center">
         {/* Back to Home Button */}

@@ -13,6 +13,7 @@ export interface TeluguLetterWithWord extends TeluguLetter {
 }
 
 // అచ్చులు (Vowels)
+// Note: ఉభయాక్షరమలు (ఁ ం ః)
 export const teluguVowels: TeluguLetterWithWord[] = [
   { letter: "అ", transliteration: "a", audio: "telugu-a.mp3", word: "అమ్మ" },
   { letter: "ఆ", transliteration: "aa", audio: "telugu-aa.mp3", word: "ఆవు" },

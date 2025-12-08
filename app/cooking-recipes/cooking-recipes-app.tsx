@@ -12,7 +12,7 @@ type RecipeCategory = "indian" | "english"
 interface User {
   id: string
   name: string
-  email: string
+  email?: string
 }
 
 interface GameData {

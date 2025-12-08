@@ -132,7 +132,13 @@ export default function TeluguVocabularyFlashcards() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-200 to-teal-500 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-200 to-teal-500 p-4 relative overflow-hidden">
+      {/* Decorative Character */}
+      <img 
+        src="/characters/rabbit.png" 
+        alt="Rabbit" 
+        className="absolute bottom-0 left-0 w-36 h-36 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+      />
       
       {/* Header */}
       <div className="w-full max-w-[600px] mb-6 flex items-center justify-between">

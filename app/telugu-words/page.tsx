@@ -11,7 +11,13 @@ export default function TeluguWordsMain() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-200 to-pink-500 p-4 flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-purple-200 to-pink-500 p-4 flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Decorative Character */}
+      <img 
+        src="/characters/rabbit.png" 
+        alt="Rabbit" 
+        className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+      />
       {/* Header with Back Button */}
       <div className="w-1/2 min-w-[600px] max-w-[800px] mb-8">
         <Button

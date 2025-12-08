@@ -3,15 +3,8 @@
  * This works on all modern browsers without server-side dependencies
  */
 
-// Voice options to rotate through for variety
-const VOICE_SETTINGS = [
-  { rate: 0.8, pitch: 1.0 },
-  { rate: 0.75, pitch: 1.1 },
-  { rate: 0.85, pitch: 0.95 },
-  { rate: 0.7, pitch: 1.05 }
-]
-
-let voiceIndex = 0
+// Track if speech is currently in progress
+let isSpeaking = false
 
 /**
  * Get a Telugu voice if available, otherwise use default
@@ -58,69 +51,75 @@ function getTeluguVoice(): SpeechSynthesisVoice | null {
  * @param text - Telugu text to speak
  * @returns Promise that resolves when speech ends
  */
-export async function playTeluguTTS(text: string): Promise<void> {
-  return new Promise((resolve, reject) => {
+export function playTeluguTTS(text: string): Promise<void> {
+  return new Promise((resolve) => {
     if (typeof window === 'undefined') {
-      reject(new Error('Window not available'))
+      resolve()
       return
     }
     
     if (!('speechSynthesis' in window)) {
-      reject(new Error('Speech synthesis not supported'))
+      resolve()
       return
     }
     
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel()
-    
-    const utterance = new SpeechSynthesisUtterance(text)
-    
-    // Get voice settings with rotation for variety
-    const settings = VOICE_SETTINGS[voiceIndex % VOICE_SETTINGS.length]
-    voiceIndex++
-    
-    // Try to get a Telugu voice
-    const voice = getTeluguVoice()
-    if (voice) {
-      utterance.voice = voice
+    // If already speaking, cancel and wait a bit
+    if (window.speechSynthesis.speaking || isSpeaking) {
+      window.speechSynthesis.cancel()
+      isSpeaking = false
     }
     
-    // Set speech parameters
-    utterance.rate = settings.rate
-    utterance.pitch = settings.pitch
-    utterance.volume = 1.0
-    
-    // If no Telugu voice, set lang to Telugu anyway (browser will do its best)
-    utterance.lang = 'te-IN'
-    
-    utterance.onend = () => {
-      resolve()
-    }
-    
-    utterance.onerror = (event) => {
-      console.error('Speech synthesis error:', event)
-      reject(new Error(`Speech synthesis failed: ${event.error}`))
-    }
-    
-    // Workaround for Chrome bug where voices aren't loaded immediately
-    if (window.speechSynthesis.getVoices().length === 0) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        const voice = getTeluguVoice()
-        if (voice) {
-          utterance.voice = voice
+    // Small delay to ensure cancel is processed
+    setTimeout(() => {
+      const utterance = new SpeechSynthesisUtterance(text)
+      
+      // Try to get a Telugu voice
+      const voice = getTeluguVoice()
+      if (voice) {
+        utterance.voice = voice
+      }
+      
+      // Set speech parameters
+      utterance.rate = 0.8
+      utterance.pitch = 1.0
+      utterance.volume = 1.0
+      utterance.lang = 'te-IN'
+      
+      isSpeaking = true
+      
+      utterance.onend = () => {
+        isSpeaking = false
+        resolve()
+      }
+      
+      utterance.onerror = (event) => {
+        isSpeaking = false
+        // Don't log "interrupted" errors - they're expected when navigating quickly
+        if (event.error !== 'interrupted') {
+          console.error('Speech synthesis error:', event.error)
         }
+        resolve() // Resolve anyway so app doesn't hang
+      }
+      
+      // Speak
+      if (window.speechSynthesis.getVoices().length === 0) {
+        // Voices not loaded yet
+        window.speechSynthesis.onvoiceschanged = () => {
+          const newVoice = getTeluguVoice()
+          if (newVoice) {
+            utterance.voice = newVoice
+          }
+          window.speechSynthesis.speak(utterance)
+        }
+      } else {
         window.speechSynthesis.speak(utterance)
       }
-    } else {
-      window.speechSynthesis.speak(utterance)
-    }
+    }, 50) // 50ms delay after cancel
   })
 }
 
 /**
- * Legacy function for compatibility - now just calls playTeluguTTS
- * @param text - Telugu text to convert to speech
- * @returns Promise that resolves to empty string (no URL needed with Web Speech API)
+ * Legacy function for compatibility
  */
 export async function generateTeluguTTS(text: string): Promise<string> {
   await playTeluguTTS(text)

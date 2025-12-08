@@ -111,8 +111,8 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
         console.log("✅ User found, logging in:", user.name)
         onUserLogin(user)
       } else {
-        console.log("❌ User not found:", formData.name)
-        setError("User not found. Would you like to register?")
+        console.log("❌ User not found, redirecting to register:", formData.name)
+        setMode("signup") // Redirect to register page
       }
     } catch (error) {
       console.error("❌ Login error:", error)
@@ -122,7 +122,8 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
         console.log("✅ User found in local storage:", localUser.name)
         onUserLogin(localUser)
       } else {
-        setError("User not found. Would you like to register?")
+        console.log("❌ User not found, redirecting to register:", formData.name)
+        setMode("signup") // Redirect to register page
       }
     } finally {
       setLoading(false)
@@ -130,14 +131,9 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
   }
 
   const handleSignup = async () => {
-    // Validate mandatory fields
+    // Validate mandatory fields - only Name is required
     if (!formData.name.trim()) {
       setError("Please enter your name")
-      return
-    }
-
-    if (!formData.email.trim()) {
-      setError("Please enter your email")
       return
     }
 
@@ -151,7 +147,7 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
       const newUser: UserType = {
         id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: formData.name,
-        email: formData.email,
+        email: formData.email || undefined,
         phone: formData.phone || undefined,
         age: formData.age ? parseInt(formData.age) : undefined,
         grade: formData.grade || undefined,
@@ -167,7 +163,7 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
         console.log("📤 Attempting to save user to Supabase...")
         createdUser = await createUserInSupabase({
           name: formData.name,
-          email: formData.email,
+          email: formData.email || undefined,
           phone: formData.phone || undefined,
           age: formData.age ? parseInt(formData.age) : undefined,
           grade: formData.grade || undefined,
@@ -395,8 +391,8 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
           )}
 
           <div>
-            <Label htmlFor="name" className="text-gray-600 font-medium">
-              Name:
+            <Label htmlFor="name" className="text-gray-600 font-bold">
+              Name<span className="text-red-500 ml-1">*</span>
             </Label>
             <Input
               id="name"
@@ -412,8 +408,8 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
           </div>
 
           <div>
-            <Label htmlFor="phone" className="text-gray-600 font-medium">
-              Phone number (optional):
+            <Label htmlFor="phone" className="text-gray-600">
+              Phone number
             </Label>
             <Input
               id="phone"
@@ -427,8 +423,8 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
           </div>
 
           <div>
-            <Label htmlFor="email" className="text-gray-600 font-medium">
-              Email id:
+            <Label htmlFor="email" className="text-gray-600">
+              Email id
             </Label>
             <Input
               id="email"
@@ -442,8 +438,8 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
           </div>
 
           <div>
-            <Label htmlFor="age" className="text-gray-600 font-medium">
-              Age (optional):
+            <Label htmlFor="age" className="text-gray-600">
+              Age
             </Label>
             <Input
               id="age"
@@ -457,8 +453,8 @@ export function UserAuth({ onUserLogin }: UserAuthProps) {
           </div>
 
           <div>
-            <Label htmlFor="grade" className="text-gray-600 font-medium">
-              Grade (optional):
+            <Label htmlFor="grade" className="text-gray-600">
+              Grade
             </Label>
             <Input
               id="grade"

@@ -269,11 +269,12 @@ export const vocabularyCategories: VocabularyCategory[] = [
     nameEnglish: "Seasons",
     nameTelugu: "ఋతువులు",
     items: [
-      { english: "Summer", telugu: "వేసవి" },
-      { english: "Winter", telugu: "శీతాకాలం" },
-      { english: "Rainy Season", telugu: "వర్షాకాలం" },
+      { english: "Spring", telugu: "వసంత ఋతువు (వసంతం)" },
+      { english: "Summer", telugu: "గ్రీష్మ ఋతువు (వేసవి)" },
+      { english: "Rainy Season", telugu: "వర్ష ఋతువు (వర్షాకాలం)" },
       { english: "Autumn", telugu: "శరదృతువు" },
-      { english: "Spring", telugu: "వసంతం" },
+      { english: "Early Winter", telugu: "హేమంత ఋతువు (శీతాకాలం ప్రారంభం)" },
+      { english: "Winter", telugu: "శిశిర ఋతువు (శీతాకాలం)" }
     ]
   },
 ]

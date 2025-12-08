@@ -27,7 +27,7 @@ type LetterCount = 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
 interface User {
   id: string
   name: string
-  email: string
+  email?: string
 }
 
 interface GameData {
@@ -424,7 +424,13 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
 
   if (currentMode === "menu") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-indigo-300 to-indigo-400 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-indigo-300 to-indigo-400 p-4 relative overflow-hidden">
+        {/* Decorative Character */}
+        <img 
+          src="/characters/monkey-1.png" 
+          alt="Monkey" 
+          className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+        />
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -473,7 +479,13 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
 
   if (currentMode === "word-selection") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-indigo-300 to-indigo-400 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-indigo-300 to-indigo-400 p-4 relative overflow-hidden">
+        {/* Decorative Character */}
+        <img 
+          src="/characters/monkey-1.png" 
+          alt="Monkey" 
+          className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+        />
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -755,7 +767,13 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
 
   if (currentMode === "game-selection") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-indigo-300 to-indigo-400 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-indigo-300 to-indigo-400 p-4 relative overflow-hidden">
+        {/* Decorative Character */}
+        <img 
+          src="/characters/monkey-1.png" 
+          alt="Monkey" 
+          className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+        />
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -964,7 +982,13 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
 
     // Placeholder for other games
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-indigo-300 to-indigo-400 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-indigo-300 to-indigo-400 p-4 relative overflow-hidden">
+        {/* Decorative Character */}
+        <img 
+          src="/characters/monkey-1.png" 
+          alt="Monkey" 
+          className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
+        />
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
