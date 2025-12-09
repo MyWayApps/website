@@ -1,0 +1,41 @@
+# Telugu TTS Implementation Notes
+
+## Audio Strategy (December 2024)
+
+We use **pre-generated static audio files** for Telugu TTS instead of browser-based TTS.
+
+### Why?
+- Browser TTS is unreliable for Telugu (wrong voices, missing support)
+- Pre-generated files work 100% on all browsers
+- Fast, free, cacheable
+
+### How?
+1. Build time: Generate MP3 files for all Telugu text
+2. Runtime: Serve static files, fallback to server TTS
+
+### Files:
+- Client: `lib/telugu-tts.ts` (hash-based lookup)
+- Server: `app/api/tts/route.ts` (fallback)
+- Generator: `scripts/generate-telugu-audio.js`
+- Audio: `public/audio/telugu/*.mp3`
+
+### Usage:
+```typescript
+import { playTeluguTTS } from '@/lib/telugu-tts'
+await playTeluguTTS('అమ్మ')
+```
+
+### Setup:
+```bash
+# Install dependencies
+sudo apt-get install espeak ffmpeg  # or brew on macOS
+
+# Generate audio
+npm run generate-audio
+
+# Test
+npm run dev
+```
+
+See `TELUGU-TTS-SOLUTION.md` for complete documentation.
+

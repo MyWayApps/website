@@ -1,10 +1,23 @@
 /**
- * Robust Telugu TTS using Server-Side Audio
- * Always uses server-side TTS for reliable Telugu audio across all browsers
+ * Robust Telugu TTS using Pre-Generated Static Audio Files
+ * Uses hashed filenames for instant, reliable playback across all browsers
+ * Falls back to server-side TTS for dynamic text
  */
 
 // Track current audio element to prevent overlapping playback
 let _currentAudio: HTMLAudioElement | null = null
+
+/**
+ * Calculate SHA-256 hash of text (matches server-side hash)
+ */
+async function hashText(text: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(text.trim())
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  return hashHex
+}
 
 /**
  * Fetch audio blob from server
@@ -166,14 +179,13 @@ async function playAudioFromBlobUrl(url: string): Promise<void> {
 }
 
 /**
- * Main Telugu TTS function using Server-Side Audio (Reliable)
+ * Main Telugu TTS function using Pre-Generated Static Files
  * @param text - Telugu text to speak
  * @returns Promise that resolves when audio playback ends
  */
 export async function playTeluguTTS(text: string): Promise<void> {
   console.log('[TTS] ========================================')
   console.log('[TTS] playTeluguTTS called with text:', text)
-  console.log('[TTS] Using SERVER-SIDE TTS (reliable across all browsers)')
   console.log('[TTS] ========================================')
   
   if (typeof window === 'undefined') {
@@ -187,15 +199,35 @@ export async function playTeluguTTS(text: string): Promise<void> {
   }
 
   try {
-    // Build server TTS URL with encoded text
-    const url = `/api/tts?lang=te&text=${encodeURIComponent(text)}`
-    console.log('[TTS] Server endpoint:', url)
+    // Calculate hash of text
+    const hash = await hashText(text)
+    console.log('[TTS] Text hash:', hash)
     
-    // Play audio from server (with blob URL for better performance)
-    await playAudioFromBlobUrl(url)
+    // Try pre-generated static file first
+    const staticUrl = `/audio/telugu/${hash}.mp3`
+    console.log('[TTS] Checking for pre-generated audio:', staticUrl)
+    
+    // Check if static file exists
+    const checkResponse = await fetch(staticUrl, { method: 'HEAD' })
+    
+    if (checkResponse.ok) {
+      console.log('[TTS] ✓ Using pre-generated static audio (fast!)')
+      await playAudioFromBlobUrl(staticUrl)
+      console.log('[TTS] ========================================')
+      console.log('[TTS] ✓ TTS completed successfully (static)')
+      console.log('[TTS] ========================================')
+      return
+    }
+    
+    // Fallback to server-side TTS for dynamic text
+    console.log('[TTS] ⚠ Pre-generated audio not found, using server fallback')
+    const serverUrl = `/api/tts?lang=te&text=${encodeURIComponent(text)}`
+    console.log('[TTS] Server endpoint:', serverUrl)
+    
+    await playAudioFromBlobUrl(serverUrl)
     
     console.log('[TTS] ========================================')
-    console.log('[TTS] ✓ TTS completed successfully')
+    console.log('[TTS] ✓ TTS completed successfully (server)')
     console.log('[TTS] ========================================')
   } catch (err) {
     console.error('[TTS] ========================================')

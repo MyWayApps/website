@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate-audio": "node scripts/generate-telugu-audio.js",
+    "prebuild": "npm run generate-audio"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.0.2",
