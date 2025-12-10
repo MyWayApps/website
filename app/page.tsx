@@ -153,6 +153,17 @@ const fallbackApplications = [
       created_at: new Date().toISOString(),
     },
   {
+    id: "15",
+    name: "Telugu Satakamalu",
+    category: "Education",
+    subcategory: "Telugu",
+    description: "Read classic Telugu Satakamalu with meanings",
+    icon_emoji: "📜",
+    color_scheme: "from-amber-200 to-orange-400",
+    route: "/telugu-satakamalu",
+    created_at: new Date().toISOString(),
+  },
+  {
     id: "9",
     name: "English Phonics",
     category: "Education",
