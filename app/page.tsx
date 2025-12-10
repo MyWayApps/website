@@ -152,6 +152,17 @@ const fallbackApplications = [
       route: "/telugu-vottulu",
       created_at: new Date().toISOString(),
     },
+    {
+      id: "17",
+      name: "Telugu Comprehension",
+      category: "Education",
+      subcategory: "Telugu",
+      description: "Read Telugu stories and test your understanding!",
+      icon_emoji: "📖",
+      color_scheme: "from-cyan-200 to-blue-400",
+      route: "/telugu-comprehension",
+      created_at: new Date().toISOString(),
+    },
   {
     id: "15",
     name: "Telugu Satakamalu",

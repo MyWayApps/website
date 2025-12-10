@@ -179,6 +179,22 @@ function extractTeluguText() {
       arrayNames: []
     },
     {
+      file: 'telugu-riddles-data.ts',
+      patterns: [
+        /letter:\s*["']([^"']+)["']/g,
+        /word:\s*["']([^"']+)["']/g,
+      ],
+      arrayNames: []
+    },
+    {
+      file: 'telugu-comprehension-data.ts',
+      patterns: [
+        /letter:\s*["']([^"']+)["']/g,
+        /word:\s*["']([^"']+)["']/g,
+      ],
+      arrayNames: []
+    },
+    {
       file: 'telugu-vottulu-data.ts',
       patterns: [
         /letter:\s*["']([^"']+)["']/g,
