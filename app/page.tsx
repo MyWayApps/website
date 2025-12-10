@@ -141,6 +141,17 @@ const fallbackApplications = [
       route: "/telugu-vocabulary",
       created_at: new Date().toISOString(),
     },
+    {
+      id: "14",
+      name: "Telugu Vottulu",
+      category: "Education",
+      subcategory: "Telugu",
+      description: "Learn Telugu subscripts (Vottulu) with flashcards and games",
+      icon_emoji: "వ",
+      color_scheme: "from-pink-200 to-pink-500",
+      route: "/telugu-vottulu",
+      created_at: new Date().toISOString(),
+    },
   {
     id: "9",
     name: "English Phonics",

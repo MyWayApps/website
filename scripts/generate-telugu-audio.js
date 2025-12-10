@@ -78,46 +78,130 @@ function generateAudio(text, outputPath) {
 }
 
 /**
- * Extract all Telugu text from vocabulary data
+ * Generic function to extract Telugu text from a file using regex patterns
+ * @param {string} filePath - Path to the file
+ * @param {Array<RegExp>} patterns - Array of regex patterns to match Telugu text
+ * @returns {Set<string>} Set of extracted Telugu texts
+ */
+function extractTextFromFile(filePath, patterns) {
+  const texts = new Set();
+  
+  if (!fs.existsSync(filePath)) {
+    return texts;
+  }
+  
+  const content = fs.readFileSync(filePath, 'utf8');
+  
+  patterns.forEach(pattern => {
+    const matches = content.matchAll(pattern);
+    for (const match of matches) {
+      const text = match[1];
+      // Only add if it contains Telugu characters (Unicode range: 0C00-0C7F)
+      if (/[\u0C00-\u0C7F]/.test(text)) {
+        texts.add(text);
+      }
+    }
+  });
+  
+  return texts;
+}
+
+/**
+ * Extract Telugu text from array literals (e.g., ["word1", "word2"])
+ * @param {string} filePath - Path to the file
+ * @param {Array<string>} arrayNames - Array of variable/const names to look for
+ * @returns {Set<string>} Set of extracted Telugu texts
+ */
+function extractTextFromArrays(filePath, arrayNames) {
+  const texts = new Set();
+  
+  if (!fs.existsSync(filePath)) {
+    return texts;
+  }
+  
+  const content = fs.readFileSync(filePath, 'utf8');
+  
+  arrayNames.forEach(arrayName => {
+    // Match array declarations like: const arrayName = ["word1", "word2", ...]
+    const arrayRegex = new RegExp(
+      `(?:const|export const|let|var)\\s+${arrayName}\\s*=\\s*\\[([^\\]]+)\\]`,
+      'gs'
+    );
+    const match = content.match(arrayRegex);
+    
+    if (match) {
+      // Extract all quoted strings from the array
+      const stringMatches = match[1].matchAll(/["']([^"']+)["']/g);
+      for (const stringMatch of stringMatches) {
+        const text = stringMatch[1];
+        // Only add if it contains Telugu characters
+        if (/[\u0C00-\u0C7F]/.test(text)) {
+          texts.add(text);
+        }
+      }
+    }
+  });
+  
+  return texts;
+}
+
+/**
+ * Extract all Telugu text from all data files
  */
 function extractTeluguText() {
   const texts = new Set();
+  const libDir = path.join(__dirname, '../lib');
   
-  // Read vocabulary data
-  const vocabPath = path.join(__dirname, '../lib/telugu-vocabulary-data.ts');
-  if (fs.existsSync(vocabPath)) {
-    const content = fs.readFileSync(vocabPath, 'utf8');
-    
-    // Extract telugu: "..." patterns
-    const matches = content.matchAll(/telugu:\s*["']([^"']+)["']/g);
-    for (const match of matches) {
-      texts.add(match[1]);
+  // Define file patterns: { filePath, patterns, arrayNames }
+  const fileConfigs = [
+    {
+      file: 'telugu-vocabulary-data.ts',
+      patterns: [
+        /telugu:\s*["']([^"']+)["']/g,
+        /nameTelugu:\s*["']([^"']+)["']/g,
+      ],
+      arrayNames: []
+    },
+    {
+      file: 'telugu-letters-data.ts',
+      patterns: [
+        /letter:\s*["']([^"']+)["']/g,
+        /word:\s*["']([^"']+)["']/g,
+      ],
+      arrayNames: []
+    },
+    {
+      file: 'telugu-vottulu-data.ts',
+      patterns: [
+        /letter:\s*["']([^"']+)["']/g,
+        /vottu:\s*["']([^"']+)["']/g,
+        /description:\s*["']([^"']+)["']/g,
+        /telugu:\s*["']([^"']+)["']/g,
+      ],
+      arrayNames: [
+        'doubleConsonantWords',
+        'conjunctWords',
+        'twoSubscriptsWords'
+      ]
     }
-    
-    // Extract nameTelugu: "..." patterns
-    const nameMatches = content.matchAll(/nameTelugu:\s*["']([^"']+)["']/g);
-    for (const match of nameMatches) {
-      texts.add(match[1]);
-    }
-  }
+  ];
   
-  // Read letters data
-  const lettersPath = path.join(__dirname, '../lib/telugu-letters-data.ts');
-  if (fs.existsSync(lettersPath)) {
-    const content = fs.readFileSync(lettersPath, 'utf8');
+  // Process each file configuration
+  fileConfigs.forEach(config => {
+    const filePath = path.join(libDir, config.file);
     
-    // Extract letter: "..." patterns
-    const letterMatches = content.matchAll(/letter:\s*["']([^"']+)["']/g);
-    for (const match of letterMatches) {
-      texts.add(match[1]);
+    // Extract using regex patterns
+    if (config.patterns && config.patterns.length > 0) {
+      const extracted = extractTextFromFile(filePath, config.patterns);
+      extracted.forEach(text => texts.add(text));
     }
     
-    // Extract word: "..." patterns
-    const wordMatches = content.matchAll(/word:\s*["']([^"']+)["']/g);
-    for (const match of wordMatches) {
-      texts.add(match[1]);
+    // Extract from array literals
+    if (config.arrayNames && config.arrayNames.length > 0) {
+      const extracted = extractTextFromArrays(filePath, config.arrayNames);
+      extracted.forEach(text => texts.add(text));
     }
-  }
+  });
   
   // Add common UI texts (you can expand this list)
   const commonTexts = [
