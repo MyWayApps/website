@@ -164,6 +164,17 @@ const fallbackApplications = [
     created_at: new Date().toISOString(),
   },
   {
+    id: "16",
+    name: "Telugu Podupu Kathalu",
+    category: "Education",
+    subcategory: "Telugu",
+    description: "Test your brain with fun Telugu riddles!",
+    icon_emoji: "🧩",
+    color_scheme: "from-orange-200 to-red-400",
+    route: "/telugu-riddles",
+    created_at: new Date().toISOString(),
+  },
+  {
     id: "9",
     name: "English Phonics",
     category: "Education",

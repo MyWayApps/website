@@ -171,6 +171,14 @@ function extractTeluguText() {
       arrayNames: []
     },
     {
+      file: 'telugu-words-by-length-data.ts',
+      patterns: [
+        /letter:\s*["']([^"']+)["']/g,
+        /word:\s*["']([^"']+)["']/g,
+      ],
+      arrayNames: []
+    },
+    {
       file: 'telugu-vottulu-data.ts',
       patterns: [
         /letter:\s*["']([^"']+)["']/g,
