@@ -79,7 +79,7 @@ export default function FindWordGame() {
     
     try {
       setIsPlayingTTS(true)
-      await playTeluguTTS(word, false)
+      await playTeluguTTS(word)
     } catch (error) {
       console.error("TTS play failed:", error)
     } finally {

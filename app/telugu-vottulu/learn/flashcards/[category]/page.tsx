@@ -30,7 +30,7 @@ export default function VottuluFlashcards() {
     try {
       setPlayingIndex(index)
       const textToSpeak = type === 'letter' ? items[index].letter : items[index].vottu
-      await playTeluguTTS(textToSpeak, false)
+      await playTeluguTTS(textToSpeak)
     } catch (error) {
       console.error("TTS play failed:", error)
     } finally {
