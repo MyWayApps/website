@@ -1,13 +1,8 @@
 // Shared correct/wrong feedback sounds for all Number Sequence topics — rotates
-// between several clips/tones each call instead of always playing the same one.
+// between several clips each call instead of always playing the same one.
 
-const CORRECT_CLIPS = ["/audio/happy_tune.mp3", "/audio/good_job.mp3", "/audio/bhesh.mp3", "/audio/pandalu-bandi.mp3"]
-
-const WRONG_TONES: number[][] = [
-  [220, 196, 174.61],
-  [246.94, 196],
-  [261.63, 220, 185],
-]
+const CORRECT_CLIPS = Array.from({ length: 10 }, (_, i) => `/audio/feedback/success${i + 1}.mp3`)
+const WRONG_CLIPS = Array.from({ length: 10 }, (_, i) => `/audio/feedback/failure${i + 1}.mp3`)
 
 const SUCCESS_MELODIES: number[][] = [
   [523.25, 659.25, 783.99, 1046.5],
@@ -47,28 +42,27 @@ function playTone(frequencies: number[], type: OscillatorType, gainPeak = 0.25) 
   })
 }
 
+const MAX_CLIP_MS = 3000
+
 function playClip(src: string) {
   try {
-    new Audio(src).play().catch(() => {})
+    const audio = new Audio(src)
+    audio.play().catch(() => {})
+    setTimeout(() => {
+      audio.pause()
+      audio.currentTime = 0
+    }, MAX_CLIP_MS)
   } catch {
     // ignore
   }
 }
 
 export function playCorrectSound() {
-  if (Math.random() < 0.7) {
-    playClip(pick(CORRECT_CLIPS))
-  } else {
-    playTone([523.25, 659.25, 783.99], "sine")
-  }
+  playClip(pick(CORRECT_CLIPS))
 }
 
 export function playWrongSound() {
-  if (Math.random() < 0.4) {
-    playClip("/audio/buzz_audio.mp3")
-  } else {
-    playTone(pick(WRONG_TONES), "sawtooth", 0.2)
-  }
+  playClip(pick(WRONG_CLIPS))
 }
 
 export function playSuccessMelody() {

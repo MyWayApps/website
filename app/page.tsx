@@ -5,9 +5,8 @@ import { UserAuth } from "@/components/user-auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
-import { Mail, Phone, MapPin, LogOut, Loader2 } from "lucide-react"
+import { Mail, Phone, MapPin, LogOut, LogIn, X, Loader2 } from "lucide-react"
 import MainNavigationMenu from "@/components/main-navigation-menu"
-import { LanguageSwitcher } from "@/components/language-switcher"
 import { AnimatedMascots } from "@/components/animated-mascots"
 import { useLanguage } from "@/lib/language-context"
 
@@ -55,7 +54,7 @@ const fallbackApplications: Application[] = [
   // ── Math ──────────────────────────────────────────────────────────────────
   {
     id: "1", name: "Number Sequence", category: "Education", subcategory: "Math",
-    description: "Practice forward and backward counting",
+    description: "Counting, before/after, place value, comparisons & more",
     icon_emoji: "📈", color_scheme: "from-blue-200 to-indigo-400",
     route: "/number-sequence", created_at: new Date().toISOString(),
   },
@@ -195,6 +194,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [showContact, setShowContact] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const [pendingApp, setPendingApp] = useState<Application | null>(null)
   const router = useRouter()
 
   useEffect(() => { loadApplications(); restoreUser() }, [])
@@ -245,6 +246,11 @@ export default function HomePage() {
       setUser(loggedInUser)
       if (typeof window !== "undefined")
         localStorage.setItem("mywayapps_current_user", JSON.stringify(loggedInUser))
+      setShowLoginModal(false)
+      if (pendingApp) {
+        launchApp(loggedInUser, pendingApp)
+        setPendingApp(null)
+      }
     } catch (error) { console.error("❌ Error during login:", error); setError("Login failed.") }
   }
 
@@ -256,14 +262,23 @@ export default function HomePage() {
     } catch (error) { console.error("❌ Error during logout:", error) }
   }
 
-  const handlePlayApp = (app: Application) => {
+  const launchApp = (forUser: User, app: Application) => {
     try {
-      if (user && typeof window !== "undefined") {
-        localStorage.setItem("mywayapps_current_user", JSON.stringify(user))
+      if (typeof window !== "undefined") {
+        localStorage.setItem("mywayapps_current_user", JSON.stringify(forUser))
         localStorage.setItem("mywayapps_current_app", JSON.stringify(app))
       }
       router.push(app.route)
     } catch (error) { console.error("❌ Error launching app:", error); setError("Failed to launch app.") }
+  }
+
+  const handlePlayApp = (app: Application) => {
+    if (!user) {
+      setPendingApp(app)
+      setShowLoginModal(true)
+      return
+    }
+    launchApp(user, app)
   }
 
   const handleUpdateUser = (userData: Partial<User> | User) => {
@@ -304,36 +319,7 @@ export default function HomePage() {
     )
   }
 
-  // ── Login screen ──────────────────────────────────────────────────────────
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-400 via-purple-500 to-pink-500 flex items-center justify-center p-4 relative overflow-hidden">
-        <AnimatedMascots />
-        {/* Language switcher on login screen */}
-        <div className="absolute top-4 right-4 z-20">
-          <LanguageSwitcher />
-        </div>
-        <div className="w-full max-w-md z-10">
-          {/* Friendly hero above the login card */}
-          <div className="text-center mb-6">
-            <div className="text-6xl mb-3" style={{ animation: "bounce 1s infinite" }}>🎓</div>
-            <h1 className="text-3xl font-black text-white drop-shadow-lg">{t("app.welcome")}</h1>
-            <p className="text-white/90 font-semibold mt-1">{t("app.subtitle")}</p>
-          </div>
-          {error && (
-            <Card className="mb-4 bg-red-50 border-red-200">
-              <CardContent className="p-4">
-                <p className="text-red-800 text-sm">{error}</p>
-              </CardContent>
-            </Card>
-          )}
-          <UserAuth onUserLogin={handleUserLogin} />
-        </div>
-      </div>
-    )
-  }
-
-  // ── Main dashboard ────────────────────────────────────────────────────────
+  // ── Main dashboard (catalogue is visible whether or not a visitor is logged in) ──
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-400 via-purple-500 to-pink-500 relative">
       <AnimatedMascots />
@@ -355,7 +341,7 @@ export default function HomePage() {
               <div>
                 <div className="text-xs text-white/70 font-semibold uppercase tracking-wider">MyWayApps</div>
                 <div className="text-lg font-black text-white leading-tight drop-shadow">
-                  {t("app.welcomeBack")}, {user.name}!
+                  {user ? `${t("app.welcomeBack")}, ${user.name}!` : t("app.welcome")}
                 </div>
               </div>
             </div>
@@ -370,14 +356,25 @@ export default function HomePage() {
                 <Mail className="mr-2 h-4 w-4" />
                 {t("app.contact")}
               </Button>
-              <Button
-                onClick={handleLogout}
-                className="bg-white/20 hover:bg-white/35 text-white border-2 border-white/40 rounded-2xl font-bold backdrop-blur-sm transition-all hover:scale-105"
-                variant="outline"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                {t("app.logout")}
-              </Button>
+              {user ? (
+                <Button
+                  onClick={handleLogout}
+                  className="bg-white/20 hover:bg-white/35 text-white border-2 border-white/40 rounded-2xl font-bold backdrop-blur-sm transition-all hover:scale-105"
+                  variant="outline"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {t("app.logout")}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => { setPendingApp(null); setShowLoginModal(true) }}
+                  className="bg-white/20 hover:bg-white/35 text-white border-2 border-white/40 rounded-2xl font-bold backdrop-blur-sm transition-all hover:scale-105"
+                  variant="outline"
+                >
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Login
+                </Button>
+              )}
             </div>
           </div>
 
@@ -432,6 +429,36 @@ export default function HomePage() {
         </div>
         </div>
       </div>
+
+      {/* Login modal — shown on demand (Login button, or Play on a locked game) */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md relative">
+            <button
+              onClick={() => { setShowLoginModal(false); setPendingApp(null) }}
+              aria-label="Close"
+              className="absolute -top-4 -right-4 z-10 bg-white rounded-full p-2 shadow-lg hover:scale-110 transition-transform"
+            >
+              <X className="h-5 w-5 text-gray-700" />
+            </button>
+            <div className="text-center mb-4">
+              <div className="text-5xl mb-2" style={{ animation: "bounce 1s infinite" }}>🎓</div>
+              <h1 className="text-2xl font-black text-white drop-shadow-lg">
+                {pendingApp ? `Log in to play ${pendingApp.name}` : t("app.welcome")}
+              </h1>
+              <p className="text-white/90 font-semibold mt-1">{t("app.subtitle")}</p>
+            </div>
+            {error && (
+              <Card className="mb-4 bg-red-50 border-red-200">
+                <CardContent className="p-4">
+                  <p className="text-red-800 text-sm">{error}</p>
+                </CardContent>
+              </Card>
+            )}
+            <UserAuth onUserLogin={handleUserLogin} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

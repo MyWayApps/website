@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Star, RotateCcw, ArrowLeft, Trophy } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -31,6 +32,18 @@ export function QuizResults({
   const percent = maxScore > 0 ? score / maxScore : 0
   const stars = starsEarned(percent)
   const isPerfect = percent === 1
+
+  const AUTO_BACK_SECONDS = 5
+  const [secondsLeft, setSecondsLeft] = useState(AUTO_BACK_SECONDS)
+
+  useEffect(() => {
+    if (secondsLeft <= 0) {
+      onBackToTopics()
+      return
+    }
+    const timer = setTimeout(() => setSecondsLeft((s) => s - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [secondsLeft, onBackToTopics])
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${gradientClass} p-4 flex items-center justify-center relative overflow-hidden`}>
@@ -94,6 +107,8 @@ export function QuizResults({
               Back to Topics
             </Button>
           </div>
+
+          <p className="mt-4 text-sm text-gray-500">Returning to topics in {secondsLeft}s…</p>
         </CardContent>
       </Card>
     </div>

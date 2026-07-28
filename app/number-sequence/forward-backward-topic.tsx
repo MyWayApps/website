@@ -20,8 +20,8 @@ export default function ForwardBackwardTopic({ onRoundComplete, onBackToTopics }
   const [score, setScore] = useState(0)
   const [sequence, setSequence] = useState<number[]>([])
   const [availableNumbers, setAvailableNumbers] = useState<number[]>([])
-  const [filledPositions, setFilledPositions] = useState<boolean[]>([false, false, false, false, false])
-  const [currentPosition, setCurrentPosition] = useState(0)
+  const [filledPositions, setFilledPositions] = useState<boolean[]>([true, false, false, false, false])
+  const [currentPosition, setCurrentPosition] = useState(1)
   const [showFeedback, setShowFeedback] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
   const [roundStartTime, setRoundStartTime] = useState(0)
@@ -30,8 +30,8 @@ export default function ForwardBackwardTopic({ onRoundComplete, onBackToTopics }
     const q = generateSequenceQuestion(order, maxNumber)
     setSequence(q.sequence)
     setAvailableNumbers(q.availableNumbers)
-    setFilledPositions([false, false, false, false, false])
-    setCurrentPosition(0)
+    setFilledPositions([true, false, false, false, false])
+    setCurrentPosition(1)
   }
 
   const handleStartRound = () => {

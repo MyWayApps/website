@@ -38,7 +38,8 @@ export function generateSequenceQuestion(order: Order, maxNumber: number): Seque
     }
   }
 
-  return { sequence, availableNumbers: shuffle([...sequence, ...distractors]) }
+  // sequence[0] is pre-filled in the grid, so it isn't offered as a choice.
+  return { sequence, availableNumbers: shuffle([...sequence.slice(1), ...distractors]) }
 }
 
 // ─── Counting shapes/objects ────────────────────────────────────────────────

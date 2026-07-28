@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star, Circle, Square, Triangle } from "lucide-react"
@@ -25,11 +25,16 @@ export default function CountingShapesTopic({ onRoundComplete, onBackToTopics }:
   const [isCorrect, setIsCorrect] = useState(false)
   const [phase, setPhase] = useState<"playing" | "results">("playing")
   const [roundStartTime, setRoundStartTime] = useState(0)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setRoundStartTime(Date.now())
     setQuestion(generateShapeQuestion(0))
   }, [])
+
+  useEffect(() => {
+    if (question?.answerFormat === "typed") inputRef.current?.focus()
+  }, [question])
 
   const submitAnswer = (givenCount: number) => {
     if (isAnswered || !question) return
@@ -132,9 +137,11 @@ export default function CountingShapesTopic({ onRoundComplete, onBackToTopics }:
             {question.answerFormat === "typed" ? (
               <div className="flex flex-col items-center gap-4 mb-6">
                 <input
+                  ref={inputRef}
                   type="number"
                   value={typedValue}
                   onChange={(e) => setTypedValue(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && typedValue !== "" && submitAnswer(Number(typedValue))}
                   disabled={isAnswered}
                   className="w-24 h-16 rounded-xl border-4 border-emerald-300 text-3xl text-center font-bold text-emerald-900 focus:outline-none focus:border-emerald-500"
                 />

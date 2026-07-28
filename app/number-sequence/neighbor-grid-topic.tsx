@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star } from "lucide-react"
@@ -37,11 +37,16 @@ export default function NeighborGridTopic({ onRoundComplete, onBackToTopics }: T
   })
   const [phase, setPhase] = useState<"playing" | "results">("playing")
   const [roundStartTime, setRoundStartTime] = useState(0)
+  const firstInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setRoundStartTime(Date.now())
     setQuestion(generateNeighborGridQuestion(0))
   }, [])
+
+  useEffect(() => {
+    firstInputRef.current?.focus()
+  }, [question])
 
   const allFilled = CELL_KEYS.every((key) => values[key] !== "")
 
@@ -141,9 +146,11 @@ export default function NeighborGridTopic({ onRoundComplete, onBackToTopics }: T
             <div className="grid grid-cols-3 grid-rows-3 gap-3 w-fit mx-auto mb-8">
               <div />
               <input
+                ref={firstInputRef}
                 type="number"
                 value={values.above}
                 onChange={(e) => setValues({ ...values, above: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && allFilled && submitAnswer()}
                 disabled={isAnswered}
                 className={`col-start-2 row-start-1 ${inputClass("above")}`}
               />
@@ -153,6 +160,7 @@ export default function NeighborGridTopic({ onRoundComplete, onBackToTopics }: T
                 type="number"
                 value={values.left}
                 onChange={(e) => setValues({ ...values, left: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && allFilled && submitAnswer()}
                 disabled={isAnswered}
                 className={`col-start-1 row-start-2 ${inputClass("left")}`}
               />
@@ -163,6 +171,7 @@ export default function NeighborGridTopic({ onRoundComplete, onBackToTopics }: T
                 type="number"
                 value={values.right}
                 onChange={(e) => setValues({ ...values, right: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && allFilled && submitAnswer()}
                 disabled={isAnswered}
                 className={`col-start-3 row-start-2 ${inputClass("right")}`}
               />
@@ -172,6 +181,7 @@ export default function NeighborGridTopic({ onRoundComplete, onBackToTopics }: T
                 type="number"
                 value={values.below}
                 onChange={(e) => setValues({ ...values, below: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && allFilled && submitAnswer()}
                 disabled={isAnswered}
                 className={`col-start-2 row-start-3 ${inputClass("below")}`}
               />

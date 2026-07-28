@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star } from "lucide-react"
@@ -22,11 +22,16 @@ export default function NumberNeighborsTopic({ onRoundComplete, onBackToTopics }
   const [afterCorrect, setAfterCorrect] = useState(false)
   const [phase, setPhase] = useState<"playing" | "results">("playing")
   const [roundStartTime, setRoundStartTime] = useState(0)
+  const firstInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setRoundStartTime(Date.now())
     setQuestion(generateBeforeAfterQuestion(0))
   }, [])
+
+  useEffect(() => {
+    firstInputRef.current?.focus()
+  }, [question])
 
   const isBoth = question?.direction === "both"
   const canSubmit = isBoth ? beforeValue !== "" && afterValue !== "" : typedValue !== ""
@@ -145,11 +150,12 @@ export default function NumberNeighborsTopic({ onRoundComplete, onBackToTopics }
                 <p className="text-xl font-bold text-gray-700 mb-6">Fill in both blanks:</p>
                 <div className="flex items-center justify-center gap-4 mb-6">
                   <input
+                    ref={firstInputRef}
                     type="number"
                     value={beforeValue}
                     onChange={(e) => setBeforeValue(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && canSubmit && submitAnswer()}
                     disabled={isAnswered}
-                    autoFocus
                     className={blankClass(beforeCorrect)}
                   />
                   <div className="w-20 h-20 rounded-2xl border-4 border-orange-500 bg-orange-100 flex items-center justify-center text-3xl font-black text-orange-900">
@@ -159,6 +165,7 @@ export default function NumberNeighborsTopic({ onRoundComplete, onBackToTopics }
                     type="number"
                     value={afterValue}
                     onChange={(e) => setAfterValue(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && canSubmit && submitAnswer()}
                     disabled={isAnswered}
                     className={blankClass(afterCorrect)}
                   />
@@ -169,12 +176,12 @@ export default function NumberNeighborsTopic({ onRoundComplete, onBackToTopics }
                 <p className="text-3xl font-bold text-gray-800 mb-8">{question.prompt}</p>
                 <div className="flex flex-col items-center gap-4 mb-6">
                   <input
+                    ref={firstInputRef}
                     type="number"
                     value={typedValue}
                     onChange={(e) => setTypedValue(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && submitAnswer()}
                     disabled={isAnswered}
-                    autoFocus
                     className="w-32 h-20 rounded-2xl border-4 border-orange-300 text-4xl text-center font-bold text-orange-900 focus:outline-none focus:border-orange-500"
                   />
                 </div>

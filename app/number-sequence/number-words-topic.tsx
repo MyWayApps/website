@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star } from "lucide-react"
@@ -18,11 +18,16 @@ export default function NumberWordsTopic({ onRoundComplete, onBackToTopics }: To
   const [isCorrect, setIsCorrect] = useState(false)
   const [phase, setPhase] = useState<"playing" | "results">("playing")
   const [roundStartTime, setRoundStartTime] = useState(0)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setRoundStartTime(Date.now())
     setQuestion(generateNumberWordsQuestion(0))
   }, [])
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [question])
 
   const submitAnswer = () => {
     if (isAnswered || !question || typedValue === "") return
@@ -121,6 +126,7 @@ export default function NumberWordsTopic({ onRoundComplete, onBackToTopics }: To
 
             <div className="flex flex-col items-center gap-4 mb-6">
               <input
+                ref={inputRef}
                 type={isNumberToWord ? "text" : "number"}
                 value={typedValue}
                 onChange={(e) => setTypedValue(e.target.value)}
