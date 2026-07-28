@@ -127,3 +127,33 @@
   }
 }
 
+/* Floating emoji animation used by AnimatedMascots */
+@keyframes float-up {
+  0%   { transform: translateY(0)      rotate(0deg);   opacity: 0;   }
+  10%  { opacity: 0.75; }
+  90%  { opacity: 0.45; }
+  100% { transform: translateY(-110vh) rotate(360deg); opacity: 0;   }
+}
+.animate-float {
+  animation: float-up linear infinite;
+}
+
+/* Child-friendly rounded font as default body font */
+body {
+  font-family: var(--font-nunito), var(--font-poppins), system-ui, sans-serif;
+}
+
+/* Smooth entrance for dropdowns (used by LanguageSwitcher) */
+@keyframes fade-in-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+  animation: fade-in-down 0.15s ease-out;
+}
+
+/* Larger tap targets for kids on mobile */
+@media (max-width: 640px) {
+  button { min-height: 44px; }
+}
+

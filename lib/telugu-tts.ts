@@ -1,11 +1,73 @@
 /**
- * Robust Telugu TTS using Pre-Generated Static Audio Files
- * Uses hashed filenames for instant, reliable playback across all browsers
- * Falls back to server-side TTS for dynamic text
+ * Telugu TTS: browser neural voice first, pre-generated espeak audio as backup.
+ * Falls back to server-side TTS for dynamic text with no pre-generated file.
  */
 
 // Track current audio element to prevent overlapping playback
 let _currentAudio: HTMLAudioElement | null = null
+
+// ─── Browser neural voice (preferred) ──────────────────────────────────────
+// Chrome and Safari on many devices ship a native te-IN voice that sounds
+// far more human than the espeak-generated files below. When one is
+// available we use it; otherwise we fall through to the espeak pipeline
+// untouched.
+
+const TELUGU_QUALITY_KEYWORDS = [
+  "compact", "standard",
+  "enhanced", "premium", "natural", "neural", "wavenet", "google",
+]
+
+function scoreTeluguVoice(voice: SpeechSynthesisVoice): number {
+  const name = voice.name.toLowerCase()
+  let score = 0
+  TELUGU_QUALITY_KEYWORDS.forEach((kw, i) => {
+    if (name.includes(kw)) score = i
+  })
+  if (!voice.localService) score -= 1
+  return score
+}
+
+function getVoices(): Promise<SpeechSynthesisVoice[]> {
+  return new Promise((resolve) => {
+    const existing = window.speechSynthesis.getVoices()
+    if (existing.length) {
+      resolve(existing)
+      return
+    }
+    const onVoicesChanged = () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged)
+      resolve(window.speechSynthesis.getVoices())
+    }
+    window.speechSynthesis.addEventListener('voiceschanged', onVoicesChanged)
+    // Some browsers never fire voiceschanged when there are simply no voices
+    setTimeout(() => {
+      window.speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged)
+      resolve(window.speechSynthesis.getVoices())
+    }, 500)
+  })
+}
+
+async function getBestTeluguVoice(): Promise<SpeechSynthesisVoice | null> {
+  const voices = await getVoices()
+  const candidates = voices.filter((v) => v.lang.toLowerCase().startsWith('te'))
+  if (!candidates.length) return null
+  return candidates.sort((a, b) => scoreTeluguVoice(b) - scoreTeluguVoice(a))[0]
+}
+
+function speakWithBrowserVoice(text: string, voice: SpeechSynthesisVoice): Promise<void> {
+  return new Promise((resolve, reject) => {
+    window.speechSynthesis.cancel()
+    const utt = new SpeechSynthesisUtterance(text)
+    utt.voice = voice
+    utt.lang = voice.lang
+    utt.rate = 0.88
+    utt.pitch = 1.05
+    utt.volume = 1
+    utt.onend = () => resolve()
+    utt.onerror = (e) => reject(new Error(e.error || 'speechSynthesis error'))
+    window.speechSynthesis.speak(utt)
+  })
+}
 
 /**
  * Calculate SHA-256 hash of text (matches server-side hash)
@@ -86,6 +148,13 @@ async function playAudioFromBlobUrl(url: string): Promise<void> {
   // Cleanup helper function
   const cleanup = () => {
     console.log('[TTS] Running cleanup...')
+    // Detach handlers first — clearing audio.src below fires another
+    // 'error' event, which would otherwise re-enter this function forever.
+    audio.onended = null
+    audio.onerror = null
+    audio.onloadstart = null
+    audio.oncanplay = null
+    audio.onplaying = null
     try { audio.pause() } catch {}
     audio.src = ''
     if (audio.parentElement) {
@@ -196,6 +265,22 @@ export async function playTeluguTTS(text: string): Promise<void> {
   if (!text || text.trim().length === 0) {
     console.log('[TTS] ✗ Empty text, skipping TTS')
     return
+  }
+
+  // Try the browser's own neural Telugu voice first
+  if (window.speechSynthesis) {
+    try {
+      const voice = await getBestTeluguVoice()
+      if (voice) {
+        console.log('[TTS] ✓ Using browser neural voice:', voice.name, voice.lang)
+        await speakWithBrowserVoice(text, voice)
+        console.log('[TTS] ✓ TTS completed successfully (browser voice)')
+        return
+      }
+      console.log('[TTS] No Telugu browser voice on this device, falling back to pre-generated audio')
+    } catch (err) {
+      console.warn('[TTS] Browser voice playback failed, falling back to pre-generated audio:', err)
+    }
   }
 
   try {

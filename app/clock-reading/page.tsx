@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import ClockReadingGame from "./clock-reading-game"
-import { findOrCreateUser, getApplicationByName, saveUserScore, testConnection } from "@/lib/database-supabase"
+import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
 import type { User, Application } from "@/lib/database-supabase"
+import { saveGameScore } from "@/lib/scoring"
 
 interface GameData {
   mode: string
@@ -77,63 +78,18 @@ export default function ClockReadingPage() {
       return
     }
 
-    try {
-      if (isConnected) {
-        const scoreData = {
-          user_id: user.id,
-          application_id: app.id,
-          score,
-          max_score: maxScore,
-          completion_time: gameData.completionTime
-            ? Math.floor((Date.now() - gameData.completionTime) / 1000)
-            : undefined,
-          difficulty_level: gameData.gameType,
-          game_data: {
-            ...gameData,
-            mode: gameData.mode,
-            gameType: gameData.gameType,
-            completionTime: gameData.completionTime,
-          } as any, // Type assertion to resolve the mismatch
-        }
-
-        const savedScore = await saveUserScore(scoreData)
-        if (savedScore) {
-          console.log("✅ Score saved to Supabase!")
-        } else {
-          console.error("❌ Failed to save score to Supabase")
-          saveScoreLocally(score, maxScore, gameData)
-        }
-      } else {
-        saveScoreLocally(score, maxScore, gameData)
-      }
-    } catch (error) {
-      console.error("❌ Error saving game completion:", error)
-      saveScoreLocally(score, maxScore, gameData)
-    }
-  }
-
-  const saveScoreLocally = (score: number, maxScore: number, gameData: GameData) => {
-    try {
-      const scoreData = {
-        user_id: user?.id,
-        application_id: app?.id,
-        score,
-        max_score: maxScore,
-        completion_time: gameData.completionTime
-          ? Math.floor((Date.now() - gameData.completionTime) / 1000)
-          : undefined,
-        difficulty_level: gameData.gameType,
-        game_data: gameData,
-        created_at: new Date().toISOString(),
-      }
-
-      const existingScores = JSON.parse(localStorage.getItem("mywayapps_offline_scores") || "[]")
-      existingScores.push(scoreData)
-      localStorage.setItem("mywayapps_offline_scores", JSON.stringify(existingScores))
-      console.log("💾 Score saved locally:", scoreData)
-    } catch (error) {
-      console.error("❌ Error saving score locally:", error)
-    }
+    await saveGameScore({
+      userId: user.id,
+      applicationId: app.id,
+      score,
+      maxScore,
+      completionTimeSec: gameData.completionTime
+        ? Math.floor((Date.now() - gameData.completionTime) / 1000)
+        : undefined,
+      difficultyLevel: gameData.gameType,
+      gameData: { ...gameData },
+      isConnected,
+    })
   }
 
   return (
