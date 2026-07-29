@@ -64,10 +64,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Validate language (support Telugu primarily)
-    if (lang !== 'te' && lang !== 'hi' && lang !== 'en') {
+    // Validate language
+    if (lang !== 'te' && lang !== 'hi' && lang !== 'kn' && lang !== 'en') {
       return NextResponse.json(
-        { error: 'Unsupported language. Use te, hi, or en.' },
+        { error: 'Unsupported language. Use te, hi, kn, or en.' },
         { status: 400 }
       )
     }
@@ -91,7 +91,8 @@ export async function GET(request: NextRequest) {
       await execAsync('which espeak')
       const voice = lang === 'te' ? getRandomVoice() : lang
       console.log(`Using voice: ${voice} for text: ${text.substring(0, 50)}...`)
-      ttsCommand = `espeak -v ${voice} "${text.replace(/"/g, '\\"')}" -w "${tempWavPath}"`
+      // Default espeak speed (175 wpm) reads too fast for kids — slow it down.
+      ttsCommand = `espeak -v ${voice} -s 140 "${text.replace(/"/g, '\\"')}" -w "${tempWavPath}"`
     } catch {
       // Fallback to festival or other TTS
       try {

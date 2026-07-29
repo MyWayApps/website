@@ -1,6 +1,6 @@
 "use client"
 
-import { Calculator, Globe, LifeBuoy, Gamepad2, Puzzle, LucideIcon } from "lucide-react"
+import { Calculator, Globe, LifeBuoy, Gamepad2, Puzzle, Microscope, Landmark, LucideIcon } from "lucide-react"
 
 interface MenuItem {
   label: string
@@ -43,6 +43,18 @@ const menuItems: MenuItem[] = [
     icon: Globe,
     href: "#english",
     color: "text-purple-500"
+  },
+  {
+    label: "Science",
+    icon: Microscope,
+    href: "#science",
+    color: "text-emerald-600"
+  },
+  {
+    label: "Social Studies",
+    icon: Landmark,
+    href: "#social-studies",
+    color: "text-indigo-500"
   },
   {
     label: "Life Skills",

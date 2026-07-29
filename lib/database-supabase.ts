@@ -111,6 +111,28 @@ const fallbackApplications = [
     route: "/cooking-recipes",
     created_at: new Date().toISOString(),
   },
+  {
+    id: "9",
+    name: "Hindi Vocabulary",
+    category: "Education",
+    subcategory: "Hindi",
+    description: "Learn Hindi vocabulary - Days, Colours, Animals & more!",
+    icon_emoji: "📚",
+    color_scheme: "from-orange-200 to-red-500",
+    route: "/hindi-vocabulary",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "10",
+    name: "Kannada Vocabulary",
+    category: "Education",
+    subcategory: "Kannada",
+    description: "Learn Kannada vocabulary - Days, Colours, Animals & more!",
+    icon_emoji: "📚",
+    color_scheme: "from-yellow-200 to-amber-500",
+    route: "/kannada-vocabulary",
+    created_at: new Date().toISOString(),
+  },
 ]
 
 // Safe wrapper for database operations
