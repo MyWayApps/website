@@ -113,9 +113,13 @@ export function useTTS() {
     []
   )
 
-  const speak = useCallback(
-    (text: string, overrideLang?: Language) => {
-      if (!isSupported) return
+  // Shared implementation — resolves/rejects when speech actually finishes,
+  // so callers that need to sequence multiple lines (e.g. reading a passage
+  // sentence by sentence) can await it. `speak()` below just fires this and
+  // ignores the promise, for the many call-sites that don't need to wait.
+  const speakInternal = useCallback(
+    (text: string, overrideLang?: Language): Promise<void> => {
+      if (!isSupported) return Promise.resolve()
 
       // Cancel any ongoing speech (browser and server-fallback alike)
       window.speechSynthesis.cancel()
@@ -131,35 +135,53 @@ export function useTTS() {
       if (!voice) {
         // No real voice on this device for the target language — use the
         // server-side espeak fallback instead of a wrong-language voice.
-        playViaServerTTS(
-          text,
-          lang,
-          () => setIsSpeaking(true),
-          () => setIsSpeaking(false)
-        )
-        return
+        return new Promise((resolve) => {
+          playViaServerTTS(
+            text,
+            lang,
+            () => setIsSpeaking(true),
+            () => { setIsSpeaking(false); resolve() }
+          )
+        })
       }
 
-      const utt = new SpeechSynthesisUtterance(text)
-      utt.voice = voice
-      utt.lang = voice.lang
+      return new Promise((resolve) => {
+        const utt = new SpeechSynthesisUtterance(text)
+        utt.voice = voice
+        utt.lang = voice.lang
 
-      // Tuned for clarity with children: slightly slower, moderate pitch
-      utt.rate = 0.88
-      utt.pitch = 1.05
-      utt.volume = 1
+        // Tuned for clarity with children: slightly slower, moderate pitch
+        utt.rate = 0.88
+        utt.pitch = 1.05
+        utt.volume = 1
 
-      utt.onstart = () => setIsSpeaking(true)
-      utt.onend = () => setIsSpeaking(false)
-      utt.onerror = (e) => {
-        console.warn(`TTS failed for lang="${lang}" voice="${voice.name}":`, e.error)
-        setIsSpeaking(false)
-      }
+        utt.onstart = () => setIsSpeaking(true)
+        utt.onend = () => { setIsSpeaking(false); resolve() }
+        utt.onerror = (e) => {
+          console.warn(`TTS failed for lang="${lang}" voice="${voice.name}":`, e.error)
+          setIsSpeaking(false)
+          resolve()
+        }
 
-      utteranceRef.current = utt
-      window.speechSynthesis.speak(utt)
+        utteranceRef.current = utt
+        window.speechSynthesis.speak(utt)
+      })
     },
     [isSupported, language, getMatchedVoice]
+  )
+
+  const speak = useCallback(
+    (text: string, overrideLang?: Language) => {
+      void speakInternal(text, overrideLang)
+    },
+    [speakInternal]
+  )
+
+  // Same as speak(), but resolves once playback actually ends — for callers
+  // that need to read multiple lines in sequence (e.g. a story passage).
+  const speakAsync = useCallback(
+    (text: string, overrideLang?: Language): Promise<void> => speakInternal(text, overrideLang),
+    [speakInternal]
   )
 
   const stop = useCallback(() => {
@@ -184,5 +206,5 @@ export function useTTS() {
     [language]
   )
 
-  return { speak, stop, isSpeaking, isSupported, getAvailableVoices }
+  return { speak, speakAsync, stop, isSpeaking, isSupported, getAvailableVoices }
 }

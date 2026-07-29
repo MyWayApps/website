@@ -144,6 +144,12 @@ const fallbackApplications: Application[] = [
     icon_emoji: "📚", color_scheme: "from-orange-200 to-red-500",
     route: "/hindi-vocabulary", created_at: new Date().toISOString(),
   },
+  {
+    id: "hi-3", name: "Hindi Comprehension", category: "Education", subcategory: "Hindi",
+    description: "Read Hindi stories and test your understanding!",
+    icon_emoji: "📖", color_scheme: "from-orange-200 to-red-400",
+    route: "/hindi-comprehension", created_at: new Date().toISOString(),
+  },
   // ── NEW: Kannada ──────────────────────────────────────────────────────────
   {
     id: "kn-1", name: "Kannada Letters", category: "Education", subcategory: "Kannada",
@@ -156,6 +162,12 @@ const fallbackApplications: Application[] = [
     description: "Learn Kannada vocabulary - Days, Colours, Animals & more!",
     icon_emoji: "📚", color_scheme: "from-yellow-200 to-amber-500",
     route: "/kannada-vocabulary", created_at: new Date().toISOString(),
+  },
+  {
+    id: "kn-3", name: "Kannada Comprehension", category: "Education", subcategory: "Kannada",
+    description: "Read Kannada stories and test your understanding!",
+    icon_emoji: "📖", color_scheme: "from-yellow-200 to-amber-400",
+    route: "/kannada-comprehension", created_at: new Date().toISOString(),
   },
   // ── English ───────────────────────────────────────────────────────────────
   {
