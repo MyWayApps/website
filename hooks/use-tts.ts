@@ -31,6 +31,36 @@ const LANG_LOCALES: Record<Language, string[]> = {
   kn: ["kn-IN", "kn"],
 }
 
+// ─── Server TTS fallback (espeak via /api/tts) ───────────────────────────────
+// Used when the browser has no voice at all for the target language — common
+// for Kannada, whose OS/browser voice support is far patchier than Hindi's.
+// Mirrors the same /api/tts endpoint lib/telugu-tts.ts already relies on.
+
+let _fallbackAudio: HTMLAudioElement | null = null
+
+function playViaServerTTS(text: string, lang: Language, onStart: () => void, onEnd: () => void): void {
+  if (_fallbackAudio) {
+    try { _fallbackAudio.pause() } catch {}
+    _fallbackAudio = null
+  }
+
+  const url = `/api/tts?lang=${lang}&text=${encodeURIComponent(text)}`
+  const audio = new Audio(url)
+  _fallbackAudio = audio
+
+  audio.onplaying = onStart
+  audio.onended = onEnd
+  audio.onerror = () => {
+    console.warn(`Server TTS failed for lang="${lang}"`)
+    onEnd()
+  }
+
+  audio.play().catch((err) => {
+    console.warn(`Server TTS playback blocked for lang="${lang}":`, err)
+    onEnd()
+  })
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useTTS() {
@@ -53,14 +83,16 @@ export function useTTS() {
     return () => window.speechSynthesis.removeEventListener("voiceschanged", load)
   }, [])
 
-  const getBestVoice = useCallback(
+  // Only returns a voice that genuinely speaks the requested language — no
+  // generic-default fallback here, so callers can tell "no real voice for
+  // this language" apart from "found one" and fall back to server TTS instead.
+  const getMatchedVoice = useCallback(
     (lang: Language): SpeechSynthesisVoice | null => {
       const voices = voicesRef.current
       if (!voices.length) return null
 
       const preferredLocales = LANG_LOCALES[lang]
 
-      // Try each preferred locale in order, pick highest-scored voice within it
       for (const locale of preferredLocales) {
         const candidates = voices.filter((v) =>
           v.lang.toLowerCase().startsWith(locale.toLowerCase())
@@ -70,15 +102,13 @@ export function useTTS() {
         }
       }
 
-      // Fallback: any voice with the right base language code
       const baseLang = preferredLocales[0].split("-")[0]
       const fallbacks = voices.filter((v) => v.lang.toLowerCase().startsWith(baseLang))
       if (fallbacks.length) {
         return fallbacks.sort((a, b) => scoreVoice(b) - scoreVoice(a))[0]
       }
 
-      // Last resort: default browser voice
-      return voices.find((v) => v.default) ?? voices[0] ?? null
+      return null
     },
     []
   )
@@ -87,16 +117,32 @@ export function useTTS() {
     (text: string, overrideLang?: Language) => {
       if (!isSupported) return
 
-      // Cancel any ongoing speech
+      // Cancel any ongoing speech (browser and server-fallback alike)
       window.speechSynthesis.cancel()
+      if (_fallbackAudio) {
+        try { _fallbackAudio.pause() } catch {}
+        _fallbackAudio = null
+      }
       setIsSpeaking(false)
 
       const lang = overrideLang ?? language
-      const voice = getBestVoice(lang)
+      const voice = getMatchedVoice(lang)
+
+      if (!voice) {
+        // No real voice on this device for the target language — use the
+        // server-side espeak fallback instead of a wrong-language voice.
+        playViaServerTTS(
+          text,
+          lang,
+          () => setIsSpeaking(true),
+          () => setIsSpeaking(false)
+        )
+        return
+      }
 
       const utt = new SpeechSynthesisUtterance(text)
-      if (voice) utt.voice = voice
-      utt.lang = LANG_LOCALES[lang][0]
+      utt.voice = voice
+      utt.lang = voice.lang
 
       // Tuned for clarity with children: slightly slower, moderate pitch
       utt.rate = 0.88
@@ -105,17 +151,24 @@ export function useTTS() {
 
       utt.onstart = () => setIsSpeaking(true)
       utt.onend = () => setIsSpeaking(false)
-      utt.onerror = () => setIsSpeaking(false)
+      utt.onerror = (e) => {
+        console.warn(`TTS failed for lang="${lang}" voice="${voice.name}":`, e.error)
+        setIsSpeaking(false)
+      }
 
       utteranceRef.current = utt
       window.speechSynthesis.speak(utt)
     },
-    [isSupported, language, getBestVoice]
+    [isSupported, language, getMatchedVoice]
   )
 
   const stop = useCallback(() => {
     if (!isSupported) return
     window.speechSynthesis.cancel()
+    if (_fallbackAudio) {
+      try { _fallbackAudio.pause() } catch {}
+      _fallbackAudio = null
+    }
     setIsSpeaking(false)
   }, [isSupported])
 

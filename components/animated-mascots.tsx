@@ -85,6 +85,40 @@ export function BouncingEmoji({ emoji, size = "text-4xl" }: { emoji: string; siz
   )
 }
 
+// ── Talking mascot (image bounces/wiggles while audio is playing) ──────────
+// No lip-sync art needed — just an image + a boolean. Pair with a TTS hook's
+// `isSpeaking` state so the character visibly "talks" in sync with the audio.
+
+interface TalkingMascotProps {
+  src: string
+  alt: string
+  isSpeaking: boolean
+  className?: string
+}
+
+export function TalkingMascot({ src, alt, isSpeaking, className = "" }: TalkingMascotProps) {
+  return (
+    <>
+      <img
+        src={src}
+        alt={alt}
+        className={`${className} ${isSpeaking ? "talking-mascot-img" : ""}`}
+      />
+      <style jsx>{`
+        .talking-mascot-img {
+          animation: talk-bounce 0.4s ease-in-out infinite;
+        }
+        @keyframes talk-bounce {
+          0%, 100% { transform: translateY(0) scale(1) rotate(0deg); }
+          25%      { transform: translateY(-8px) scale(1.05) rotate(-3deg); }
+          50%      { transform: translateY(0) scale(1.09) rotate(0deg); }
+          75%      { transform: translateY(-5px) scale(1.05) rotate(3deg); }
+        }
+      `}</style>
+    </>
+  )
+}
+
 // ── Wiggle on hover ──────────────────────────────────────────────────────────
 
 export function WiggleEmoji({ emoji, size = "text-4xl" }: { emoji: string; size?: string }) {

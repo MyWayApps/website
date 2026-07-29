@@ -76,6 +76,12 @@ const fallbackApplications: Application[] = [
     icon_emoji: "⏩", color_scheme: "from-yellow-200 to-amber-400",
     route: "/skip-counting", created_at: new Date().toISOString(),
   },
+  {
+    id: "math-2", name: "Math Videos", category: "Education", subcategory: "Math",
+    description: "Watch and learn double-digit addition & subtraction",
+    icon_emoji: "🎬", color_scheme: "from-sky-300 to-indigo-500",
+    route: "/math-videos", created_at: new Date().toISOString(),
+  },
   // ── Telugu ────────────────────────────────────────────────────────────────
   {
     id: "5", name: "Telugu Letters", category: "Education", subcategory: "Telugu",
@@ -132,12 +138,24 @@ const fallbackApplications: Application[] = [
     icon_emoji: "अ", color_scheme: "from-orange-200 to-red-400",
     route: "/hindi-letters", created_at: new Date().toISOString(),
   },
+  {
+    id: "hi-2", name: "Hindi Vocabulary", category: "Education", subcategory: "Hindi",
+    description: "Learn Hindi vocabulary - Days, Colours, Animals & more!",
+    icon_emoji: "📚", color_scheme: "from-orange-200 to-red-500",
+    route: "/hindi-vocabulary", created_at: new Date().toISOString(),
+  },
   // ── NEW: Kannada ──────────────────────────────────────────────────────────
   {
     id: "kn-1", name: "Kannada Letters", category: "Education", subcategory: "Kannada",
     description: "Learn Kannada alphabet (ವರ್ಣಮಾಲೆ) with flashcards and games",
     icon_emoji: "ಅ", color_scheme: "from-yellow-200 to-amber-500",
     route: "/kannada-letters", created_at: new Date().toISOString(),
+  },
+  {
+    id: "kn-2", name: "Kannada Vocabulary", category: "Education", subcategory: "Kannada",
+    description: "Learn Kannada vocabulary - Days, Colours, Animals & more!",
+    icon_emoji: "📚", color_scheme: "from-yellow-200 to-amber-500",
+    route: "/kannada-vocabulary", created_at: new Date().toISOString(),
   },
   // ── English ───────────────────────────────────────────────────────────────
   {
@@ -152,6 +170,26 @@ const fallbackApplications: Application[] = [
     icon_emoji: "✨", color_scheme: "from-blue-200 to-indigo-400",
     route: "/spelling-game-suite", created_at: new Date().toISOString(),
   },
+  {
+    id: "en-2", name: "English Grammar", category: "Education", subcategory: "English",
+    description: "Watch and learn nouns, verbs, adjectives & more",
+    icon_emoji: "🎬", color_scheme: "from-purple-200 to-pink-500",
+    route: "/english-grammar", created_at: new Date().toISOString(),
+  },
+  // ── Science ───────────────────────────────────────────────────────────────
+  {
+    id: "sci-1", name: "Science", category: "Education", subcategory: "Science",
+    description: "Watch and learn about plants, animals & living things",
+    icon_emoji: "🔬", color_scheme: "from-emerald-300 to-green-600",
+    route: "/science", created_at: new Date().toISOString(),
+  },
+  // ── Social Studies ────────────────────────────────────────────────────────
+  {
+    id: "ss-1", name: "Social Studies", category: "Education", subcategory: "Social Studies",
+    description: "Learn about India's symbols, festivals & famous people",
+    icon_emoji: "🏛️", color_scheme: "from-indigo-300 to-violet-600",
+    route: "/social-studies", created_at: new Date().toISOString(),
+  },
   // ── Life Skills ───────────────────────────────────────────────────────────
   {
     id: "11", name: "Cooking Recipes", category: "Education", subcategory: "Life Skills",
@@ -162,7 +200,7 @@ const fallbackApplications: Application[] = [
   // ── Puzzles ───────────────────────────────────────────────────────────────
   {
     id: "9p", name: "Shape Puzzle", category: "Puzzles", subcategory: "Geometry",
-    description: "Identify and match different shapes",
+    description: "Watch and learn solid & plane shapes",
     icon_emoji: "🔺", color_scheme: "from-green-200 to-teal-500",
     route: "/shape-puzzle", created_at: new Date().toISOString(),
   },
