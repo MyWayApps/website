@@ -1,7 +1,5 @@
 "use client"
 
-import { usePathname } from "next/navigation"
-import Link from "next/link"
 import { Calculator, Globe, LifeBuoy, Gamepad2, Puzzle, LucideIcon } from "lucide-react"
 
 interface MenuItem {
@@ -9,7 +7,7 @@ interface MenuItem {
   icon: LucideIcon | string
   href: string
   color: string
-  isTelugu?: boolean
+  isTextIcon?: boolean
 }
 
 const menuItems: MenuItem[] = [
@@ -24,7 +22,21 @@ const menuItems: MenuItem[] = [
     icon: "అ",
     href: "#telugu",
     color: "text-green-500",
-    isTelugu: true
+    isTextIcon: true
+  },
+  {
+    label: "Hindi",
+    icon: "अ",
+    href: "#hindi",
+    color: "text-orange-500",
+    isTextIcon: true
+  },
+  {
+    label: "Kannada",
+    icon: "ಅ",
+    href: "#kannada",
+    color: "text-amber-600",
+    isTextIcon: true
   },
   {
     label: "English",
@@ -53,8 +65,6 @@ const menuItems: MenuItem[] = [
 ]
 
 export default function MainNavigationMenu() {
-  const pathname = usePathname()
-
   const handleCategoryClick = (href: string) => {
     // Try to find element by the href
     const element = document.querySelector(href)
@@ -72,38 +82,36 @@ export default function MainNavigationMenu() {
   }
 
   return (
-    <nav className="w-full bg-gradient-to-r from-blue-200 via-blue-300 to-blue-200 backdrop-blur-sm shadow-lg border-b-2 border-blue-400 mb-6 sticky top-0 z-50" style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}>
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="flex items-center justify-center gap-6 flex-wrap">
-          {menuItems.map((item) => {
-            const isTelugu = item.isTelugu || false
-            const isIconString = typeof item.icon === 'string'
-            const Icon = isIconString ? null : (item.icon as LucideIcon)
-            const teluguIcon = isIconString ? (item.icon as string) : null
-            
-            return (
-              <button
-                key={item.href}
-                onClick={() => handleCategoryClick(item.href)}
-                className={`
-                  px-6 py-3 rounded-lg transition-all duration-200 flex items-center gap-3
-                  bg-white/60 hover:bg-white/80 backdrop-blur-sm
-                  ${item.color} font-bold shadow-md hover:shadow-lg
-                `}
-                style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif', fontSize: '18px' }}
-              >
-                {isTelugu && teluguIcon ? (
-                  <span className="text-2xl">{teluguIcon}</span>
-                ) : Icon ? (
-                  <Icon className="h-5 w-5" />
-                ) : null}
-                <span className="whitespace-nowrap">{item.label}</span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
+    <nav
+      className="w-44 shrink-0 sticky top-4 self-start max-h-[calc(100vh-2rem)] overflow-y-auto bg-white/15 backdrop-blur-md border-2 border-white/30 rounded-3xl shadow-lg p-3 flex flex-col gap-2"
+      style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}
+    >
+      {menuItems.map((item) => {
+        const isTextIcon = item.isTextIcon || false
+        const isIconString = typeof item.icon === 'string'
+        const Icon = isIconString ? null : (item.icon as LucideIcon)
+        const textIcon = isIconString ? (item.icon as string) : null
+
+        return (
+          <button
+            key={item.href}
+            onClick={() => handleCategoryClick(item.href)}
+            className={`
+              w-full px-4 py-3 rounded-xl transition-all duration-200 flex items-center gap-3
+              bg-white/70 hover:bg-white/90 backdrop-blur-sm
+              ${item.color} font-bold shadow-sm hover:shadow-md
+            `}
+            style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif', fontSize: '16px' }}
+          >
+            {isTextIcon && textIcon ? (
+              <span className="text-xl">{textIcon}</span>
+            ) : Icon ? (
+              <Icon className="h-5 w-5" />
+            ) : null}
+            <span className="whitespace-nowrap">{item.label}</span>
+          </button>
+        )
+      })}
     </nav>
   )
 }
-

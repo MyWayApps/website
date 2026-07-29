@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import EvenOddGame from "./even-odd-game"
-import { findOrCreateUser, getApplicationByName, saveUserScore, testConnection } from "@/lib/database-supabase"
+import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
 import type { User, Application } from "@/lib/database-supabase"
+import { saveGameScore } from "@/lib/scoring"
 
 type GameData = {
   mode?: string
@@ -66,48 +67,16 @@ export default function EvenOddPage() {
 
   const handleGameComplete = async (_score: number, _maxScore: number, data: GameData) => {
     if (!user || !app) return
-    try {
-      if (isConnected) {
-        const scoreData = {
-          user_id: user.id,
-          application_id: app.id,
-          score: 1,
-          max_score: 1,
-          completion_time: data.completionTime ? Math.floor((Date.now() - data.completionTime) / 1000) : undefined,
-          difficulty_level: `${data.gameType || "unknown"}-${data.rangeMax || ""}`,
-          game_data: {
-            ...data,
-            mode: data.mode || "even-odd",
-          } as any,
-        }
-        const saved = await saveUserScore(scoreData)
-        if (!saved) {
-          saveScoreLocally(data)
-        }
-      } else {
-        saveScoreLocally(data)
-      }
-    } catch (e) {
-      console.error("Error saving score:", e)
-      saveScoreLocally(data)
-    }
-  }
-
-  const saveScoreLocally = (data: GameData) => {
-    if (!user || !app) return
-    const scoreData = {
-      user_id: user.id,
-      application_id: app.id,
+    await saveGameScore({
+      userId: user.id,
+      applicationId: app.id,
       score: 1,
-      max_score: 1,
-      completion_time: data.completionTime ? Math.floor((Date.now() - data.completionTime) / 1000) : undefined,
-      difficulty_level: `${data.gameType || "unknown"}-${data.rangeMax || ""}`,
-      game_data: data,
-      created_at: new Date().toISOString(),
-    }
-    const existing = JSON.parse(localStorage.getItem("mywayapps_offline_scores") || "[]")
-    existing.push(scoreData)
-    localStorage.setItem("mywayapps_offline_scores", JSON.stringify(existing))
+      maxScore: 1,
+      completionTimeSec: data.completionTime ? Math.floor((Date.now() - data.completionTime) / 1000) : undefined,
+      difficultyLevel: `${data.gameType || "unknown"}-${data.rangeMax || ""}`,
+      gameData: { ...data, mode: data.mode || "even-odd" },
+      isConnected,
+    })
   }
 
   return (

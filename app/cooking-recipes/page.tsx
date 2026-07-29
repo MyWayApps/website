@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import CookingRecipesApp from "./cooking-recipes-app"
-import { findOrCreateUser, getApplicationByName, saveUserScore, testConnection } from "@/lib/database-supabase"
+import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
 import type { User, Application } from "@/lib/database-supabase"
+import { saveGameScore } from "@/lib/scoring"
 
 type CookingGameData = {
   mode?: string
@@ -74,63 +75,23 @@ export default function CookingRecipesPage() {
     }
 
     setTimeout(async () => {
-      try {
-        if (isConnected) {
-          const scoreData = {
-            user_id: user.id,
-            application_id: app.id,
-            score: stepsCompleted,
-            max_score: stepsCompleted,
-            completion_time: gameData.completionTime
-              ? Math.floor((Date.now() - gameData.completionTime) / 1000)
-              : undefined,
-            difficulty_level: recipeName,
-            game_data: {
-              mode: gameData.mode || "cooking-recipes",
-              recipeCompleted: gameData.recipeCompleted || recipeName,
-              completionTime: gameData.completionTime || Date.now(),
-            } as any,
-          }
-
-          const savedScore = await saveUserScore(scoreData)
-          if (savedScore) {
-            console.log("✅ Recipe completion saved to Supabase!")
-          } else {
-            console.error("❌ Failed to save to Supabase")
-            saveScoreLocally(recipeName, stepsCompleted, gameData)
-          }
-        } else {
-          saveScoreLocally(recipeName, stepsCompleted, gameData)
-        }
-      } catch (error) {
-        console.error("❌ Error saving recipe completion:", error)
-        saveScoreLocally(recipeName, stepsCompleted, gameData)
-      }
-    }, 0)
-  }
-
-  const saveScoreLocally = (recipeName: string, stepsCompleted: number, gameData: CookingGameData) => {
-    try {
-      const scoreData = {
-        user_id: user?.id,
-        application_id: app?.id,
+      await saveGameScore({
+        userId: user.id,
+        applicationId: app.id,
         score: stepsCompleted,
-        max_score: stepsCompleted,
-        completion_time: gameData.completionTime
+        maxScore: stepsCompleted,
+        completionTimeSec: gameData.completionTime
           ? Math.floor((Date.now() - gameData.completionTime) / 1000)
           : undefined,
-        difficulty_level: recipeName,
-        game_data: gameData,
-        created_at: new Date().toISOString(),
-      }
-
-      const existingScores = JSON.parse(localStorage.getItem("mywayapps_offline_scores") || "[]")
-      existingScores.push(scoreData)
-      localStorage.setItem("mywayapps_offline_scores", JSON.stringify(existingScores))
-      console.log("💾 Recipe completion saved locally:", scoreData)
-    } catch (error) {
-      console.error("❌ Error saving locally:", error)
-    }
+        difficultyLevel: recipeName,
+        gameData: {
+          mode: gameData.mode || "cooking-recipes",
+          recipeCompleted: gameData.recipeCompleted || recipeName,
+          completionTime: gameData.completionTime || Date.now(),
+        },
+        isConnected,
+      })
+    }, 0)
   }
 
   return (

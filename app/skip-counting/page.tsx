@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import SkipCountingGame from "./skip-counting-game"
+import { saveGameScore } from "@/lib/scoring"
 
 interface User {
   id: string
@@ -40,32 +41,19 @@ export default function SkipCountingPage() {
   }, [])
 
   const handleGameComplete = async (score: number, maxScore: number, gameData: GameData) => {
-    if (user && app) {
-      try {
-        // Save score locally
-        const scoreData = {
-          user_id: user.id,
-          application_id: app.id,
-          score,
-          max_score: maxScore,
-          completion_time: gameData.completionTime
-            ? Math.floor((Date.now() - gameData.completionTime) / 1000)
-            : undefined,
-          difficulty_level: gameData.mode,
-          game_data: gameData,
-          created_at: new Date().toISOString(),
-        }
-
-        // Store in localStorage
-        const existingScores = JSON.parse(localStorage.getItem("mywayapps_offline_scores") || "[]")
-        existingScores.push(scoreData)
-        localStorage.setItem("mywayapps_offline_scores", JSON.stringify(existingScores))
-
-        console.log("Game completed and saved locally:", scoreData)
-      } catch (error) {
-        console.error("Error saving score:", error)
-      }
-    }
+    if (!user || !app) return
+    await saveGameScore({
+      userId: user.id,
+      applicationId: app.id,
+      score,
+      maxScore,
+      completionTimeSec: gameData.completionTime
+        ? Math.floor((Date.now() - gameData.completionTime) / 1000)
+        : undefined,
+      difficultyLevel: gameData.mode,
+      gameData: { ...gameData },
+      isConnected: false,
+    })
   }
 
   return <SkipCountingGame user={user} onGameComplete={handleGameComplete} onBackToHome={() => router.push("/")} />

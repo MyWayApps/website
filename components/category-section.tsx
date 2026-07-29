@@ -47,15 +47,15 @@ export function CategorySection({ category, apps, userProgress, onPlayApp }: Cat
   )
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-3xl font-bold text-center text-white mb-6">{category}</h2>
+    <div className="space-y-4">
+      <h2 className="text-3xl font-bold text-center text-white mb-3">{category}</h2>
 
       {Object.entries(subcategories).map(([subcategory, subApps]) => {
         // Create ID from subcategory name (e.g., "Math" -> "math", "Life Skills" -> "life-skills")
         const subcategoryId = subcategory.toLowerCase().replace(/\s+/g, '-')
-        
+
         return (
-        <div key={subcategory} id={subcategoryId} className="space-y-4 scroll-mt-24">
+        <div key={subcategory} id={subcategoryId} className="space-y-3 scroll-mt-24">
           {Object.keys(subcategories).length > 1 && (
             <h3 className="text-xl font-semibold text-white/90 text-center">{subcategory}</h3>
           )}
