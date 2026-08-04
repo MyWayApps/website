@@ -682,7 +682,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
                         max="12"
                         value={userInput.hours}
                         onChange={(e) => setUserInput({ ...userInput, hours: e.target.value })}
-                        className="w-20 h-12 text-xl text-center border-4 border-orange-300 focus:border-orange-500 rounded-xl font-bold"
+                        className="no-spinner w-20 h-12 text-xl text-center border-4 border-orange-300 focus:border-orange-500 rounded-xl font-bold"
                         placeholder="0"
                         disabled={showFeedback}
                       />
@@ -699,7 +699,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
                         step="5"
                         value={userInput.minutes}
                         onChange={(e) => setUserInput({ ...userInput, minutes: e.target.value })}
-                        className="w-20 h-12 text-xl text-center border-4 border-orange-300 focus:border-orange-500 rounded-xl font-bold"
+                        className="no-spinner w-20 h-12 text-xl text-center border-4 border-orange-300 focus:border-orange-500 rounded-xl font-bold"
                         placeholder="00"
                         disabled={showFeedback}
                       />

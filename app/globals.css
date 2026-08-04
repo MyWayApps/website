@@ -143,6 +143,16 @@ body {
   font-family: var(--font-nunito), var(--font-poppins), system-ui, sans-serif;
 }
 
+/* Hides native number-input spin buttons on Math games' typed-answer inputs */
+.no-spinner::-webkit-inner-spin-button,
+.no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spinner {
+  -moz-appearance: textfield;
+}
+
 /* Smooth entrance for dropdowns (used by LanguageSwitcher) */
 @keyframes fade-in-down {
   from { opacity: 0; transform: translateY(-6px); }

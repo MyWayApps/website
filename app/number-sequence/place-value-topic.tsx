@@ -122,7 +122,7 @@ export default function PlaceValueTopic({ onRoundComplete, onBackToTopics }: Top
                 onKeyDown={(e) => e.key === "Enter" && submitAnswer()}
                 disabled={isAnswered}
                 autoFocus
-                className="w-32 h-20 rounded-2xl border-4 border-blue-300 text-4xl text-center font-bold text-blue-900 focus:outline-none focus:border-blue-500"
+                className="no-spinner w-32 h-20 rounded-2xl border-4 border-blue-300 text-4xl text-center font-bold text-blue-900 focus:outline-none focus:border-blue-500"
               />
               <Button
                 onClick={submitAnswer}

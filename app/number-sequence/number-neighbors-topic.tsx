@@ -112,7 +112,7 @@ export default function NumberNeighborsTopic({ onRoundComplete, onBackToTopics }
   if (!question) return null
 
   const blankClass = (correct: boolean) =>
-    `w-20 h-20 rounded-2xl border-4 text-3xl text-center font-bold focus:outline-none ${
+    `no-spinner w-20 h-20 rounded-2xl border-4 text-3xl text-center font-bold focus:outline-none ${
       isAnswered
         ? correct
           ? "border-green-500 bg-green-100 text-green-800"
@@ -182,7 +182,7 @@ export default function NumberNeighborsTopic({ onRoundComplete, onBackToTopics }
                     onChange={(e) => setTypedValue(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && submitAnswer()}
                     disabled={isAnswered}
-                    className="w-32 h-20 rounded-2xl border-4 border-orange-300 text-4xl text-center font-bold text-orange-900 focus:outline-none focus:border-orange-500"
+                    className="no-spinner w-32 h-20 rounded-2xl border-4 border-orange-300 text-4xl text-center font-bold text-orange-900 focus:outline-none focus:border-orange-500"
                   />
                 </div>
               </>

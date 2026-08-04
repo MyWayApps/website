@@ -112,26 +112,47 @@ export function generateChoices(correct: number, spread: number, numChoices = 4)
 }
 
 const WORD_PROBLEM_NAMES = ["Ravi", "Meera", "Arjun", "Priya", "Kabir", "Ananya", "Dev", "Isha", "Vikram", "Sara"]
-const WORD_PROBLEM_OBJECTS = [
-  "mangoes", "marbles", "pencils", "stickers", "candies", "balloons", "apples", "toy cars", "flowers", "cookies",
+
+interface WordProblemObject {
+  label: string
+  emoji: string
+}
+
+const WORD_PROBLEM_OBJECTS: WordProblemObject[] = [
+  { label: "mangoes", emoji: "🥭" },
+  { label: "marbles", emoji: "🔵" },
+  { label: "pencils", emoji: "✏️" },
+  { label: "stickers", emoji: "⭐" },
+  { label: "candies", emoji: "🍬" },
+  { label: "balloons", emoji: "🎈" },
+  { label: "apples", emoji: "🍎" },
+  { label: "toy cars", emoji: "🚗" },
+  { label: "flowers", emoji: "🌸" },
+  { label: "cookies", emoji: "🍪" },
 ]
 
 export interface WordProblem extends NumericalQuestion {
   text: string
+  emoji: string
 }
 
 export function generateWordProblem(operation: Operation, digitLevel: DigitLevel, gameKey: string): WordProblem {
   const q = generateNumericalQuestion(operation, digitLevel, gameKey)
   const name = WORD_PROBLEM_NAMES[randInt(0, WORD_PROBLEM_NAMES.length - 1)]
-  const name2 = WORD_PROBLEM_NAMES[randInt(0, WORD_PROBLEM_NAMES.length - 1)]
+  // A second character is only used in some templates, but always pick someone
+  // different from `name` so sentences never read "Vikram gives Vikram...".
+  let name2 = name
+  while (name2 === name) {
+    name2 = WORD_PROBLEM_NAMES[randInt(0, WORD_PROBLEM_NAMES.length - 1)]
+  }
   const object = WORD_PROBLEM_OBJECTS[randInt(0, WORD_PROBLEM_OBJECTS.length - 1)]
 
   const templates: Record<Operation, string> = {
-    add: `${name} has ${q.a} ${object}. ${name2} gives ${name} ${q.b} more ${object}. How many ${object} does ${name} have now?`,
-    subtract: `${name} has ${q.a} ${object}. ${name} gives away ${q.b} ${object}. How many ${object} does ${name} have left?`,
-    multiply: `There are ${q.a} boxes with ${q.b} ${object} in each box. How many ${object} are there in total?`,
-    divide: `${name} has ${q.a} ${object} to share equally among ${q.b} friends. How many ${object} does each friend get?`,
+    add: `${name} has ${q.a} ${object.label}. ${name2} gives ${name} ${q.b} more ${object.label}. How many ${object.label} does ${name} have now?`,
+    subtract: `${name} has ${q.a} ${object.label}. ${name} gives ${q.b} ${object.label} to ${name2}. How many ${object.label} does ${name} have left?`,
+    multiply: `There are ${q.a} boxes with ${q.b} ${object.label} in each box. How many ${object.label} are there in total?`,
+    divide: `${name} has ${q.a} ${object.label} to share equally among ${q.b} friends. How many ${object.label} does each friend get?`,
   }
 
-  return { ...q, text: templates[operation] }
+  return { ...q, text: templates[operation], emoji: object.emoji }
 }

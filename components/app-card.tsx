@@ -2,7 +2,6 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Play, Star, Clock } from "lucide-react"
 
 interface Application {
@@ -41,23 +40,6 @@ export function AppCard({ app, userProgress, onPlay }: AppCardProps) {
           <div className="space-y-2">
             <h3 className="text-xl font-bold text-gray-800">{app.name}</h3>
             <p className="text-sm text-gray-600 line-clamp-2">{app.description}</p>
-
-            {/* Category Badge — "Education" is dropped since every subject already
-                has its own top-level section; Games/Puzzles still show their label. */}
-            {(app.category !== "Education" || app.subcategory) && (
-              <div className="flex flex-wrap gap-1 justify-center">
-                {app.category !== "Education" && (
-                  <Badge variant="secondary" className="text-xs">
-                    {app.category}
-                  </Badge>
-                )}
-                {app.subcategory && (
-                  <Badge variant="outline" className="text-xs">
-                    {app.subcategory}
-                  </Badge>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Progress Info */}

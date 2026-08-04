@@ -2,23 +2,30 @@
 
 import { useEffect, useState } from "react"
 
+type Character = "frog" | "kangaroo" | "rabbit"
+
 interface NumberLineJumpProps {
   start: number
   end: number
   max: number
-  character?: "frog" | "kangaroo"
+  character?: Character
   className?: string
 }
 
-const CHARACTER_EMOJI: Record<"frog" | "kangaroo", string> = {
+const CHARACTER_EMOJI: Record<Character, string> = {
   frog: "🐸",
   kangaroo: "🦘",
+  rabbit: "🐇",
 }
+
+const START_DELAY_MS = 900
+const TRAVEL_DURATION_MS = 2200
 
 /**
  * Animated number line: a character hops from `start` to `end` along a
  * 0..max line. Used to visualize counting sequences and simple addition/
- * subtraction ("start at 3, hop forward 4, land on 7").
+ * subtraction ("start at 3, hop forward 4, land on 7"). Pauses visibly at
+ * the start position first, then does one single big hop over to the answer.
  */
 export function NumberLineJump({ start, end, max, character = "frog", className = "" }: NumberLineJumpProps) {
   const [position, setPosition] = useState(start)
@@ -30,8 +37,8 @@ export function NumberLineJump({ start, end, max, character = "frog", className 
     const startTimer = setTimeout(() => {
       setIsHopping(true)
       setPosition(end)
-    }, 400)
-    const stopTimer = setTimeout(() => setIsHopping(false), 400 + 700)
+    }, START_DELAY_MS)
+    const stopTimer = setTimeout(() => setIsHopping(false), START_DELAY_MS + TRAVEL_DURATION_MS)
     return () => {
       clearTimeout(startTimer)
       clearTimeout(stopTimer)
@@ -48,8 +55,12 @@ export function NumberLineJump({ start, end, max, character = "frog", className 
     <div className={`relative w-full pt-14 pb-8 ${className}`}>
       {/* Character */}
       <div
-        className="absolute top-0 transition-[left] duration-700 ease-in-out"
-        style={{ left: `${percentFor(position)}%`, transform: "translateX(-50%)" }}
+        className="absolute top-0 ease-in-out"
+        style={{
+          left: `${percentFor(position)}%`,
+          transform: "translateX(-50%)",
+          transition: `left ${TRAVEL_DURATION_MS}ms ease-in-out`,
+        }}
       >
         <div
           className={`text-5xl inline-block ${isHopping ? "number-line-hop" : ""}`}
@@ -60,15 +71,15 @@ export function NumberLineJump({ start, end, max, character = "frog", className 
       </div>
 
       {/* Line */}
-      <div className="relative h-2 bg-white/60 rounded-full mt-2">
+      <div className="relative h-2 bg-gray-700 rounded-full mt-2">
         {ticks.map((n) => (
           <div
             key={n}
             className="absolute top-1/2 flex flex-col items-center"
             style={{ left: `${percentFor(n)}%`, transform: "translate(-50%, -50%)" }}
           >
-            <div className={`w-1 rounded-full ${n === end ? "h-4 bg-yellow-400" : "h-2 bg-white/80"}`} />
-            {n % labelStep === 0 && <span className="mt-1 text-xs font-bold text-white/90">{n}</span>}
+            <div className={`w-1 rounded-full ${n === end ? "h-4 bg-emerald-600" : "h-2 bg-gray-700"}`} />
+            {n % labelStep === 0 && <span className="mt-1 text-xs font-bold text-gray-800">{n}</span>}
           </div>
         ))}
       </div>
@@ -80,11 +91,11 @@ export function NumberLineJump({ start, end, max, character = "frog", className 
             margin-top: 0;
           }
           50% {
-            margin-top: -20px;
+            margin-top: -60px;
           }
         }
         .number-line-hop {
-          animation: number-line-hop-arc 0.7s ease-in-out;
+          animation: number-line-hop-arc ${TRAVEL_DURATION_MS}ms ease-in-out 1;
         }
       `}</style>
     </div>

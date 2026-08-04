@@ -27,6 +27,8 @@ interface RoundQuestion {
   b: number
   answer: number
   text?: string
+  /** Illustrative emoji for word problems (e.g. 🥭 for "mangoes"). */
+  emoji?: string
   choices?: number[]
   /** For "missing-operand": which slot the child must fill in. */
   missingSlot?: "a" | "b"
@@ -53,7 +55,7 @@ function buildQuestion(
     format === "word-problem"
       ? (() => {
           const wp = generateWordProblem(operation, digitLevel, gameKey)
-          return { a: wp.a, b: wp.b, answer: wp.answer, text: wp.text }
+          return { a: wp.a, b: wp.b, answer: wp.answer, text: wp.text, emoji: wp.emoji }
         })()
       : generateNumericalQuestion(operation, digitLevel, gameKey)
 
@@ -211,7 +213,14 @@ export default function MathQuizEngine({
         <Card className="bg-white/90 backdrop-blur-sm shadow-2xl border-0">
           <CardContent className="p-8">
             {question.text ? (
-              <p className="text-2xl font-bold text-gray-800 text-center mb-8 leading-relaxed">{question.text}</p>
+              <>
+                {question.emoji && (
+                  <p className="text-5xl text-center mb-4 leading-none" aria-hidden="true">
+                    {question.emoji.repeat(Math.min(question.a, 12))}
+                  </p>
+                )}
+                <p className="text-2xl font-bold text-gray-800 text-center mb-8 leading-relaxed">{question.text}</p>
+              </>
             ) : mechanic === "column" ? (
               <div className="flex flex-col items-end mx-auto w-fit mb-8 font-mono text-4xl font-bold text-gray-800">
                 <div className="pr-2">{question.a}</div>
@@ -231,7 +240,7 @@ export default function MathQuizEngine({
                   start={question.a}
                   end={question.answer}
                   max={Math.max(question.a, question.answer, 20)}
-                  character={operation === "add" ? "kangaroo" : "frog"}
+                  character={operation === "add" ? "kangaroo" : "rabbit"}
                 />
               </div>
             )}
@@ -268,7 +277,7 @@ export default function MathQuizEngine({
                     }}
                     disabled={!!showResult}
                     placeholder="Type your answer"
-                    className="text-3xl font-bold text-center h-16 max-w-xs"
+                    className="no-spinner text-3xl font-bold text-center h-16 max-w-xs"
                   />
                   <Button
                     onClick={submitTyped}

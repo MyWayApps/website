@@ -403,7 +403,7 @@ export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipC
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     placeholder="Enter the next number"
-                    className="text-3xl text-center w-48 h-16 border-4 border-amber-300 focus:border-amber-500 rounded-2xl font-bold"
+                    className="no-spinner text-3xl text-center w-48 h-16 border-4 border-amber-300 focus:border-amber-500 rounded-2xl font-bold"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && userInput.trim() !== "") {
                         e.preventDefault()

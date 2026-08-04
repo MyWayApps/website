@@ -275,7 +275,7 @@ export default function ForwardBackwardTopic({ onRoundComplete, onBackToTopics }
                     start={sequence[prevFilledIdx] ?? 0}
                     end={sequence[lastFilledIdx] ?? 0}
                     max={maxNumber}
-                    character="kangaroo"
+                    character={order === "ascending" ? "kangaroo" : "rabbit"}
                   />
                 </div>
               )

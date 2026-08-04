@@ -175,11 +175,12 @@ export default function MathOperationHub({ operation, title, emoji, gradient, ap
           <h1 className="text-4xl md:text-5xl font-bold text-white drop-shadow-lg mb-2 font-sans tracking-tight">
             {emoji} {title}
           </h1>
-          <p className="text-xl text-white/90 font-medium">
-            {step === "digit-level" && "Choose a difficulty level to begin"}
-            {step === "format" && "Numbers, or a word problem?"}
-            {step === "mechanic" && "Choose how you'd like to practice"}
-          </p>
+          {step !== "format" && (
+            <p className="text-xl text-white/90 font-medium">
+              {step === "digit-level" && "Choose a difficulty level to begin"}
+              {step === "mechanic" && "Choose how you'd like to practice"}
+            </p>
+          )}
         </div>
 
         {step === "digit-level" && (

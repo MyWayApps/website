@@ -113,7 +113,7 @@ export default function NeighborGridTopic({ onRoundComplete, onBackToTopics }: T
   if (!question) return null
 
   const inputClass = (key: CellKey) =>
-    `w-16 h-16 rounded-xl border-4 text-2xl text-center font-bold focus:outline-none ${cellClasses(isAnswered, cellCorrect[key], values[key] !== "")}`
+    `no-spinner w-16 h-16 rounded-xl border-4 text-2xl text-center font-bold focus:outline-none ${cellClasses(isAnswered, cellCorrect[key], values[key] !== "")}`
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-300 via-rose-400 to-red-400 p-4 relative overflow-hidden">

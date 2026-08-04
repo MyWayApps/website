@@ -143,7 +143,7 @@ export default function CountingShapesTopic({ onRoundComplete, onBackToTopics }:
                   onChange={(e) => setTypedValue(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && typedValue !== "" && submitAnswer(Number(typedValue))}
                   disabled={isAnswered}
-                  className="w-24 h-16 rounded-xl border-4 border-emerald-300 text-3xl text-center font-bold text-emerald-900 focus:outline-none focus:border-emerald-500"
+                  className="no-spinner w-24 h-16 rounded-xl border-4 border-emerald-300 text-3xl text-center font-bold text-emerald-900 focus:outline-none focus:border-emerald-500"
                 />
                 <Button
                   onClick={() => submitAnswer(Number(typedValue))}
