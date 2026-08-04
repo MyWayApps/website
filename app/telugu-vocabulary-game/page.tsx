@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star, Volume2 } from "lucide-react"
 import { getCategoryById, vocabularyCategories, VocabularyItem } from "@/lib/telugu-vocabulary-data"
+import { pickUnseenRandom } from "@/lib/question-history"
 
 const HAPPY_TUNE_AUDIO = "/audio/happy_tune.mp3"
 const BUZZ_AUDIO = "/audio/buzz_audio.mp3"
@@ -122,7 +123,7 @@ export default function TeluguVocabularyGame() {
       return
     }
     
-    const correct = getRandomInt(items.length)
+    const correct = pickUnseenRandom(`telugu-vocabulary-game:${categoryId}`, 0, items.length - 1)
     setCorrectIdx(correct)
     setChoices(getRandomChoices(correct, items.length, 4))
     setShowResult(null)

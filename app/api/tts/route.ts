@@ -65,9 +65,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Validate language
-    if (lang !== 'te' && lang !== 'hi' && lang !== 'kn' && lang !== 'en') {
+    const supportedLangs = ['te', 'hi', 'kn', 'ta', 'ml', 'en']
+    if (!supportedLangs.includes(lang)) {
       return NextResponse.json(
-        { error: 'Unsupported language. Use te, hi, kn, or en.' },
+        { error: `Unsupported language. Use one of: ${supportedLangs.join(', ')}.` },
         { status: 400 }
       )
     }

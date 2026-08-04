@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star, ArrowUp, ArrowDown } from "lucide-react"
 import { QuizResults } from "@/components/quiz-results"
+import { NumberLineJump } from "@/components/number-line-jump"
 import type { TopicProps } from "./types"
 import { type Order, generateSequenceQuestion } from "./question-generators"
 import { playCorrectSound, playWrongSound, playSuccessMelody } from "./audio"
@@ -261,6 +262,24 @@ export default function ForwardBackwardTopic({ onRoundComplete, onBackToTopics }
                 </div>
               ))}
             </div>
+
+            {(() => {
+              const filledIndices = filledPositions
+                .map((filled, i) => (filled ? i : -1))
+                .filter((i) => i >= 0)
+              const lastFilledIdx = filledIndices[filledIndices.length - 1] ?? 0
+              const prevFilledIdx = filledIndices.length > 1 ? filledIndices[filledIndices.length - 2] : lastFilledIdx
+              return (
+                <div className="bg-indigo-50 rounded-2xl p-4 mb-8">
+                  <NumberLineJump
+                    start={sequence[prevFilledIdx] ?? 0}
+                    end={sequence[lastFilledIdx] ?? 0}
+                    max={maxNumber}
+                    character="kangaroo"
+                  />
+                </div>
+              )
+            })()}
 
             <div className="text-center mb-6">
               <h3 className="text-xl font-bold text-gray-700 mb-4">Choose the correct number:</h3>

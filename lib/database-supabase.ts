@@ -532,6 +532,48 @@ export async function updateUserProgress(
   }, null)
 }
 
+// Rolls a completed round up into a per-subject total (Math, Telugu, Kannada, …),
+// in addition to the per-app row saveUserScore()/updateUserProgress() already write.
+// Table: mywayapps_user_subject_progress (user_id, subject, total_score,
+// total_attempts, best_percentage, last_played_at) — same accumulate-then-upsert
+// shape as updateUserProgress() above, just keyed by subject instead of application_id.
+export async function saveSubjectProgress(userId: string, subject: string, score: number, maxScore: number) {
+  return safeDbOperation(async () => {
+    if (!supabase) return null
+
+    const { data: currentProgress } = await supabase
+      .from("mywayapps_user_subject_progress")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("subject", subject)
+      .single()
+
+    const percent = maxScore > 0 ? score / maxScore : 0
+    const updateData = {
+      user_id: userId,
+      subject,
+      total_score: (currentProgress?.total_score || 0) + score,
+      total_attempts: (currentProgress?.total_attempts || 0) + 1,
+      best_percentage: Math.max(currentProgress?.best_percentage || 0, percent),
+      last_played_at: new Date().toISOString(),
+    }
+
+    const { data, error } = await supabase
+      .from("mywayapps_user_subject_progress")
+      .upsert([updateData], { onConflict: "user_id,subject" })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("❌ Error saving subject progress:", error)
+      throw error
+    }
+
+    console.log("✅ Subject progress updated successfully:", subject)
+    return data
+  }, null)
+}
+
 export async function getUserStats(userId: string) {
   return safeDbOperation(
     async () => {

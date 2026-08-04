@@ -19,6 +19,7 @@ import SpellTheWordGame from "./spell-the-word-game"
 import TypeTheWordGame from "./type-the-word-game"
 import SearchTheWordGame from "./search-the-word-game"
 import { generateWords, generateWordsLocal } from "@/lib/word-generator"
+import { pickUnseen } from "@/lib/question-history"
 
 type GameMode = "menu" | "word-selection" | "game-selection" | "playing"
 type WordSource = "custom" | "letter-count" | "ai-generated"
@@ -285,14 +286,21 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
     } else {
       // Get 5 random words from the selected letter count
       const words = WORD_LISTS[count]
-      
+
       // First, remove any duplicates from the word list itself
       const uniqueWords = [...new Set(words)]
-      
-      // Then shuffle and select 5 unique words
-      const shuffled = [...uniqueWords].sort(() => Math.random() - 0.5)
-      const selectedWords = shuffled.slice(0, 5)
-      
+
+      // Pick 5 words the user hasn't seen yet for this letter count, cycling
+      // back to a fresh pool once every word has been shown.
+      const selectedWords: string[] = []
+      let remainingPool = [...uniqueWords]
+      const pickCount = Math.min(5, uniqueWords.length)
+      for (let i = 0; i < pickCount; i++) {
+        const picked = pickUnseen(`spelling-game-suite:${count}`, remainingPool, (w) => w)
+        selectedWords.push(picked)
+        remainingPool = remainingPool.filter((w) => w !== picked)
+      }
+
       setCurrentWordList(selectedWords)
     }
   }

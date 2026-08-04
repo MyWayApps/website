@@ -24,11 +24,19 @@ function scoreVoice(voice: SpeechSynthesisVoice): number {
 }
 
 // ─── Language → BCP-47 locale preferences ────────────────────────────────────
+// Widened beyond the app's UI-switcher `Language` type (en/hi/kn) — ta/ml are
+// content-only languages here, same as Telugu already is via its own module.
+// Sanskrit is deliberately excluded: no browser/espeak voice exists for it,
+// so Sanskrit pages don't call speak() at all rather than mis-pronounce it.
 
-const LANG_LOCALES: Record<Language, string[]> = {
+export type TTSLanguage = Language | "ta" | "ml"
+
+const LANG_LOCALES: Record<TTSLanguage, string[]> = {
   en: ["en-IN", "en-GB", "en-US", "en-AU"],   // en-IN first so Indian names sound natural
   hi: ["hi-IN", "hi"],
   kn: ["kn-IN", "kn"],
+  ta: ["ta-IN", "ta-LK", "ta"],
+  ml: ["ml-IN", "ml"],
 }
 
 // ─── Server TTS fallback (espeak via /api/tts) ───────────────────────────────
@@ -38,7 +46,7 @@ const LANG_LOCALES: Record<Language, string[]> = {
 
 let _fallbackAudio: HTMLAudioElement | null = null
 
-function playViaServerTTS(text: string, lang: Language, onStart: () => void, onEnd: () => void): void {
+function playViaServerTTS(text: string, lang: TTSLanguage, onStart: () => void, onEnd: () => void): void {
   if (_fallbackAudio) {
     try { _fallbackAudio.pause() } catch {}
     _fallbackAudio = null
@@ -87,7 +95,7 @@ export function useTTS() {
   // generic-default fallback here, so callers can tell "no real voice for
   // this language" apart from "found one" and fall back to server TTS instead.
   const getMatchedVoice = useCallback(
-    (lang: Language): SpeechSynthesisVoice | null => {
+    (lang: TTSLanguage): SpeechSynthesisVoice | null => {
       const voices = voicesRef.current
       if (!voices.length) return null
 
@@ -118,7 +126,7 @@ export function useTTS() {
   // sentence by sentence) can await it. `speak()` below just fires this and
   // ignores the promise, for the many call-sites that don't need to wait.
   const speakInternal = useCallback(
-    (text: string, overrideLang?: Language): Promise<void> => {
+    (text: string, overrideLang?: TTSLanguage): Promise<void> => {
       if (!isSupported) return Promise.resolve()
 
       // Cancel any ongoing speech (browser and server-fallback alike)
@@ -171,7 +179,7 @@ export function useTTS() {
   )
 
   const speak = useCallback(
-    (text: string, overrideLang?: Language) => {
+    (text: string, overrideLang?: TTSLanguage) => {
       void speakInternal(text, overrideLang)
     },
     [speakInternal]
@@ -180,7 +188,7 @@ export function useTTS() {
   // Same as speak(), but resolves once playback actually ends — for callers
   // that need to read multiple lines in sequence (e.g. a story passage).
   const speakAsync = useCallback(
-    (text: string, overrideLang?: Language): Promise<void> => speakInternal(text, overrideLang),
+    (text: string, overrideLang?: TTSLanguage): Promise<void> => speakInternal(text, overrideLang),
     [speakInternal]
   )
 
@@ -196,7 +204,7 @@ export function useTTS() {
 
   // Expose available voices for the language (useful for a voice-picker UI)
   const getAvailableVoices = useCallback(
-    (lang?: Language): SpeechSynthesisVoice[] => {
+    (lang?: TTSLanguage): SpeechSynthesisVoice[] => {
       const target = lang ?? language
       const locales = LANG_LOCALES[target]
       return voicesRef.current

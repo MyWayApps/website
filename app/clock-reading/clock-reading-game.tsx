@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star, Clock, CheckCircle, XCircle } from "lucide-react"
+import { pickUnseenRandom } from "@/lib/question-history"
 
 type GameMode = "menu" | "setup" | "playing"
 type GameType = "multiple-choice" | "text-input"
@@ -131,6 +132,38 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
     return { hours, minutes }
   }
 
+  // Encodes a ClockTime into a single integer in [0, maxCodeForType[type]] so
+  // the "correct" time for a new question can be tracked/no-repeated via
+  // pickUnseenRandom, which only understands plain integer ranges.
+  const QUARTER_OPTIONS = [0, 15, 30, 45]
+  const maxCodeForType: Record<TimeType, number> = {
+    hours: 11,
+    "half-hour": 23,
+    "quarter-hour": 47,
+    "all-times": 143,
+  }
+
+  const codeToTime = (code: number, type: TimeType): ClockTime => {
+    switch (type) {
+      case "hours":
+        return { hours: code + 1, minutes: 0 }
+      case "half-hour":
+        return { hours: Math.floor(code / 2) + 1, minutes: (code % 2) * 30 }
+      case "quarter-hour":
+        return { hours: Math.floor(code / 4) + 1, minutes: QUARTER_OPTIONS[code % 4] }
+      case "all-times":
+        return { hours: Math.floor(code / 12) + 1, minutes: (code % 12) * 5 }
+    }
+  }
+
+  // Generate a random time for the *correct* answer, tracked so a user
+  // doesn't see the same clock face again until every time in the range
+  // for this timeType has been shown.
+  const generateUnseenTime = (type: TimeType): ClockTime => {
+    const code = pickUnseenRandom(`clock-reading:${type}`, 0, maxCodeForType[type])
+    return codeToTime(code, type)
+  }
+
   // Format time to string
   const formatTime = (time: ClockTime): string => {
     const { hours, minutes } = time
@@ -169,7 +202,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
     const newQuestions: Question[] = []
 
     for (let i = 0; i < 5; i++) {
-      const time = generateRandomTime(timeType)
+      const time = generateUnseenTime(timeType)
       const correctAnswer = formatTime(time)
 
       if (gameType === "multiple-choice") {

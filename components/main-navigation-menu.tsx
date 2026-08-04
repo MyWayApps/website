@@ -39,6 +39,27 @@ const menuItems: MenuItem[] = [
     isTextIcon: true
   },
   {
+    label: "Tamil",
+    icon: "அ",
+    href: "#tamil",
+    color: "text-fuchsia-600",
+    isTextIcon: true
+  },
+  {
+    label: "Malayalam",
+    icon: "അ",
+    href: "#malayalam",
+    color: "text-cyan-600",
+    isTextIcon: true
+  },
+  {
+    label: "Sanskrit",
+    icon: "ॐ",
+    href: "#sanskrit",
+    color: "text-amber-700",
+    isTextIcon: true
+  },
+  {
     label: "English",
     icon: Globe,
     href: "#english",

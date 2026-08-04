@@ -1,6 +1,8 @@
 // Pure question-generation functions — no React/DOM, easy to reason about and
 // tweak independently of the topic components that render them.
 
+import { pickUnseenRandom } from "@/lib/question-history"
+
 export function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
@@ -21,7 +23,7 @@ export interface SequenceQuestion {
 export function generateSequenceQuestion(order: Order, maxNumber: number): SequenceQuestion {
   const maxStart = order === "ascending" ? maxNumber - 4 : Math.max(5, maxNumber - 5)
   const minStart = order === "ascending" ? 1 : 5
-  const startNumber = randInt(minStart, maxStart)
+  const startNumber = pickUnseenRandom(`number-sequence:forward-backward:${order}:${maxNumber}`, minStart, maxStart)
 
   const sequence: number[] = []
   for (let i = 0; i < 5; i++) {
@@ -80,7 +82,7 @@ export function generateShapeQuestion(index: number): ShapeQuestion {
   const targetShape = shuffledTypes[0]
   const distractorTypes = shuffledTypes.slice(1, 1 + config.distractorTypes)
 
-  const correctCount = randInt(config.min, config.max)
+  const correctCount = pickUnseenRandom(`number-sequence:shapes:${level}:${targetShape}`, config.min, config.max)
   const shapes: ShapeQuestion["shapes"] = Array.from({ length: correctCount }, () => ({ type: targetShape }))
 
   distractorTypes.forEach((distractorType) => {
@@ -124,7 +126,7 @@ export function generateBeforeAfterQuestion(index: number): BeforeAfterQuestion 
   const direction: BeforeAfterDirection = roll < 0.25 ? "both" : roll < 0.625 ? "before" : "after"
 
   if (direction === "both") {
-    const base = randInt(2, maxNumber - 1)
+    const base = pickUnseenRandom(`number-sequence:before-after:${index}:both`, 2, maxNumber - 1)
     return {
       prompt: `Fill in the numbers on both sides of ${base}`,
       base,
@@ -134,7 +136,10 @@ export function generateBeforeAfterQuestion(index: number): BeforeAfterQuestion 
     }
   }
 
-  const base = direction === "before" ? randInt(2, maxNumber) : randInt(1, maxNumber - 1)
+  const base =
+    direction === "before"
+      ? pickUnseenRandom(`number-sequence:before-after:${index}:before`, 2, maxNumber)
+      : pickUnseenRandom(`number-sequence:before-after:${index}:after`, 1, maxNumber - 1)
   const answer = direction === "before" ? base - 1 : base + 1
   return { prompt: `What number comes right ${direction} ${base}?`, base, direction, answer }
 }
@@ -151,8 +156,8 @@ export interface CompareQuestion {
 
 export function generateCompareQuestion(maxNumber = 100): CompareQuestion {
   const equalChance = Math.random() < 0.2
-  const a = randInt(1, maxNumber)
-  const b = equalChance ? a : randInt(1, maxNumber)
+  const a = pickUnseenRandom(`number-sequence:compare:a:${maxNumber}`, 1, maxNumber)
+  const b = equalChance ? a : pickUnseenRandom(`number-sequence:compare:b:${maxNumber}`, 1, maxNumber)
   const correct: CompareSymbol = a > b ? ">" : a < b ? "<" : "="
   return { a, b, correct }
 }
@@ -170,7 +175,9 @@ export interface PlaceValueQuestion {
 
 export function generatePlaceValueQuestion(index: number): PlaceValueQuestion {
   const useThreeDigit = index >= 2
-  const number = useThreeDigit ? randInt(100, 999) : randInt(10, 99)
+  const number = useThreeDigit
+    ? pickUnseenRandom("number-sequence:place-value:three-digit", 100, 999)
+    : pickUnseenRandom("number-sequence:place-value:two-digit", 10, 99)
 
   const digits: Record<Place, number> = {
     hundreds: Math.floor(number / 100),
@@ -193,7 +200,10 @@ export interface NeighborGridQuestion {
 
 export function generateNeighborGridQuestion(index: number): NeighborGridQuestion {
   // Early questions use smaller centers, later ones use larger 2-digit centers.
-  const center = index < 2 ? randInt(11, 49) : randInt(11, 89)
+  const center =
+    index < 2
+      ? pickUnseenRandom("number-sequence:neighbor-grid:small", 11, 49)
+      : pickUnseenRandom("number-sequence:neighbor-grid:large", 11, 89)
   return {
     center,
     neighbors: {
@@ -214,11 +224,18 @@ const NUMBER_WORDS_ONES = [
 const NUMBER_WORDS_TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
 
 export function numberToWords(n: number): string {
-  if (n === 100) return "one hundred"
+  if (n === 1000) return "one thousand"
+  if (n === 0) return "zero"
   if (n < 20) return NUMBER_WORDS_ONES[n]
-  const tens = Math.floor(n / 10)
-  const ones = n % 10
-  return ones === 0 ? NUMBER_WORDS_TENS[tens] : `${NUMBER_WORDS_TENS[tens]}-${NUMBER_WORDS_ONES[ones]}`
+  if (n < 100) {
+    const tens = Math.floor(n / 10)
+    const ones = n % 10
+    return ones === 0 ? NUMBER_WORDS_TENS[tens] : `${NUMBER_WORDS_TENS[tens]}-${NUMBER_WORDS_ONES[ones]}`
+  }
+  const hundreds = Math.floor(n / 100)
+  const remainder = n % 100
+  const hundredsPart = `${NUMBER_WORDS_ONES[hundreds]} hundred`
+  return remainder === 0 ? hundredsPart : `${hundredsPart} and ${numberToWords(remainder)}`
 }
 
 /** Normalizes hyphens/spacing/case so "twenty-one", "twenty one" and "Twenty One" all match. */
@@ -236,6 +253,15 @@ export interface NumberWordsQuestion {
 
 export function generateNumberWordsQuestion(index: number): NumberWordsQuestion {
   const direction: NumberWordsDirection = index % 2 === 0 ? "numberToWord" : "wordToNumber"
-  const number = randInt(1, 100)
+  const number = pickUnseenRandom(`number-sequence:number-words:${direction}`, 1, 1000)
   return { direction, number, word: numberToWords(number) }
+}
+
+/** Distinct random numbers (including the correct one) for a multiple-choice round. */
+export function generateNumberWordsChoices(correctNumber: number, maxNumber = 1000, numChoices = 4): number[] {
+  const choices = new Set<number>([correctNumber])
+  while (choices.size < numChoices) {
+    choices.add(randInt(1, maxNumber))
+  }
+  return shuffle([...choices])
 }

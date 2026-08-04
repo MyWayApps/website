@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { CategorySection } from "@/components/category-section"
+import { TopicSection } from "@/components/topic-section"
 import { UserAuth } from "@/components/user-auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -77,10 +77,28 @@ const fallbackApplications: Application[] = [
     route: "/skip-counting", created_at: new Date().toISOString(),
   },
   {
-    id: "math-2", name: "Math Videos", category: "Education", subcategory: "Math",
-    description: "Watch and learn double-digit addition & subtraction",
-    icon_emoji: "🎬", color_scheme: "from-sky-300 to-indigo-500",
-    route: "/math-videos", created_at: new Date().toISOString(),
+    id: "math-3", name: "Addition", category: "Education", subcategory: "Math",
+    description: "1, 2 & 3-digit addition — numbers and word problems",
+    icon_emoji: "➕", color_scheme: "from-green-300 to-teal-500",
+    route: "/math-addition", created_at: new Date().toISOString(),
+  },
+  {
+    id: "math-4", name: "Subtraction", category: "Education", subcategory: "Math",
+    description: "1, 2 & 3-digit subtraction — numbers and word problems",
+    icon_emoji: "➖", color_scheme: "from-orange-300 to-rose-500",
+    route: "/math-subtraction", created_at: new Date().toISOString(),
+  },
+  {
+    id: "math-5", name: "Multiplication", category: "Education", subcategory: "Math",
+    description: "1, 2 & 3-digit multiplication — numbers and word problems",
+    icon_emoji: "✖️", color_scheme: "from-violet-300 to-fuchsia-500",
+    route: "/math-multiplication", created_at: new Date().toISOString(),
+  },
+  {
+    id: "math-6", name: "Division", category: "Education", subcategory: "Math",
+    description: "1, 2 & 3-digit division — numbers and word problems",
+    icon_emoji: "➗", color_scheme: "from-sky-300 to-cyan-500",
+    route: "/math-division", created_at: new Date().toISOString(),
   },
   // ── Telugu ────────────────────────────────────────────────────────────────
   {
@@ -135,39 +153,91 @@ const fallbackApplications: Application[] = [
   {
     id: "hi-1", name: "Hindi Letters", category: "Education", subcategory: "Hindi",
     description: "Learn Hindi alphabet (वर्णमाला) with flashcards and games",
-    icon_emoji: "अ", color_scheme: "from-orange-200 to-red-400",
+    icon_emoji: "अ", color_scheme: "from-blue-200 to-indigo-400",
     route: "/hindi-letters", created_at: new Date().toISOString(),
   },
   {
     id: "hi-2", name: "Hindi Vocabulary", category: "Education", subcategory: "Hindi",
     description: "Learn Hindi vocabulary - Days, Colours, Animals & more!",
-    icon_emoji: "📚", color_scheme: "from-orange-200 to-red-500",
+    icon_emoji: "📚", color_scheme: "from-purple-200 to-pink-500",
     route: "/hindi-vocabulary", created_at: new Date().toISOString(),
   },
   {
     id: "hi-3", name: "Hindi Comprehension", category: "Education", subcategory: "Hindi",
     description: "Read Hindi stories and test your understanding!",
-    icon_emoji: "📖", color_scheme: "from-orange-200 to-red-400",
+    icon_emoji: "📖", color_scheme: "from-green-200 to-teal-500",
     route: "/hindi-comprehension", created_at: new Date().toISOString(),
   },
   // ── NEW: Kannada ──────────────────────────────────────────────────────────
   {
     id: "kn-1", name: "Kannada Letters", category: "Education", subcategory: "Kannada",
     description: "Learn Kannada alphabet (ವರ್ಣಮಾಲೆ) with flashcards and games",
-    icon_emoji: "ಅ", color_scheme: "from-yellow-200 to-amber-500",
+    icon_emoji: "ಅ", color_scheme: "from-yellow-200 to-amber-400",
     route: "/kannada-letters", created_at: new Date().toISOString(),
   },
   {
     id: "kn-2", name: "Kannada Vocabulary", category: "Education", subcategory: "Kannada",
     description: "Learn Kannada vocabulary - Days, Colours, Animals & more!",
-    icon_emoji: "📚", color_scheme: "from-yellow-200 to-amber-500",
+    icon_emoji: "📚", color_scheme: "from-green-300 to-teal-500",
     route: "/kannada-vocabulary", created_at: new Date().toISOString(),
   },
   {
     id: "kn-3", name: "Kannada Comprehension", category: "Education", subcategory: "Kannada",
     description: "Read Kannada stories and test your understanding!",
-    icon_emoji: "📖", color_scheme: "from-yellow-200 to-amber-400",
+    icon_emoji: "📖", color_scheme: "from-orange-300 to-rose-500",
     route: "/kannada-comprehension", created_at: new Date().toISOString(),
+  },
+  // ── NEW: Tamil ────────────────────────────────────────────────────────────
+  {
+    id: "ta-1", name: "Tamil Letters", category: "Education", subcategory: "Tamil",
+    description: "Learn Tamil alphabet (தமிழ் எழுத்துக்கள்) with flashcards and games",
+    icon_emoji: "அ", color_scheme: "from-violet-300 to-fuchsia-500",
+    route: "/tamil-letters", created_at: new Date().toISOString(),
+  },
+  {
+    id: "ta-2", name: "Tamil Vocabulary", category: "Education", subcategory: "Tamil",
+    description: "Learn Tamil vocabulary - Days, Colours, Animals & more!",
+    icon_emoji: "📚", color_scheme: "from-sky-300 to-cyan-500",
+    route: "/tamil-vocabulary", created_at: new Date().toISOString(),
+  },
+  {
+    id: "ta-3", name: "Tamil Comprehension", category: "Education", subcategory: "Tamil",
+    description: "Read Tamil stories and test your understanding!",
+    icon_emoji: "📖", color_scheme: "from-blue-200 to-indigo-400",
+    route: "/tamil-comprehension", created_at: new Date().toISOString(),
+  },
+  // ── NEW: Malayalam ────────────────────────────────────────────────────────
+  {
+    id: "ml-1", name: "Malayalam Letters", category: "Education", subcategory: "Malayalam",
+    description: "Learn Malayalam alphabet (മലയാള അക്ഷരമാല) with flashcards and games",
+    icon_emoji: "അ", color_scheme: "from-purple-200 to-pink-500",
+    route: "/malayalam-letters", created_at: new Date().toISOString(),
+  },
+  {
+    id: "ml-2", name: "Malayalam Vocabulary", category: "Education", subcategory: "Malayalam",
+    description: "Learn Malayalam vocabulary - Days, Colours, Animals & more!",
+    icon_emoji: "📚", color_scheme: "from-green-200 to-teal-500",
+    route: "/malayalam-vocabulary", created_at: new Date().toISOString(),
+  },
+  {
+    id: "ml-3", name: "Malayalam Comprehension", category: "Education", subcategory: "Malayalam",
+    description: "Read Malayalam stories and test your understanding!",
+    icon_emoji: "📖", color_scheme: "from-yellow-200 to-amber-400",
+    route: "/malayalam-comprehension", created_at: new Date().toISOString(),
+  },
+  // ── NEW: Sanskrit (Vocabulary & Comprehension only — same script as Hindi,
+  // no audio since no reliable Sanskrit voice exists in browsers or espeak) ──
+  {
+    id: "sa-1", name: "Sanskrit Vocabulary", category: "Education", subcategory: "Sanskrit",
+    description: "Learn Sanskrit vocabulary - Days, Colours, Animals & more!",
+    icon_emoji: "📚", color_scheme: "from-green-300 to-teal-500",
+    route: "/sanskrit-vocabulary", created_at: new Date().toISOString(),
+  },
+  {
+    id: "sa-2", name: "Sanskrit Comprehension", category: "Education", subcategory: "Sanskrit",
+    description: "Read Sanskrit stories and test your understanding!",
+    icon_emoji: "📖", color_scheme: "from-orange-300 to-rose-500",
+    route: "/sanskrit-comprehension", created_at: new Date().toISOString(),
   },
   // ── English ───────────────────────────────────────────────────────────────
   {
@@ -352,7 +422,24 @@ export default function HomePage() {
     } catch (error) { console.error("❌ Error updating user:", error); setError("Failed to update profile.") }
   }
 
-  const categories = ["Education", "Games", "Puzzles"]
+  // Flatten "Education" into its subcategories (Math, Telugu, Hindi, ...) so every
+  // subject is its own top-level section — same treatment Games/Puzzles already got.
+  const topicGroups = (() => {
+    const order: string[] = []
+    const groups: Record<string, Application[]> = {}
+    for (const app of applications) {
+      const key = app.category === "Education" ? app.subcategory || "General" : app.category
+      if (!groups[key]) {
+        groups[key] = []
+        order.push(key)
+      }
+      groups[key].push(app)
+    }
+    return order.map((topic) => ({ topic, apps: groups[topic] }))
+  })()
+
+  const topicSlug = (topic: string) =>
+    topic === "Games" || topic === "Puzzles" ? `${topic.toLowerCase()}-section` : topic.toLowerCase().replace(/\s+/g, "-")
 
   // ── Loading screen ────────────────────────────────────────────────────────
   if (loading) {
@@ -376,7 +463,12 @@ export default function HomePage() {
 
       {/* ── Header ── */}
       <header className="relative z-20 bg-white/15 backdrop-blur-md border-b-2 border-white/30 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="px-4 md:px-6 py-4 relative">
+          {/* Tagline — centered on the header regardless of how wide the logo/buttons are */}
+          <div className="hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xl lg:text-2xl font-bold text-white/90 drop-shadow whitespace-nowrap">
+            MyWayApps, {t("app.subtitle")} 🌈
+          </div>
+
           <div className="flex items-center justify-between gap-4 flex-wrap">
             {/* Logo + greeting */}
             <div className="flex items-center gap-3">
@@ -388,11 +480,8 @@ export default function HomePage() {
                   onError={e => { e.currentTarget.src = "/mywayapps-logo.svg" }}
                 />
               </div>
-              <div>
-                <div className="text-xs text-white/70 font-semibold uppercase tracking-wider">MyWayApps</div>
-                <div className="text-lg font-black text-white leading-tight drop-shadow">
-                  {user ? `${t("app.welcomeBack")}, ${user.name}!` : t("app.welcome")}
-                </div>
+              <div className="text-lg md:text-xl font-black text-white leading-tight drop-shadow">
+                {user ? `${t("app.welcomeBack")}, ${user.name}!` : t("app.welcome")}
               </div>
             </div>
 
@@ -427,19 +516,11 @@ export default function HomePage() {
               )}
             </div>
           </div>
-
-          {/* Welcome banner */}
-          <div className="text-center mt-1">
-            <h1 className="text-2xl md:text-3xl font-black text-white drop-shadow-lg">
-              {t("app.welcome")}
-            </h1>
-            <p className="text-white/90 font-bold">{t("app.subtitle")}</p>
-          </div>
         </div>
       </header>
 
       {/* ── Sidebar + Body ── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 flex items-start gap-6">
+      <div className="relative z-10 px-4 md:px-6 py-8 flex items-start gap-6">
         <MainNavigationMenu />
         <div className="flex-1 min-w-0">
         {error && (
@@ -464,13 +545,13 @@ export default function HomePage() {
           </Card>
         )}
 
-        {/* Category sections (unchanged component — all existing functionality preserved) */}
+        {/* Topic sections — one flat, top-level section per subject */}
         <div className="space-y-8">
-          {categories.map(category => (
-            <div key={category} id={`${category.toLowerCase()}-section`}>
-              <CategorySection
-                category={category}
-                apps={applications}
+          {topicGroups.map(({ topic, apps }) => (
+            <div key={topic} id={topicSlug(topic)} className="scroll-mt-24">
+              <TopicSection
+                topic={topic}
+                apps={apps}
                 userProgress={userProgress}
                 onPlayApp={handlePlayApp}
               />

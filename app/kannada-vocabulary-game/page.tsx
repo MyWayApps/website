@@ -9,6 +9,7 @@ import { getCategoryById, VocabularyItem } from "@/lib/kannada-vocabulary-data"
 import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
 import type { User, Application } from "@/lib/database-supabase"
 import { saveGameScore } from "@/lib/scoring"
+import { pickUnseenRandom } from "@/lib/question-history"
 
 const HAPPY_TUNE_AUDIO = "/audio/happy_tune.mp3"
 const BUZZ_AUDIO = "/audio/buzz_audio.mp3"
@@ -188,7 +189,7 @@ export default function KannadaVocabularyGame() {
       return
     }
 
-    const correct = getRandomInt(items.length)
+    const correct = pickUnseenRandom(`kannada-vocabulary-game:${categoryId}`, 0, items.length - 1)
     setCorrectIdx(correct)
     setChoices(getRandomChoices(correct, items.length, 4))
     setShowResult(null)

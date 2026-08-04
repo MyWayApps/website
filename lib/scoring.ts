@@ -1,4 +1,4 @@
-import { saveUserScore } from "@/lib/database-supabase"
+import { saveUserScore, saveSubjectProgress } from "@/lib/database-supabase"
 
 /**
  * Consolidated scoring/progress persistence, used by every game page instead of
@@ -25,6 +25,19 @@ export interface SaveGameScoreInput {
   gameData?: Record<string, unknown>
   /** Caller already knows this from its own testConnection() call in initializeData(). */
   isConnected: boolean
+  /**
+   * The app catalogue's subcategory (e.g. "Math", "Telugu", "Kannada") — rolls
+   * this score up into a per-subject total in addition to the per-app one.
+   * Optional so existing call sites keep working while being retrofitted.
+   */
+  subject?: string
+}
+
+export interface SubjectProgressEntry {
+  totalScore: number
+  totalAttempts: number
+  bestPercentage: number
+  lastPlayedAt: string
 }
 
 export interface SaveGameScoreResult {
@@ -82,6 +95,45 @@ function updateLocalProgress(input: SaveGameScoreInput): UserProgressEntry {
   return next
 }
 
+function subjectProgressKey(userId: string) {
+  return `mywayapps_subject_progress_${userId}`
+}
+
+function updateLocalSubjectProgress(input: SaveGameScoreInput): SubjectProgressEntry | null {
+  if (!input.subject) return null
+
+  const key = subjectProgressKey(input.userId)
+  const all: Record<string, SubjectProgressEntry> = JSON.parse(localStorage.getItem(key) || "{}")
+  const prev: SubjectProgressEntry = all[input.subject] ?? {
+    totalScore: 0,
+    totalAttempts: 0,
+    bestPercentage: 0,
+    lastPlayedAt: "",
+  }
+
+  const percent = input.maxScore > 0 ? input.score / input.maxScore : 0
+  const next: SubjectProgressEntry = {
+    totalScore: prev.totalScore + input.score,
+    totalAttempts: prev.totalAttempts + 1,
+    bestPercentage: Math.max(prev.bestPercentage, percent),
+    lastPlayedAt: new Date().toISOString(),
+  }
+
+  all[input.subject] = next
+  localStorage.setItem(key, JSON.stringify(all))
+  return next
+}
+
+/** Reads the per-subject rollup (e.g. for a "Your Math score" dashboard). */
+export function getSubjectProgress(userId: string): Record<string, SubjectProgressEntry> {
+  if (typeof window === "undefined") return {}
+  try {
+    return JSON.parse(localStorage.getItem(subjectProgressKey(userId)) || "{}")
+  } catch {
+    return {}
+  }
+}
+
 function saveScoreToOfflineStorage(record: {
   user_id: string
   application_id: string
@@ -124,6 +176,15 @@ export async function saveGameScore(input: SaveGameScoreInput): Promise<SaveGame
   // Local progress tracking is a client-only concern the homepage reads directly
   // from localStorage — kept independent of whether Supabase save succeeded.
   const progress = updateLocalProgress(input)
+  updateLocalSubjectProgress(input)
+
+  if (input.subject && input.isConnected) {
+    try {
+      await saveSubjectProgress(input.userId, input.subject, input.score, input.maxScore)
+    } catch (error) {
+      console.error("❌ Error saving subject progress to Supabase:", error)
+    }
+  }
 
   return { savedTo, progress }
 }
