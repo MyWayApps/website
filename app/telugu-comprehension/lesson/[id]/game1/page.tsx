@@ -7,9 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Volume2, Star } from "lucide-react"
 import { getLessonById } from "@/lib/telugu-comprehension-data"
 import { playTeluguTTS } from "@/lib/telugu-tts"
-
-const GOOD_JOB_AUDIO = "/audio/happy_tune.mp3"
-const BUZZ_AUDIO = "/audio/buzz_audio.mp3"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 export default function Game1Page() {
   const params = useParams()
@@ -41,24 +39,6 @@ export default function Game1Page() {
     }
   }
 
-  const playGoodJobSound = () => {
-    try {
-      const audio = new Audio(GOOD_JOB_AUDIO)
-      audio.play().catch(err => console.log("Audio play failed:", err))
-    } catch (error) {
-      console.log("Audio error:", error)
-    }
-  }
-
-  const playBuzzSound = () => {
-    try {
-      const audio = new Audio(BUZZ_AUDIO)
-      audio.play().catch(err => console.log("Audio play failed:", err))
-    } catch (error) {
-      console.log("Audio error:", error)
-    }
-  }
-
   const handleAnswerSelect = (answer: string) => {
     if (isAnswered) return
 
@@ -68,11 +48,11 @@ export default function Game1Page() {
     const currentQuestion = lesson!.game1Questions[currentQuestionIndex]
     if (answer === currentQuestion.correctAnswer) {
       setScore(score + 1)
-      playGoodJobSound()
+      playCorrectSound()
       setShowCelebration(true)
       setTimeout(() => setShowCelebration(false), 2000)
     } else {
-      playBuzzSound()
+      playWrongSound()
       setShowSadFace(true)
       setTimeout(() => setShowSadFace(false), 2000)
     }

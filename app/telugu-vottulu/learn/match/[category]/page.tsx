@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react"
 import { useParams } from "next/navigation"
 import { getVottuluByCategory, getCategoryLabel, VottuluCategory } from "@/lib/telugu-vottulu-data"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 export default function MatchVottuGame() {
   const params = useParams()
@@ -19,9 +20,6 @@ export default function MatchVottuGame() {
   const [draggedItem, setDraggedItem] = useState<any>(null)
   const [matchedPairs, setMatchedPairs] = useState<Record<string, any>>({})
   const [showConfetti, setShowConfetti] = useState(false)
-  
-  const goodJobRef = useRef<HTMLAudioElement | null>(null)
-  const buzzerRef = useRef<HTMLAudioElement | null>(null)
 
   const categoryLabel = getCategoryLabel(category)
 
@@ -102,18 +100,6 @@ export default function MatchVottuGame() {
 
   const currentQ = questions[currentQuestion]
 
-  const playGoodJob = () => {
-    if (goodJobRef.current) {
-      goodJobRef.current.play().catch(e => console.error("Good job audio failed:", e))
-    }
-  }
-
-  const playBuzzer = () => {
-    if (buzzerRef.current) {
-      buzzerRef.current.play().catch(e => console.error("Buzzer audio failed:", e))
-    }
-  }
-
   // Handle drag start
   const handleDragStart = (e: React.DragEvent, answer: any) => {
     setDraggedItem(answer)
@@ -143,7 +129,7 @@ export default function MatchVottuGame() {
           setScore(score + 1)
           setShowResult("question-complete")
           setShowConfetti(true)
-          playGoodJob()
+          playCorrectSound()
           setTimeout(() => {
             setShowConfetti(false)
             if (currentQuestion < 4) {
@@ -154,7 +140,7 @@ export default function MatchVottuGame() {
           }, 3000)
         } else {
           setShowResult("wrong")
-          playBuzzer()
+          playWrongSound()
           const updatedPairs = { ...matchedPairs }
           delete updatedPairs[leftOption.id]
           setMatchedPairs(updatedPairs)
@@ -352,9 +338,6 @@ export default function MatchVottuGame() {
         </div>
       )}
 
-      {/* Audio Elements */}
-      <audio ref={goodJobRef} src="/audio/happy_tune.mp3" preload="auto" />
-      <audio ref={buzzerRef} src="/audio/buzz_audio.mp3" preload="auto" />
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react"
 import { useParams } from "next/navigation"
 import { playTeluguTTS } from "@/lib/telugu-tts"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 // Matra sequence for all consonants
 const matraSequence = [
@@ -34,8 +35,6 @@ export default function MissingLettersGame() {
   const [showConfetti, setShowConfetti] = useState(false)
   
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const goodJobRef = useRef<HTMLAudioElement | null>(null)
-  const buzzerRef = useRef<HTMLAudioElement | null>(null)
 
   // Generate 5 questions with missing letters
   const generateQuestions = () => {
@@ -135,18 +134,6 @@ export default function MissingLettersGame() {
     }
   }
 
-  const playGoodJob = () => {
-    if (goodJobRef.current) {
-      goodJobRef.current.play().catch(e => console.error("Good job audio failed:", e))
-    }
-  }
-
-  const playBuzzer = () => {
-    if (buzzerRef.current) {
-      buzzerRef.current.play().catch(e => console.error("Buzzer audio failed:", e))
-    }
-  }
-
   // Handle option selection
   const handleOptionClick = (option: string) => {
     if (isWaitingForNext || !currentQ) return // Waiting for next step or no current question
@@ -164,7 +151,7 @@ export default function MissingLettersGame() {
         setShowResult("correct")
         setScore(score + 1)
         setShowConfetti(true)
-        playGoodJob()
+        playCorrectSound()
         setIsWaitingForNext(true)
         setTimeout(() => {
           setShowConfetti(false)
@@ -179,7 +166,7 @@ export default function MissingLettersGame() {
         setCurrentMissingIndex(currentMissingIndex + 1)
         setShowResult("correct")
         setShowConfetti(true)
-        playGoodJob()
+        playCorrectSound()
         setTimeout(() => {
           setShowResult(null)
           setShowConfetti(false)
@@ -188,7 +175,7 @@ export default function MissingLettersGame() {
     } else {
       // Wrong answer
       setShowResult("wrong")
-      playBuzzer()
+      playWrongSound()
       setTimeout(() => {
         setShowResult(null)
       }, 1500)
@@ -406,8 +393,6 @@ export default function MissingLettersGame() {
 
       {/* Audio Elements */}
       <audio ref={audioRef} preload="auto" />
-      <audio ref={goodJobRef} src="/audio/happy_tune.mp3" preload="auto" />
-      <audio ref={buzzerRef} src="/audio/buzz_audio.mp3" preload="auto" />
     </div>
   )
 }

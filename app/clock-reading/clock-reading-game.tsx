@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star, Clock, CheckCircle, XCircle } from "lucide-react"
 import { pickUnseenRandom } from "@/lib/question-history"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 type GameMode = "menu" | "setup" | "playing"
 type GameType = "multiple-choice" | "text-input"
@@ -41,8 +42,6 @@ interface ClockReadingGameProps {
 }
 
 // Sound effect frequencies
-const correctSoundFreqs = [523.25, 659.25, 783.99, 1046.5, 1318.51] // C5, E5, G5, C6, E6
-const wrongSoundFreqs = [220, 196, 174.61] // A3, G3, F3
 const successSoundFreqs = [523.25, 659.25, 783.99, 1046.5] // Success melody
 
 export default function ClockReadingGame({ onGameComplete, onBackToHome }: ClockReadingGameProps = {}) {
@@ -349,7 +348,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
 
     if (correct) {
       setScore(score + 1)
-      playSound(correctSoundFreqs, true)
+      playCorrectSound()
 
       setTimeout(() => {
         setShowFeedback(false)
@@ -361,7 +360,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
         }
       }, 2000)
     } else {
-      playSound(wrongSoundFreqs, false)
+      playWrongSound()
 
       setTimeout(() => {
         setShowFeedback(false)
@@ -380,7 +379,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
 
     if (correct) {
       setScore(score + 1)
-      playSound(correctSoundFreqs, true)
+      playCorrectSound()
 
       setTimeout(() => {
         setShowFeedback(false)
@@ -394,7 +393,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
         }
       }, 2000)
     } else {
-      playSound(wrongSoundFreqs, false)
+      playWrongSound()
 
       setTimeout(() => {
         setShowFeedback(false)
@@ -626,8 +625,12 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
           </Button>
 
           <div className="flex items-center gap-4 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
-            <Star className="h-6 w-6 text-yellow-600" />
-            <span className="text-xl font-bold text-orange-800">Score: {score}/5</span>
+            {Array.from({ length: questions.length }, (_, i) => (
+              <Star
+                key={i}
+                className={`h-6 w-6 transition-all ${i < score ? "fill-yellow-300 text-yellow-300 scale-110" : "text-white/40"}`}
+              />
+            ))}
           </div>
         </div>
 

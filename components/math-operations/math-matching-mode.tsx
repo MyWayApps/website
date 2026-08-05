@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star } from "lucide-react"
 import { QuizResults } from "@/components/quiz-results"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 import { OPERATION_SYMBOLS, generateNumericalQuestion, type DigitLevel, type Operation } from "@/lib/math-operations-data"
 
 const PAIR_COUNT = 5
@@ -19,9 +20,18 @@ interface MatchCard {
 function generateCards(operation: Operation, digitLevel: DigitLevel, gameKey: string): MatchCard[] {
   const symbol = OPERATION_SYMBOLS[operation]
   const cards: MatchCard[] = []
+  // Every pair's answer must be unique, or two different equations can land on
+  // the same displayed number and matching becomes ambiguous/impossible to win.
+  const usedAnswers = new Set<number>()
   let id = 0
   for (let pairId = 0; pairId < PAIR_COUNT; pairId++) {
-    const q = generateNumericalQuestion(operation, digitLevel, gameKey)
+    let q = generateNumericalQuestion(operation, digitLevel, gameKey)
+    let attempts = 0
+    while (usedAnswers.has(q.answer) && attempts < 30) {
+      q = generateNumericalQuestion(operation, digitLevel, gameKey)
+      attempts++
+    }
+    usedAnswers.add(q.answer)
     cards.push({ id: id++, pairId, display: `${q.a} ${symbol} ${q.b}`, type: "equation" })
     cards.push({ id: id++, pairId, display: String(q.answer), type: "answer" })
   }
@@ -66,6 +76,7 @@ export default function MathMatchingMode({ operation, digitLevel, gradientClass,
 
       setTimeout(() => {
         if (isMatch) {
+          playCorrectSound()
           const wasFirstTry = !touchedIds.has(firstId) && !touchedIds.has(secondId)
           const newMatchedIds = new Set(matchedIds)
           newMatchedIds.add(firstId)
@@ -81,6 +92,7 @@ export default function MathMatchingMode({ operation, digitLevel, gradientClass,
             setPhase("results")
           }
         } else {
+          playWrongSound()
           setTouchedIds((prev) => new Set(prev).add(firstId).add(secondId))
           setFlipped([])
           setIsChecking(false)
@@ -116,7 +128,7 @@ export default function MathMatchingMode({ operation, digitLevel, gradientClass,
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${gradientClass} p-4 relative overflow-hidden`}>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Button
             onClick={onBackToModes}
@@ -126,22 +138,26 @@ export default function MathMatchingMode({ operation, digitLevel, gradientClass,
             <ArrowLeft className="mr-2 h-5 w-5" />
             Back
           </Button>
-          <div className="flex items-center gap-4 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
-            <Star className="h-6 w-6 text-yellow-300" />
-            <span className="text-xl font-bold text-white">
-              Pairs found: {matchedIds.size / 2}/{PAIR_COUNT}
-            </span>
+          <div className="flex items-center gap-3 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
+            {Array.from({ length: PAIR_COUNT }, (_, i) => (
+              <Star
+                key={i}
+                className={`h-8 w-8 transition-all ${
+                  i < matchedIds.size / 2 ? "fill-yellow-300 text-yellow-300 scale-110" : "text-white/40"
+                }`}
+              />
+            ))}
           </div>
         </div>
 
         <Card className="bg-white/90 backdrop-blur-sm shadow-2xl border-0">
-          <CardContent className="p-8">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Match the Equation to Its Answer</h2>
+          <CardContent className="p-10 md:p-12">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">Match the Equation to Its Answer</h2>
               <p className="text-lg text-gray-600">Tap two cards to make a pair</p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 max-w-3xl mx-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-5 max-w-4xl mx-auto">
               {cards.map((card) => {
                 const isFaceUp = flipped.includes(card.id) || matchedIds.has(card.id)
                 const isMatched = matchedIds.has(card.id)
@@ -159,9 +175,9 @@ export default function MathMatchingMode({ operation, digitLevel, gradientClass,
                   >
                     <CardContent className="p-2 text-center flex items-center justify-center h-full">
                       {isFaceUp ? (
-                        <span className="font-bold text-gray-800 text-lg md:text-xl">{card.display}</span>
+                        <span className="font-bold text-gray-800 text-2xl md:text-3xl">{card.display}</span>
                       ) : (
-                        <span className="text-3xl">🔢</span>
+                        <span className="text-4xl">❓</span>
                       )}
                     </CardContent>
                   </Card>

@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, Volume2, Star, Frown } from "lucide-react"
 import { teluguRiddles, TeluguRiddle, getWrongAnswers } from "@/lib/telugu-riddles-data"
 import { playTeluguTTS } from "@/lib/telugu-tts"
-
-const GOOD_JOB_AUDIO = "/audio/happy_tune.mp3"
-const BUZZ_AUDIO = "/audio/buzz_audio.mp3"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 interface QuestionData {
   riddle: TeluguRiddle
@@ -70,11 +68,11 @@ export default function MultipleChoiceGame() {
 
     if (answer === currentQuestion.correctAnswer) {
       setScore(score + 1)
-      playGoodJobSound()
+      playCorrectSound()
       setShowCelebration(true)
       setTimeout(() => setShowCelebration(false), 2000)
     } else {
-      playBuzzSound()
+      playWrongSound()
       setShowSadFace(true)
       setTimeout(() => setShowSadFace(false), 2000)
     }
@@ -90,24 +88,6 @@ export default function MultipleChoiceGame() {
       const percentage = Math.round((score / questions.length) * 100)
       alert(`🎉 Game Complete!\n\nYou got ${score} out of ${questions.length} riddles correct!\nScore: ${percentage}%`)
       handleRestart()
-    }
-  }
-
-  const playGoodJobSound = () => {
-    try {
-      const audio = new Audio(GOOD_JOB_AUDIO)
-      audio.play().catch(err => console.log("Audio play failed:", err))
-    } catch (error) {
-      console.log("Audio error:", error)
-    }
-  }
-
-  const playBuzzSound = () => {
-    try {
-      const audio = new Audio(BUZZ_AUDIO)
-      audio.play().catch(err => console.log("Audio play failed:", err))
-    } catch (error) {
-      console.log("Audio error:", error)
     }
   }
 

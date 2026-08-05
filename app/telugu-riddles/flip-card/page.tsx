@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, Lightbulb, CheckCircle, Volume2 } from "lucide-react"
 import { teluguRiddles, TeluguRiddle } from "@/lib/telugu-riddles-data"
 import { playTeluguTTS } from "@/lib/telugu-tts"
-
-const GOOD_JOB_AUDIO = "/audio/happy_tune.mp3"
+import { playCorrectSound } from "@/lib/feedback-audio"
 
 export default function FlipCardGame() {
   const [currentRiddleIndex, setCurrentRiddleIndex] = useState(0)
@@ -37,7 +36,7 @@ export default function FlipCardGame() {
       // First click - show answer
       setIsFlipped(true)
       setScore(score + 1)
-      playGoodJobSound()
+      playCorrectSound()
       setShowCelebration(true)
       setTimeout(() => setShowCelebration(false), 2000)
     } else {
@@ -63,15 +62,6 @@ export default function FlipCardGame() {
     setCurrentRiddleIndex(0)
     setIsFlipped(false)
     setScore(0)
-  }
-
-  const playGoodJobSound = () => {
-    try {
-      const audio = new Audio(GOOD_JOB_AUDIO)
-      audio.play().catch(err => console.log("Audio play failed:", err))
-    } catch (error) {
-      console.log("Audio error:", error)
-    }
   }
 
   const handlePlayAudio = async (text: string) => {

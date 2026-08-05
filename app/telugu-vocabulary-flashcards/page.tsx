@@ -91,13 +91,14 @@ export default function TeluguVocabularyFlashcards() {
         next()
       } else if (event.key === ' ') {
         event.preventDefault()
-        setIsFlipped(f => !f)
+        handleCardClick()
       }
     }
 
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [items])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, index, isFlipped])
 
   const onBackToVocabulary = () => {
     window.location.href = "/telugu-vocabulary"

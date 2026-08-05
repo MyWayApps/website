@@ -86,14 +86,14 @@ export default function KannadaVocabularyFlashcards() {
         next()
       } else if (event.key === ' ') {
         event.preventDefault()
-        setIsFlipped(f => !f)
+        handleCardClick()
       }
     }
 
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items])
+  }, [items, index, isFlipped])
 
   const onBackToVocabulary = () => {
     window.location.href = "/kannada-vocabulary"

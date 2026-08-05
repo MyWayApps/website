@@ -8,9 +8,7 @@ import { ArrowLeft, Volume2, Star, RotateCcw } from "lucide-react"
 import { getLessonById } from "@/lib/sanskrit-comprehension-data"
 import { useTTS } from "@/hooks/use-tts"
 import { transliterateToKannada } from "@/lib/sanskrit-tts"
-
-const GOOD_JOB_AUDIO = "/audio/happy_tune.mp3"
-const BUZZ_AUDIO = "/audio/buzz_audio.mp3"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 // Sanskrit has no TTS voice of its own — the sentence is transliterated to
 // Kannada script and spoken with the Kannada voice/fallback (lib/sanskrit-tts.ts).
@@ -40,24 +38,6 @@ export default function Game2Page() {
     }
   }
 
-  const playGoodJobSound = () => {
-    try {
-      const audio = new Audio(GOOD_JOB_AUDIO)
-      audio.play().catch(err => console.log("Audio play failed:", err))
-    } catch (error) {
-      console.log("Audio error:", error)
-    }
-  }
-
-  const playBuzzSound = () => {
-    try {
-      const audio = new Audio(BUZZ_AUDIO)
-      audio.play().catch(err => console.log("Audio play failed:", err))
-    } catch (error) {
-      console.log("Audio error:", error)
-    }
-  }
-
   const handleAnswerSelect = (answer: string) => {
     if (isAnswered) return
 
@@ -67,11 +47,11 @@ export default function Game2Page() {
     const currentQuestion = lesson!.game2Questions[currentQuestionIndex]
     if (answer === currentQuestion.correctAnswer) {
       setScore(score + 1)
-      playGoodJobSound()
+      playCorrectSound()
       setShowCelebration(true)
       setTimeout(() => setShowCelebration(false), 2000)
     } else {
-      playBuzzSound()
+      playWrongSound()
       setShowSadFace(true)
       setTimeout(() => setShowSadFace(false), 2000)
     }

@@ -159,7 +159,7 @@ export default function MathOperationHub({ operation, title, emoji, gradient, ap
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${gradient} p-4 relative overflow-hidden`}>
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Button
             onClick={step === "digit-level" ? handleBackToHome : handleBackOneStep}
@@ -184,16 +184,18 @@ export default function MathOperationHub({ operation, title, emoji, gradient, ap
         </div>
 
         {step === "digit-level" && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-10">
             {(["1", "2", "3"] as DigitLevel[]).map((level) => (
               <Card
                 key={level}
                 onClick={() => handlePickDigitLevel(level)}
                 className="bg-white/90 border-4 border-white shadow-xl cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl"
               >
-                <CardContent className="p-8 text-center">
-                  <div className="text-4xl mb-3">🔢</div>
-                  <h3 className="text-2xl font-bold text-gray-800">{DIGIT_LEVEL_LABELS[level]}</h3>
+                <CardContent className="p-10 text-center">
+                  <div className="mx-auto mb-4 w-20 h-20 rounded-2xl bg-indigo-500 text-white flex items-center justify-center text-4xl font-black">
+                    {level === "3" ? "3+" : level}
+                  </div>
+                  <h3 className="text-3xl font-bold text-gray-800">{DIGIT_LEVEL_LABELS[level]}</h3>
                 </CardContent>
               </Card>
             ))}
@@ -201,32 +203,32 @@ export default function MathOperationHub({ operation, title, emoji, gradient, ap
         )}
 
         {step === "format" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-10">
             <Card
               onClick={() => handlePickFormat("numerical")}
               className="bg-white/90 border-4 border-white shadow-xl cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl"
             >
-              <CardContent className="p-8 text-center">
-                <div className="text-5xl mb-3">🔢</div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">Numerical</h3>
-                <p className="text-gray-600">Straightforward equations</p>
+              <CardContent className="p-10 text-center">
+                <div className="text-6xl mb-4">🧮</div>
+                <h3 className="text-3xl font-bold text-gray-800 mb-2">Numerical</h3>
+                <p className="text-lg text-gray-600">Straightforward equations</p>
               </CardContent>
             </Card>
             <Card
               onClick={() => handlePickFormat("word-problem")}
               className="bg-white/90 border-4 border-white shadow-xl cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl"
             >
-              <CardContent className="p-8 text-center">
-                <div className="text-5xl mb-3">📖</div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">Word Problem</h3>
-                <p className="text-gray-600">Solve a short story problem</p>
+              <CardContent className="p-10 text-center">
+                <div className="text-6xl mb-4">📖</div>
+                <h3 className="text-3xl font-bold text-gray-800 mb-2">Word Problem</h3>
+                <p className="text-lg text-gray-600">Solve a short story problem</p>
               </CardContent>
             </Card>
           </div>
         )}
 
         {step === "mechanic" && digitLevel && format && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
             {(format === "numerical" ? mechanicsForLevel(digitLevel, operation) : (["typed", "mcq"] as Mechanic[])).map((m) => {
               const meta = MECHANIC_META[m]
               return (
@@ -235,10 +237,10 @@ export default function MathOperationHub({ operation, title, emoji, gradient, ap
                   onClick={() => handlePickMechanic(m)}
                   className="bg-white/90 border-4 border-white shadow-xl cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl"
                 >
-                  <CardContent className="p-6 text-center">
-                    <div className="text-4xl mb-3">{meta.emoji}</div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">{meta.label}</h3>
-                    <p className="text-sm text-gray-600">{meta.description}</p>
+                  <CardContent className="p-8 text-center">
+                    <div className="text-5xl mb-4">{meta.emoji}</div>
+                    <h3 className="text-2xl font-bold text-gray-800 mb-2">{meta.label}</h3>
+                    <p className="text-base text-gray-600">{meta.description}</p>
                   </CardContent>
                 </Card>
               )

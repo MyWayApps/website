@@ -7,6 +7,10 @@ import { Input } from "@/components/ui/input"
 import { ArrowLeft, Star } from "lucide-react"
 import { QuizResults } from "@/components/quiz-results"
 import { NumberLineJump } from "@/components/number-line-jump"
+import { AnimatedFigures } from "./animated-figures"
+import { ColumnAnswerGrid } from "./column-answer-grid"
+import { MathScratchpad } from "./math-scratchpad"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 import {
   OPERATION_SYMBOLS,
   generateNumericalQuestion,
@@ -18,8 +22,6 @@ import {
   type Operation,
 } from "@/lib/math-operations-data"
 
-const HAPPY_TUNE_AUDIO = "/audio/happy_tune.mp3"
-const BUZZ_AUDIO = "/audio/buzz_audio.mp3"
 const ROUND_LENGTH = 5
 
 interface RoundQuestion {
@@ -91,9 +93,19 @@ export default function MathQuizEngine({
   const [typedAnswer, setTypedAnswer] = useState("")
   const [showResult, setShowResult] = useState<"correct" | "wrong" | null>(null)
   const [numberLineDone, setNumberLineDone] = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false)
 
-  const happyTuneRef = useRef<HTMLAudioElement | null>(null)
-  const buzzRef = useRef<HTMLAudioElement | null>(null)
+  // The subtraction mascot turns to face left before actually navigating away,
+  // so the "walking back" motion reads clearly instead of an instant cut.
+  const handleBack = () => {
+    if (operation !== "subtract") {
+      onBackToModes()
+      return
+    }
+    setIsLeaving(true)
+    setTimeout(onBackToModes, 400)
+  }
+
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -117,25 +129,12 @@ export default function MathQuizEngine({
     }
   }, [question, mechanic])
 
-  const playHappyTune = () => {
-    if (happyTuneRef.current) {
-      happyTuneRef.current.currentTime = 0
-      happyTuneRef.current.play().catch(() => {})
-    }
-  }
-  const playBuzz = () => {
-    if (buzzRef.current) {
-      buzzRef.current.currentTime = 0
-      buzzRef.current.play().catch(() => {})
-    }
-  }
-
   const finishRound = (wasCorrect: boolean) => {
     setShowResult(wasCorrect ? "correct" : "wrong")
     if (wasCorrect) {
-      playHappyTune()
+      playCorrectSound()
     } else {
-      playBuzz()
+      playWrongSound()
     }
 
     setTimeout(() => {
@@ -149,13 +148,18 @@ export default function MathQuizEngine({
         onComplete(nextScore, ROUND_LENGTH)
         setPhase("results")
       }
-    }, 1400)
+    }, 5000)
   }
 
-  const submitTyped = () => {
+  // Accepts an optional override so a caller that just computed the answer
+  // itself (ColumnAnswerGrid, right after its own setState) can pass it
+  // straight through instead of relying on `typedAnswer`, which — since
+  // setState isn't synchronous — would still hold the previous render's
+  // value if read in the same tick as the state update that produced it.
+  const submitTyped = (overrideAnswer?: string) => {
     if (!question || showResult) return
     const expected = question.missingSlot === "b" ? question.b : question.answer
-    const parsed = parseInt(typedAnswer, 10)
+    const parsed = parseInt(overrideAnswer ?? typedAnswer, 10)
     finishRound(!Number.isNaN(parsed) && parsed === expected)
   }
 
@@ -188,40 +192,70 @@ export default function MathQuizEngine({
   const equationText =
     mechanic === "missing-operand"
       ? `${question.a} ${symbol} ___ = ${question.answer}`
-      : `${question.a} ${symbol} ${question.b} = ?`
+      : `${question.a} ${symbol} ${question.b} = ${showResult ? question.answer : "?"}`
+
+  // The objects-appearing hint only reads clearly with small counts, so it's
+  // limited to 1-digit addition/subtraction (numerical or word problem) —
+  // 2/3-digit levels would mean dozens of icons, unusable.
+  const canShowFigures = digitLevel === "1" && (operation === "add" || operation === "subtract")
+
+  // Division's quotient digit count doesn't map cleanly onto a's/b's column
+  // widths the way add/subtract/multiply do, so it keeps the single-box input.
+  const isColumnGrid = mechanic === "column" && operation !== "divide"
+  const answerLength = String(question.answer).length
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${gradientClass} p-4 relative overflow-hidden`}>
-      <div className="max-w-3xl mx-auto">
+      {operation === "subtract" && (
+        <img
+          src="/characters/rabbit.png"
+          alt="Rabbit"
+          className="absolute bottom-10 right-10 w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10 transition-transform duration-500 ease-in-out"
+          style={{ transform: `scaleX(${isLeaving ? -1 : 1})` }}
+        />
+      )}
+      <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Button
-            onClick={onBackToModes}
+            onClick={handleBack}
             className="bg-white/20 hover:bg-white/30 text-white border-2 border-white font-bold text-lg px-6 py-3"
             variant="outline"
           >
             <ArrowLeft className="mr-2 h-5 w-5" />
             Back
           </Button>
-          <div className="flex items-center gap-4 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
-            <Star className="h-6 w-6 text-yellow-300" />
-            <span className="text-xl font-bold text-white">
-              Question {roundIndex + 1}/{ROUND_LENGTH} · Score: {score}
+          <div className="flex items-center gap-3 bg-white/20 px-5 py-3 rounded-full backdrop-blur-sm">
+            <span className="text-lg font-bold text-white mr-1">
+              Question {roundIndex + 1}/{ROUND_LENGTH}
             </span>
+            {Array.from({ length: ROUND_LENGTH }, (_, i) => (
+              <Star
+                key={i}
+                className={`h-8 w-8 transition-all ${i < score ? "fill-yellow-300 text-yellow-300 scale-110" : "text-white/40"}`}
+              />
+            ))}
           </div>
         </div>
 
         <Card className="bg-white/90 backdrop-blur-sm shadow-2xl border-0">
-          <CardContent className="p-8">
+          <CardContent className="p-10 md:p-12">
             {question.text ? (
               <>
-                {question.emoji && (
-                  <p className="text-5xl text-center mb-4 leading-none" aria-hidden="true">
-                    {question.emoji.repeat(Math.min(question.a, 12))}
+                <p className="text-2xl font-bold text-gray-800 text-center mb-6 leading-relaxed">{question.text}</p>
+
+                {canShowFigures && (
+                  <div className="bg-amber-50 rounded-2xl p-4 mb-6">
+                    <AnimatedFigures a={question.a} b={question.b} operation={operation} emoji={question.emoji} />
+                  </div>
+                )}
+
+                {showResult && (
+                  <p className="text-3xl font-bold text-gray-800 text-center mb-8">
+                    {question.a} {symbol} {question.b} = {question.answer}
                   </p>
                 )}
-                <p className="text-2xl font-bold text-gray-800 text-center mb-8 leading-relaxed">{question.text}</p>
               </>
-            ) : mechanic === "column" ? (
+            ) : mechanic === "column" && operation === "divide" ? (
               <div className="flex flex-col items-end mx-auto w-fit mb-8 font-mono text-4xl font-bold text-gray-800">
                 <div className="pr-2">{question.a}</div>
                 <div className="flex items-center gap-3">
@@ -230,7 +264,7 @@ export default function MathQuizEngine({
                 </div>
                 <div className="w-full border-b-4 border-gray-700 mt-1" />
               </div>
-            ) : (
+            ) : mechanic === "column" ? null : (
               <p className="text-5xl font-bold text-gray-800 text-center mb-8">{equationText}</p>
             )}
 
@@ -245,14 +279,20 @@ export default function MathQuizEngine({
               </div>
             )}
 
+            {!question.text && canShowFigures && (
+              <div className="bg-amber-50 rounded-2xl p-4 mb-8">
+                <AnimatedFigures a={question.a} b={question.b} operation={operation} />
+              </div>
+            )}
+
             {mechanic === "mcq" && question.choices && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-5">
                 {question.choices.map((choice) => (
                   <Button
                     key={choice}
                     onClick={() => submitChoice(choice)}
                     disabled={!!showResult}
-                    className="h-16 text-2xl font-bold bg-white hover:bg-indigo-50 text-gray-800 border-2 border-indigo-200 hover:border-indigo-500 rounded-2xl shadow-md"
+                    className="h-20 md:h-24 text-3xl md:text-4xl font-bold bg-white hover:bg-indigo-50 text-gray-800 border-2 border-indigo-200 hover:border-indigo-500 rounded-2xl shadow-md"
                     variant="outline"
                   >
                     {choice}
@@ -261,8 +301,33 @@ export default function MathQuizEngine({
               </div>
             )}
 
+            {isColumnGrid && (
+              <div className="flex flex-col items-center gap-4">
+                <ColumnAnswerGrid
+                  a={question.a}
+                  b={question.b}
+                  symbol={symbol}
+                  operation={operation}
+                  answerLength={answerLength}
+                  value={typedAnswer}
+                  onChange={setTypedAnswer}
+                  disabled={!!showResult}
+                  onEnterComplete={submitTyped}
+                />
+                {!showResult && (
+                  <Button
+                    onClick={() => submitTyped()}
+                    disabled={typedAnswer.length < answerLength}
+                    className="h-16 px-10 text-2xl font-bold bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white rounded-2xl shadow-lg"
+                  >
+                    Check
+                  </Button>
+                )}
+              </div>
+            )}
+
             {(mechanic === "typed" ||
-              mechanic === "column" ||
+              (mechanic === "column" && operation === "divide") ||
               mechanic === "missing-operand" ||
               (mechanic === "number-line" && numberLineDone)) && (
                 <div className="flex flex-col items-center gap-4">
@@ -270,6 +335,7 @@ export default function MathQuizEngine({
                     ref={inputRef}
                     type="number"
                     inputMode="numeric"
+                    autoFocus
                     value={typedAnswer}
                     onChange={(e) => setTypedAnswer(e.target.value)}
                     onKeyDown={(e) => {
@@ -277,15 +343,17 @@ export default function MathQuizEngine({
                     }}
                     disabled={!!showResult}
                     placeholder="Type your answer"
-                    className="no-spinner text-3xl font-bold text-center h-16 max-w-xs"
+                    className="no-spinner text-4xl md:text-5xl font-bold text-center h-20 max-w-sm placeholder:text-base md:placeholder:text-lg placeholder:font-medium"
                   />
-                  <Button
-                    onClick={submitTyped}
-                    disabled={!!showResult || typedAnswer === ""}
-                    className="h-14 px-10 text-xl font-bold bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white rounded-2xl shadow-lg"
-                  >
-                    Check
-                  </Button>
+                  {!showResult && (
+                    <Button
+                      onClick={() => submitTyped()}
+                      disabled={typedAnswer === ""}
+                      className="h-16 px-10 text-2xl font-bold bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white rounded-2xl shadow-lg"
+                    >
+                      Check
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -294,7 +362,7 @@ export default function MathQuizEngine({
                 className={`mt-6 text-center p-6 rounded-2xl ${showResult === "correct" ? "bg-green-100 border-4 border-green-300" : "bg-red-100 border-4 border-red-300"}`}
               >
                 <div className={`text-3xl font-bold ${showResult === "correct" ? "text-green-600" : "text-red-600"} mb-2`}>
-                  {showResult === "correct" ? "🎉 Correct!" : "🤔 Try Again!"}
+                  {showResult === "correct" ? "🎉 Correct!" : "🤔 Not Quite!"}
                 </div>
                 {showResult === "wrong" && (
                   <div className="text-xl font-medium text-gray-700">
@@ -305,10 +373,9 @@ export default function MathQuizEngine({
             )}
           </CardContent>
         </Card>
-      </div>
 
-      <audio ref={happyTuneRef} src={HAPPY_TUNE_AUDIO} preload="auto" />
-      <audio ref={buzzRef} src={BUZZ_AUDIO} preload="auto" />
+        <MathScratchpad />
+      </div>
     </div>
   )
 }

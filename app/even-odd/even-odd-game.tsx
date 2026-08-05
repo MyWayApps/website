@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star } from "lucide-react"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 type GameMode = "menu" | "setup" | "playing"
 type GameType = "drag-baskets" | "select-even" | "select-odd"
@@ -28,8 +29,6 @@ interface EvenOddGameProps {
   onBackToHome?: () => void
 }
 
-const correctSoundFreqs = [523.25, 659.25, 783.99, 1046.5, 1318.51] // pleasant
-const wrongSoundFreqs = [220, 196, 174.61] // error
 const successSoundFreqs = [523.25, 659.25, 783.99, 1046.5] // victory
 
 export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGameProps = {}) {
@@ -121,11 +120,11 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
           const ns = new Set(selected)
           ns.add(n)
           setSelected(ns)
-          playSound(correctSoundFreqs, true)
+          playCorrectSound()
         }
       } else {
         // wrong: do not add, just sound and temporary shake
-        playSound(wrongSoundFreqs, false)
+        playWrongSound()
       }
     } else if (gameType === "select-odd") {
       if (!isEven(n)) {
@@ -133,10 +132,10 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
           const ns = new Set(selected)
           ns.add(n)
           setSelected(ns)
-          playSound(correctSoundFreqs, true)
+          playCorrectSound()
         }
       } else {
-        playSound(wrongSoundFreqs, false)
+        playWrongSound()
       }
     }
   }
@@ -155,7 +154,7 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
     const shouldBeEven = isEven(n)
     const correct = (bucket === "even" && shouldBeEven) || (bucket === "odd" && !shouldBeEven)
     if (correct) {
-      playSound(correctSoundFreqs, true)
+      playCorrectSound()
       setPlaced((prev) => {
         const next = { even: [...prev.even], odd: [...prev.odd] }
         // Avoid duplicates
@@ -166,7 +165,7 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
       })
     } else {
       // wrong: bounce back (do nothing state-wise)
-      playSound(wrongSoundFreqs, false)
+      playWrongSound()
     }
     dragNumberRef.current = null
   }
@@ -286,8 +285,12 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
             </Button>
 
             <div className="flex items-center gap-4 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
-              <Star className="h-6 w-6 text-yellow-600" />
-              <span className="text-xl font-bold text-purple-800">Score: {score}</span>
+              {Array.from({ length: 1 }, (_, i) => (
+                <Star
+                  key={i}
+                  className={`h-6 w-6 transition-all ${i < score ? "fill-yellow-300 text-yellow-300 scale-110" : "text-white/40"}`}
+                />
+              ))}
             </div>
           </div>
 
@@ -412,8 +415,12 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
           </Button>
 
           <div className="flex items-center gap-4 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
-            <Star className="h-6 w-6 text-yellow-600" />
-            <span className="text-xl font-bold text-purple-800">Score: {score}/1</span>
+            {Array.from({ length: 1 }, (_, i) => (
+              <Star
+                key={i}
+                className={`h-6 w-6 transition-all ${i < score ? "fill-yellow-300 text-yellow-300 scale-110" : "text-white/40"}`}
+              />
+            ))}
           </div>
         </div>
 

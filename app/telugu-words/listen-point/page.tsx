@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, Volume2, CheckCircle, XCircle } from "lucide-react"
 import { playTeluguTTS } from "@/lib/telugu-tts"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 // All Telugu words data organized by groups
 const teluguWordsData = {
@@ -265,9 +266,6 @@ export default function ListenPointGame() {
   const [showMasteredTab, setShowMasteredTab] = useState(false)
   const [selectedWords, setSelectedWords] = useState<string[]>([])
   const [isPlayingTTS, setIsPlayingTTS] = useState(false)
-  
-  const goodJobRef = useRef<HTMLAudioElement | null>(null)
-  const buzzerRef = useRef<HTMLAudioElement | null>(null)
 
   // localStorage functions for mastered words
   const loadMasteredWords = () => {
@@ -385,18 +383,6 @@ export default function ListenPointGame() {
     }
   }
 
-  const playGoodJob = () => {
-    if (goodJobRef.current) {
-      goodJobRef.current.play().catch(e => console.error("Good job audio failed:", e))
-    }
-  }
-
-  const playBuzzer = () => {
-    if (buzzerRef.current) {
-      buzzerRef.current.play().catch(e => console.error("Buzzer audio failed:", e))
-    }
-  }
-
   // Handle word selection
   const handleWordClick = (selectedWord: any) => {
     if (showResult) return // Already answered
@@ -406,8 +392,8 @@ export default function ListenPointGame() {
       setShowResult("correct")
       setScore(score + 1)
       setShowConfetti(true)
-      playGoodJob()
-      
+      playCorrectSound()
+
       // Add to mastered words if not already there
       if (!masteredWords.includes(selectedWord.word)) {
         const newMasteredWords = [...masteredWords, selectedWord.word]
@@ -426,7 +412,7 @@ export default function ListenPointGame() {
     } else {
       // Wrong answer
       setShowResult("wrong")
-      playBuzzer()
+      playWrongSound()
       setTimeout(() => {
         setShowResult(null)
       }, 1500)
@@ -730,9 +716,6 @@ export default function ListenPointGame() {
         </div>
       )}
 
-      {/* Audio Elements */}
-      <audio ref={goodJobRef} src="/audio/happy_tune.mp3" preload="auto" />
-      <audio ref={buzzerRef} src="/audio/buzz_audio.mp3" preload="auto" />
     </div>
   )
 }

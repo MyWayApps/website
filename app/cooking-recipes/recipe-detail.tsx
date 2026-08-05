@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, ArrowRight, CheckCircle, Clock, Users, Lightbulb, Home } from "lucide-react"
+import { playCorrectSound } from "@/lib/feedback-audio"
 
 interface RecipeStep {
   id: number
@@ -93,7 +94,7 @@ export default function RecipeDetail({ recipe, onComplete, onBack, onBackToHome 
   const handleStepComplete = () => {
     if (!completedSteps.includes(currentStep)) {
       setCompletedSteps([...completedSteps, currentStep])
-      playSound("step")
+      playCorrectSound()
     }
   }
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react"
 import { useParams } from "next/navigation"
 import { playTeluguTTS } from "@/lib/telugu-tts"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 // Matra data with names
 const matraData = [
@@ -41,8 +42,6 @@ export default function MatchPairGame() {
   const [showConfetti, setShowConfetti] = useState(false)
   
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const goodJobRef = useRef<HTMLAudioElement | null>(null)
-  const buzzerRef = useRef<HTMLAudioElement | null>(null)
 
   // Generate 5 questions with matching pairs
   const generateQuestions = () => {
@@ -141,18 +140,6 @@ export default function MatchPairGame() {
     }
   }
 
-  const playGoodJob = () => {
-    if (goodJobRef.current) {
-      goodJobRef.current.play().catch(e => console.error("Good job audio failed:", e))
-    }
-  }
-
-  const playBuzzer = () => {
-    if (buzzerRef.current) {
-      buzzerRef.current.play().catch(e => console.error("Buzzer audio failed:", e))
-    }
-  }
-
   // Handle drag start
   const handleDragStart = (e: React.DragEvent, answer: any) => {
     setDraggedItem(answer)
@@ -185,7 +172,7 @@ export default function MatchPairGame() {
           setScore(score + 1)
           setShowResult("question-complete")
           setShowConfetti(true)
-          playGoodJob()
+          playCorrectSound()
           setTimeout(() => {
             setShowConfetti(false)
             if (currentQuestion < 4) {
@@ -197,7 +184,7 @@ export default function MatchPairGame() {
         } else {
           // Some matches are wrong, show wrong message and reset only the last match
           setShowResult("wrong")
-          playBuzzer()
+          playWrongSound()
           // Remove only the last matched pair (the one that was just dropped)
           const updatedPairs = { ...matchedPairs }
           delete updatedPairs[leftOption.id]
@@ -429,8 +416,6 @@ export default function MatchPairGame() {
 
       {/* Audio Elements */}
       <audio ref={audioRef} preload="auto" />
-      <audio ref={goodJobRef} src="/audio/happy_tune.mp3" preload="auto" />
-      <audio ref={buzzerRef} src="/audio/buzz_audio.mp3" preload="auto" />
     </div>
   )
 }

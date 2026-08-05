@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star } from 'lucide-react'
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 type GameMode = "menu" | "count-by-2" | "count-by-3" | "count-by-5" | "count-by-10"
 type PlayableGameMode = Exclude<GameMode, "menu">
@@ -77,10 +78,6 @@ const gameData: Record<PlayableGameMode, {
     sequence: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
   },
 }
-
-// Sound effect frequencies for correct answers
-const correctSoundFreqs = [523.25, 659.25, 783.99, 1046.5, 1318.51] // C5, E5, G5, C6, E6
-const wrongSoundFreqs = [220, 196, 174.61] // A3, G3, F3
 
 export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipCountingGameProps = {}) {
   const [currentMode, setCurrentMode] = useState<GameMode>("menu")
@@ -177,7 +174,7 @@ export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipC
       setShowFeedback(true)
 
       // Play correct answer sound
-      playSound(correctSoundFreqs, true)
+      playCorrectSound()
 
       setTimeout(() => {
         if (currentIndex < currentGame.sequence.length - 1) {
@@ -218,7 +215,7 @@ export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipC
       setShowFeedback(true)
 
       // Play wrong answer sound
-      playSound(wrongSoundFreqs, false)
+      playWrongSound()
 
       setTimeout(() => {
         setShowFeedback(false)
@@ -357,9 +354,13 @@ export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipC
             {onBackToHome ? "Back to Home" : "Back to Menu"}
           </Button>
 
-          <div className="flex items-center gap-4 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
-            <Star className="h-6 w-6 text-yellow-600" />
-            <span className="text-xl font-bold text-amber-800">Score: {score}</span>
+          <div className="flex flex-wrap items-center gap-2 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
+            {Array.from({ length: currentGame.sequence.length }, (_, i) => (
+              <Star
+                key={i}
+                className={`h-6 w-6 transition-all ${i < score ? "fill-yellow-300 text-yellow-300 scale-110" : "text-white/40"}`}
+              />
+            ))}
           </div>
         </div>
 

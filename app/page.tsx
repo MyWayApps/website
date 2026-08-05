@@ -100,6 +100,42 @@ const fallbackApplications: Application[] = [
     icon_emoji: "➗", color_scheme: "from-sky-300 to-cyan-500",
     route: "/math-division", created_at: new Date().toISOString(),
   },
+  {
+    id: "math-7", name: "Shapes", category: "Education", subcategory: "Math",
+    description: "Identify flat & solid shapes, sort them, and match to real life",
+    icon_emoji: "🔺", color_scheme: "from-green-300 to-teal-500",
+    route: "/math-shapes", created_at: new Date().toISOString(),
+  },
+  {
+    id: "math-8", name: "Fractions", category: "Education", subcategory: "Math",
+    description: "Simple & mixed fractions — identify, compare, and shade",
+    icon_emoji: "🥧", color_scheme: "from-violet-300 to-fuchsia-500",
+    route: "/math-fractions", created_at: new Date().toISOString(),
+  },
+  {
+    id: "math-9", name: "Money", category: "Education", subcategory: "Math",
+    description: "Indian Rupees & Paise — identify, count, and compare",
+    icon_emoji: "💰", color_scheme: "from-sky-300 to-cyan-500",
+    route: "/math-money", created_at: new Date().toISOString(),
+  },
+  {
+    id: "math-10", name: "Measurement", category: "Education", subcategory: "Math",
+    description: "Compare length, weight, capacity, and measure with everyday units",
+    icon_emoji: "📏", color_scheme: "from-orange-300 to-amber-400",
+    route: "/math-measurement", created_at: new Date().toISOString(),
+  },
+  {
+    id: "math-11", name: "Memorize Tables", category: "Education", subcategory: "Math",
+    description: "Addition, subtraction & multiplication facts 1-10, animated and in order",
+    icon_emoji: "🔢", color_scheme: "from-indigo-300 to-cyan-500",
+    route: "/math-tables", created_at: new Date().toISOString(),
+  },
+  {
+    id: "math-12", name: "Patterns", category: "Education", subcategory: "Math",
+    description: "Spot repeating patterns, fill the gap, and count on number patterns",
+    icon_emoji: "🧩", color_scheme: "from-pink-300 to-red-500",
+    route: "/math-patterns", created_at: new Date().toISOString(),
+  },
   // ── Telugu ────────────────────────────────────────────────────────────────
   {
     id: "5", name: "Telugu Letters", category: "Education", subcategory: "Telugu",
@@ -138,6 +174,18 @@ const fallbackApplications: Application[] = [
     route: "/telugu-comprehension", created_at: new Date().toISOString(),
   },
   {
+    id: "te-wg", name: "Telugu Word Games", category: "Education", subcategory: "Telugu",
+    description: "Picture Vocabulary, Word Search & Crossword",
+    icon_emoji: "🧩", color_scheme: "from-teal-300 to-cyan-500",
+    route: "/word-games/telugu", created_at: new Date().toISOString(),
+  },
+  {
+    id: "te-poems", name: "Telugu Poems", category: "Education", subcategory: "Telugu",
+    description: "Simple traditional rhymes — script and audio",
+    icon_emoji: "📜", color_scheme: "from-rose-300 to-fuchsia-500",
+    route: "/poems/telugu", created_at: new Date().toISOString(),
+  },
+  {
     id: "15", name: "Telugu Satakamalu", category: "Education", subcategory: "Telugu",
     description: "Read classic Telugu Satakamalu with meanings",
     icon_emoji: "📜", color_scheme: "from-amber-200 to-orange-400",
@@ -168,6 +216,18 @@ const fallbackApplications: Application[] = [
     icon_emoji: "📖", color_scheme: "from-green-200 to-teal-500",
     route: "/hindi-comprehension", created_at: new Date().toISOString(),
   },
+  {
+    id: "hi-wg", name: "Hindi Word Games", category: "Education", subcategory: "Hindi",
+    description: "Picture Vocabulary, Word Search & Crossword",
+    icon_emoji: "🧩", color_scheme: "from-teal-300 to-cyan-500",
+    route: "/word-games/hindi", created_at: new Date().toISOString(),
+  },
+  {
+    id: "hi-poems", name: "Hindi Poems", category: "Education", subcategory: "Hindi",
+    description: "Simple traditional rhymes — script and audio",
+    icon_emoji: "📜", color_scheme: "from-rose-300 to-fuchsia-500",
+    route: "/poems/hindi", created_at: new Date().toISOString(),
+  },
   // ── NEW: Kannada ──────────────────────────────────────────────────────────
   {
     id: "kn-1", name: "Kannada Letters", category: "Education", subcategory: "Kannada",
@@ -186,6 +246,18 @@ const fallbackApplications: Application[] = [
     description: "Read Kannada stories and test your understanding!",
     icon_emoji: "📖", color_scheme: "from-orange-300 to-rose-500",
     route: "/kannada-comprehension", created_at: new Date().toISOString(),
+  },
+  {
+    id: "kn-wg", name: "Kannada Word Games", category: "Education", subcategory: "Kannada",
+    description: "Picture Vocabulary, Word Search & Crossword",
+    icon_emoji: "🧩", color_scheme: "from-teal-300 to-cyan-500",
+    route: "/word-games/kannada", created_at: new Date().toISOString(),
+  },
+  {
+    id: "kn-poems", name: "Kannada Poems", category: "Education", subcategory: "Kannada",
+    description: "Simple traditional rhymes — script and audio",
+    icon_emoji: "📜", color_scheme: "from-rose-300 to-fuchsia-500",
+    route: "/poems/kannada", created_at: new Date().toISOString(),
   },
   // ── NEW: Tamil ────────────────────────────────────────────────────────────
   {
@@ -206,6 +278,18 @@ const fallbackApplications: Application[] = [
     icon_emoji: "📖", color_scheme: "from-blue-200 to-indigo-400",
     route: "/tamil-comprehension", created_at: new Date().toISOString(),
   },
+  {
+    id: "ta-wg", name: "Tamil Word Games", category: "Education", subcategory: "Tamil",
+    description: "Picture Vocabulary, Word Search & Crossword",
+    icon_emoji: "🧩", color_scheme: "from-teal-300 to-cyan-500",
+    route: "/word-games/tamil", created_at: new Date().toISOString(),
+  },
+  {
+    id: "ta-poems", name: "Tamil Poems", category: "Education", subcategory: "Tamil",
+    description: "Simple traditional rhymes — script and audio",
+    icon_emoji: "📜", color_scheme: "from-rose-300 to-fuchsia-500",
+    route: "/poems/tamil", created_at: new Date().toISOString(),
+  },
   // ── NEW: Malayalam ────────────────────────────────────────────────────────
   {
     id: "ml-1", name: "Malayalam Letters", category: "Education", subcategory: "Malayalam",
@@ -225,8 +309,26 @@ const fallbackApplications: Application[] = [
     icon_emoji: "📖", color_scheme: "from-yellow-200 to-amber-400",
     route: "/malayalam-comprehension", created_at: new Date().toISOString(),
   },
-  // ── NEW: Sanskrit (Vocabulary & Comprehension only — same script as Hindi,
-  // no audio since no reliable Sanskrit voice exists in browsers or espeak) ──
+  {
+    id: "ml-wg", name: "Malayalam Word Games", category: "Education", subcategory: "Malayalam",
+    description: "Picture Vocabulary, Word Search & Crossword",
+    icon_emoji: "🧩", color_scheme: "from-teal-300 to-cyan-500",
+    route: "/word-games/malayalam", created_at: new Date().toISOString(),
+  },
+  {
+    id: "ml-poems", name: "Malayalam Poems", category: "Education", subcategory: "Malayalam",
+    description: "Simple traditional rhymes — script and audio",
+    icon_emoji: "📜", color_scheme: "from-rose-300 to-fuchsia-500",
+    route: "/poems/malayalam", created_at: new Date().toISOString(),
+  },
+  // ── NEW: Sanskrit (same Devanagari script as Hindi; audio routes through a
+  // Kannada-transliteration TTS pipeline since no native Sanskrit voice exists) ──
+  {
+    id: "sa-0", name: "Sanskrit Letters", category: "Education", subcategory: "Sanskrit",
+    description: "Learn the Sanskrit alphabet with flashcards and games",
+    icon_emoji: "ॐ", color_scheme: "from-yellow-200 to-amber-400",
+    route: "/sanskrit-letters", created_at: new Date().toISOString(),
+  },
   {
     id: "sa-1", name: "Sanskrit Vocabulary", category: "Education", subcategory: "Sanskrit",
     description: "Learn Sanskrit vocabulary - Days, Colours, Animals & more!",
@@ -238,6 +340,18 @@ const fallbackApplications: Application[] = [
     description: "Read Sanskrit stories and test your understanding!",
     icon_emoji: "📖", color_scheme: "from-orange-300 to-rose-500",
     route: "/sanskrit-comprehension", created_at: new Date().toISOString(),
+  },
+  {
+    id: "sa-wg", name: "Sanskrit Word Games", category: "Education", subcategory: "Sanskrit",
+    description: "Picture Vocabulary, Word Search & Crossword",
+    icon_emoji: "🧩", color_scheme: "from-teal-300 to-cyan-500",
+    route: "/word-games/sanskrit", created_at: new Date().toISOString(),
+  },
+  {
+    id: "sa-poems", name: "Sanskrit Poems", category: "Education", subcategory: "Sanskrit",
+    description: "A simple classic subhashita — script and audio",
+    icon_emoji: "📜", color_scheme: "from-rose-300 to-fuchsia-500",
+    route: "/poems/sanskrit", created_at: new Date().toISOString(),
   },
   // ── English ───────────────────────────────────────────────────────────────
   {
@@ -278,13 +392,6 @@ const fallbackApplications: Application[] = [
     description: "Learn cooking skills with fun recipes!",
     icon_emoji: "🥗", color_scheme: "from-yellow-200 to-amber-400",
     route: "/cooking-recipes", created_at: new Date().toISOString(),
-  },
-  // ── Puzzles ───────────────────────────────────────────────────────────────
-  {
-    id: "9p", name: "Shape Puzzle", category: "Puzzles", subcategory: "Geometry",
-    description: "Watch and learn solid & plane shapes",
-    icon_emoji: "🔺", color_scheme: "from-green-200 to-teal-500",
-    route: "/shape-puzzle", created_at: new Date().toISOString(),
   },
   // ── Games ─────────────────────────────────────────────────────────────────
   {

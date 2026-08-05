@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,9 +10,7 @@ import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/da
 import type { User, Application } from "@/lib/database-supabase"
 import { saveGameScore } from "@/lib/scoring"
 import { pickUnseenRandom } from "@/lib/question-history"
-
-const HAPPY_TUNE_AUDIO = "/audio/happy_tune.mp3"
-const BUZZ_AUDIO = "/audio/buzz_audio.mp3"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 // Function to play English TTS
 const playEnglishTTS = (text: string): Promise<void> => {
@@ -88,9 +86,6 @@ export default function MalayalamVocabularyGame() {
   const [currentMessage, setCurrentMessage] = useState("Good job!")
   const [isPlayingTTS, setIsPlayingTTS] = useState(false)
   const [isReady, setIsReady] = useState(false)
-
-  const happyTuneRef = useRef<HTMLAudioElement | null>(null)
-  const buzzRef = useRef<HTMLAudioElement | null>(null)
 
   // Scoring/persistence
   const [user, setUser] = useState<User | null>(null)
@@ -213,10 +208,7 @@ export default function MalayalamVocabularyGame() {
       setTimeout(() => setShowConfetti(false), 2000)
 
       // Play happy tune
-      if (happyTuneRef.current) {
-        happyTuneRef.current.currentTime = 0
-        happyTuneRef.current.play().catch(e => console.error("Happy tune play failed:", e))
-      }
+      playCorrectSound()
 
       // Set random success message
       setCurrentMessage(successMessages[Math.floor(Math.random() * successMessages.length)])
@@ -224,10 +216,7 @@ export default function MalayalamVocabularyGame() {
       setTimeout(() => setRound((r) => r + 1), 2000)
     } else {
       setShowResult("wrong")
-      if (buzzRef.current) {
-        buzzRef.current.currentTime = 0
-        buzzRef.current.play().catch(e => console.error("Buzz audio play failed:", e))
-      }
+      playWrongSound()
       setTimeout(() => setShowResult(null), 1500)
     }
   }
@@ -405,9 +394,6 @@ export default function MalayalamVocabularyGame() {
           ))}
         </div>
       )}
-
-      <audio ref={happyTuneRef} src={HAPPY_TUNE_AUDIO} preload="auto" />
-      <audio ref={buzzRef} src={BUZZ_AUDIO} preload="auto" />
     </div>
   )
 }

@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, Volume2, CheckCircle, XCircle } from "lucide-react"
 import { useParams } from "next/navigation"
 import { getWordsByCategory, getWordCategoryLabel, WordCategory } from "@/lib/telugu-vottulu-data"
 import { playTeluguTTS } from "@/lib/telugu-tts"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 export default function FindWordGame() {
   const params = useParams()
@@ -19,9 +20,6 @@ export default function FindWordGame() {
   const [isLoading, setIsLoading] = useState(true)
   const [showConfetti, setShowConfetti] = useState(false)
   const [isPlayingTTS, setIsPlayingTTS] = useState(false)
-  
-  const goodJobRef = useRef<HTMLAudioElement | null>(null)
-  const buzzerRef = useRef<HTMLAudioElement | null>(null)
 
   const categoryLabel = getWordCategoryLabel(category)
 
@@ -87,18 +85,6 @@ export default function FindWordGame() {
     }
   }
 
-  const playGoodJob = () => {
-    if (goodJobRef.current) {
-      goodJobRef.current.play().catch(e => console.error("Good job audio failed:", e))
-    }
-  }
-
-  const playBuzzer = () => {
-    if (buzzerRef.current) {
-      buzzerRef.current.play().catch(e => console.error("Buzzer audio failed:", e))
-    }
-  }
-
   // Handle word selection
   const handleWordClick = (selectedWord: string) => {
     if (showResult) return
@@ -107,8 +93,8 @@ export default function FindWordGame() {
       setShowResult("correct")
       setScore(score + 1)
       setShowConfetti(true)
-      playGoodJob()
-      
+      playCorrectSound()
+
       setTimeout(() => {
         setShowConfetti(false)
         if (currentQuestion < 4) {
@@ -119,7 +105,7 @@ export default function FindWordGame() {
       }, 3000)
     } else {
       setShowResult("wrong")
-      playBuzzer()
+      playWrongSound()
       setTimeout(() => {
         setShowResult(null)
       }, 1500)
@@ -294,9 +280,6 @@ export default function FindWordGame() {
         </div>
       )}
 
-      {/* Audio Elements */}
-      <audio ref={goodJobRef} src="/audio/happy_tune.mp3" preload="auto" />
-      <audio ref={buzzerRef} src="/audio/buzz_audio.mp3" preload="auto" />
     </div>
   )
 }

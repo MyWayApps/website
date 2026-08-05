@@ -1728,9 +1728,11 @@ export default function CookingRecipesApp({ onRecipeComplete, onBackToHome }: Co
             {onBackToHome ? "Back to Home" : "Back to Menu"}
           </Button>
 
-          <div className="flex items-center gap-4 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
-            <Star className="h-6 w-6 text-yellow-600" />
-            <span className="text-xl font-bold text-purple-800">Recipes Completed: {completedRecipes.length}</span>
+          <div className="flex items-center gap-2 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
+            <Star className="h-6 w-6 fill-yellow-300 text-yellow-300" />
+            <span className="text-lg font-bold text-purple-900">
+              {completedRecipes.length} / {recipes.length} Recipes Completed
+            </span>
           </div>
         </div>
 

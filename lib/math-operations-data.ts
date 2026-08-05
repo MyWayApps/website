@@ -81,8 +81,12 @@ export function generateNumericalQuestion(operation: Operation, digitLevel: Digi
       // Build up from the answer so it always divides evenly — a remainder
       // would need fraction/decimal handling this game doesn't offer.
       const divisor = pickUnseenRandom(`${gameKey}:divisor`, 2, 9)
-      const quotientMin = Math.max(1, Math.ceil(min / divisor))
-      const quotientMax = Math.max(quotientMin, Math.floor(max / divisor))
+      // At level 1, "digit level" describes the division fact's complexity
+      // (basic times-table facts, quotient 1-9) rather than the dividend's
+      // digit count — deriving it from DIGIT_RANGES["1"] = [1,9] would cap
+      // the dividend at 9 and force the quotient to almost always be 1.
+      const quotientMin = digitLevel === "1" ? 1 : Math.max(1, Math.ceil(min / divisor))
+      const quotientMax = digitLevel === "1" ? 9 : Math.max(quotientMin, Math.floor(max / divisor))
       const quotient = pickUnseenRandom(`${gameKey}:quotient`, quotientMin, quotientMax)
       return { a: divisor * quotient, b: divisor, answer: quotient }
     }

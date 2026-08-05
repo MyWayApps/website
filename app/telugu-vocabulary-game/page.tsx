@@ -1,15 +1,13 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star, Volume2 } from "lucide-react"
 import { getCategoryById, vocabularyCategories, VocabularyItem } from "@/lib/telugu-vocabulary-data"
 import { pickUnseenRandom } from "@/lib/question-history"
-
-const HAPPY_TUNE_AUDIO = "/audio/happy_tune.mp3"
-const BUZZ_AUDIO = "/audio/buzz_audio.mp3"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 // Function to play English TTS
 const playEnglishTTS = (text: string): Promise<void> => {
@@ -85,9 +83,6 @@ export default function TeluguVocabularyGame() {
   const [currentMessage, setCurrentMessage] = useState("Good job!")
   const [isPlayingTTS, setIsPlayingTTS] = useState(false)
   const [isReady, setIsReady] = useState(false)
-  
-  const happyTuneRef = useRef<HTMLAudioElement | null>(null)
-  const buzzRef = useRef<HTMLAudioElement | null>(null)
 
   // Initialize items based on category
   useEffect(() => {
@@ -146,21 +141,15 @@ export default function TeluguVocabularyGame() {
       setTimeout(() => setShowConfetti(false), 2000)
       
       // Play happy tune
-      if (happyTuneRef.current) {
-        happyTuneRef.current.currentTime = 0
-        happyTuneRef.current.play().catch(e => console.error("Happy tune play failed:", e))
-      }
-      
+      playCorrectSound()
+
       // Set random success message
       setCurrentMessage(successMessages[Math.floor(Math.random() * successMessages.length)])
       
       setTimeout(() => setRound((r) => r + 1), 2000)
     } else {
       setShowResult("wrong")
-      if (buzzRef.current) {
-        buzzRef.current.currentTime = 0
-        buzzRef.current.play().catch(e => console.error("Buzz audio play failed:", e))
-      }
+      playWrongSound()
       setTimeout(() => setShowResult(null), 1500)
     }
   }
@@ -337,9 +326,6 @@ export default function TeluguVocabularyGame() {
           ))}
         </div>
       )}
-
-      <audio ref={happyTuneRef} src={HAPPY_TUNE_AUDIO} preload="auto" />
-      <audio ref={buzzRef} src={BUZZ_AUDIO} preload="auto" />
     </div>
   )
 }

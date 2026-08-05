@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star, Volume2, Delete } from "lucide-react"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 interface TypeTheWordGameProps {
   wordList: string[]
@@ -76,6 +77,7 @@ export default function TypeTheWordGame({ wordList, onGameComplete, onBackToGame
     if (correct) {
       setScore(score + 1)
       setShowConfetti(true)
+      playCorrectSound()
 
       setTimeout(() => {
         setShowFeedback(false)
@@ -90,6 +92,8 @@ export default function TypeTheWordGame({ wordList, onGameComplete, onBackToGame
         }
       }, 2000)
     } else {
+      playWrongSound()
+
       setTimeout(() => {
         setShowFeedback(false)
         setTypedWord("")
@@ -135,9 +139,16 @@ export default function TypeTheWordGame({ wordList, onGameComplete, onBackToGame
             Back to Games
           </Button>
 
-          <div className="flex items-center gap-4 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
-            <Star className="h-6 w-6 text-yellow-500" />
-            <span className="text-xl font-bold text-purple-800">Score: {score}/{wordList.length}</span>
+          <div className="flex items-center gap-3 bg-white/20 px-5 py-3 rounded-full backdrop-blur-sm flex-wrap">
+            <span className="text-lg font-bold text-purple-800 mr-1">
+              Word {currentWordIndex + 1}/{wordList.length}
+            </span>
+            {Array.from({ length: wordList.length }, (_, i) => (
+              <Star
+                key={i}
+                className={`h-6 w-6 transition-all ${i < score ? "fill-yellow-300 text-yellow-300 scale-110" : "text-white/40"}`}
+              />
+            ))}
           </div>
         </div>
 

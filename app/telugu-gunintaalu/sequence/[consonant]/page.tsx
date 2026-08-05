@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react"
 import { useParams } from "next/navigation"
 import { playTeluguTTS } from "@/lib/telugu-tts"
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 // Matra sequence for all consonants
 const matraSequence = [
@@ -32,8 +33,6 @@ export default function SequenceGame() {
   const [showBalloons, setShowBalloons] = useState(false)
   
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const goodJobRef = useRef<HTMLAudioElement | null>(null)
-  const buzzerRef = useRef<HTMLAudioElement | null>(null)
 
   // Generate 5 random questions
   const generateQuestions = () => {
@@ -105,18 +104,6 @@ export default function SequenceGame() {
     }
   }
 
-  const playGoodJob = () => {
-    if (goodJobRef.current) {
-      goodJobRef.current.play().catch(e => console.error("Good job audio failed:", e))
-    }
-  }
-
-  const playBuzzer = () => {
-    if (buzzerRef.current) {
-      buzzerRef.current.play().catch(e => console.error("Buzzer audio failed:", e))
-    }
-  }
-
   // Handle drag start
   const handleDragStart = (e: React.DragEvent, item: string) => {
     setDraggedItem(item)
@@ -155,7 +142,7 @@ export default function SequenceGame() {
       } else {
         // Wrong placement - immediate feedback
         setShowResult("wrong")
-        playBuzzer()
+        playWrongSound()
         setTimeout(() => {
           setShowResult(null)
           // Reset the question with first letter in place
@@ -177,7 +164,7 @@ export default function SequenceGame() {
       setShowResult("correct")
       setScore(score + 1)
       setShowBalloons(true)
-      playGoodJob()
+      playCorrectSound()
       setTimeout(() => {
         setShowBalloons(false)
         if (currentQuestion < 4) {
@@ -188,7 +175,7 @@ export default function SequenceGame() {
       }, 2000)
     } else {
       setShowResult("wrong")
-      playBuzzer()
+      playWrongSound()
       setTimeout(() => {
         setShowResult(null)
         // Reset the question
@@ -374,8 +361,6 @@ export default function SequenceGame() {
 
       {/* Audio Elements */}
       <audio ref={audioRef} preload="auto" />
-      <audio ref={goodJobRef} src="/audio/happy_tune.mp3" preload="auto" />
-      <audio ref={buzzerRef} src="/audio/buzz_audio.mp3" preload="auto" />
     </div>
   )
 }

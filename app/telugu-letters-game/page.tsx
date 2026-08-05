@@ -1,16 +1,13 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star } from "lucide-react"
 import { playTeluguTTS } from "@/lib/telugu-tts"
 import { getLettersByType, getLetterTypeLabel, LetterType, TeluguLetterWithWord } from "@/lib/telugu-letters-data"
-
-const GOOD_JOB_AUDIO = "/audio/happy_tune.mp3"
-const BUZZ_AUDIO = "/audio/buzz_audio.mp3"
-const HAPPY_TUNE_AUDIO = "/audio/happy_tune.mp3" 
+import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 // Success messages array
 const successMessages = [
@@ -64,9 +61,6 @@ export default function TeluguLettersGame() {
   const [currentMessage, setCurrentMessage] = useState("Good job!")
   const [isPlayingTTS, setIsPlayingTTS] = useState(false)
   const [isReady, setIsReady] = useState(false)
-  const goodJobRef = useRef<HTMLAudioElement | null>(null)
-  const buzzRef = useRef<HTMLAudioElement | null>(null)
-  const happyTuneRef = useRef<HTMLAudioElement | null>(null)
 
   const typeLabel = getLetterTypeLabel(letterType)
 
@@ -120,28 +114,16 @@ export default function TeluguLettersGame() {
       setShowConfetti(true)
       setTimeout(() => setShowConfetti(false), 2000)
       
-      // Play happy tune and good job audio
-      console.log("Playing success audio...")
-      if (happyTuneRef.current) {
-        happyTuneRef.current.currentTime = 0
-        happyTuneRef.current.play().catch(e => console.error("Happy tune play failed:", e))
-      }
-      if (goodJobRef.current) {
-        goodJobRef.current.currentTime = 0
-        goodJobRef.current.play().catch(e => console.error("Good job audio play failed:", e))
-      }
-      
+      // Play success audio
+      playCorrectSound()
+
       // Set random success message
       setCurrentMessage(successMessages[Math.floor(Math.random() * successMessages.length)])
       
       setTimeout(() => setRound((r) => r + 1), 2500)
     } else {
       setShowResult("wrong")
-      console.log("Playing wrong answer audio...")
-      if (buzzRef.current) {
-        buzzRef.current.currentTime = 0
-        buzzRef.current.play().catch(e => console.error("Buzz audio play failed:", e))
-      }
+      playWrongSound()
       setTimeout(() => setShowResult(null), 1500)
     }
   }
@@ -307,31 +289,6 @@ export default function TeluguLettersGame() {
           ))}
         </div>
       )}
-
-      <audio 
-        ref={goodJobRef} 
-        src={GOOD_JOB_AUDIO} 
-        preload="auto"
-        onError={(e) => console.error("Good job audio error:", e)}
-        onLoadStart={() => console.log("Good job audio loading...")}
-        onCanPlay={() => console.log("Good job audio can play")}
-      />
-      <audio 
-        ref={buzzRef} 
-        src={BUZZ_AUDIO} 
-        preload="auto"
-        onError={(e) => console.error("Buzz audio error:", e)}
-        onLoadStart={() => console.log("Buzz audio loading...")}
-        onCanPlay={() => console.log("Buzz audio can play")}
-      />
-      <audio 
-        ref={happyTuneRef} 
-        src={HAPPY_TUNE_AUDIO} 
-        preload="auto"
-        onError={(e) => console.error("Happy tune audio error:", e)}
-        onLoadStart={() => console.log("Happy tune audio loading...")}
-        onCanPlay={() => console.log("Happy tune audio can play")}
-      />
     </div>
   )
 }
