@@ -142,6 +142,95 @@ function extractTextFromArrays(filePath, arrayNames, unicodeRange, transform) {
   return texts;
 }
 
+// Unlike extractTextFromArrays (one top-level `const name = [...]`), this
+// matches a field name that repeats many times throughout the file — e.g.
+// `passage: [...]` appears once per lesson, `options: [...]` once per
+// question. Each occurrence's strings are spoken individually at runtime
+// (no joining), same as any other per-string vocabulary hash.
+function extractTextFromRepeatedArrayField(filePath, fieldName, unicodeRange, transform) {
+  const texts = new Set();
+  if (!fs.existsSync(filePath)) return texts;
+
+  const content = fs.readFileSync(filePath, 'utf8');
+  const fieldRegex = new RegExp(`${fieldName}:\\s*\\[([^\\]]+)\\]`, 'g');
+  const blocks = content.matchAll(fieldRegex);
+  for (const block of blocks) {
+    const stringMatches = block[1].matchAll(/["']([^"']+)["']/g);
+    for (const stringMatch of stringMatches) {
+      let text = stringMatch[1];
+      if (!unicodeRange.test(text)) continue;
+      if (transform) text = transform(text);
+      if (text) texts.add(text);
+    }
+  }
+  return texts;
+}
+
+// Fill-in-the-blank runtime text isn't the raw `sentence`/`blank` fields —
+// game2/page.tsx computes `sentence.replace(blank, selectedAnswer)` (or
+// `.replace(blank, "______")` before any answer is picked), so the literal
+// `sentence`/`blank` field values are never what's actually spoken. Parse
+// each { sentence, blank, options } object and pre-generate every substituted
+// variant that getSentenceWithAnswer() can actually produce.
+function extractFillBlankVariants(filePath, unicodeRange, transform) {
+  const texts = new Set();
+  if (!fs.existsSync(filePath)) return texts;
+  const content = fs.readFileSync(filePath, 'utf8');
+
+  const questionObjRegex =
+    /\{\s*sentence:\s*["']([^"']+)["'],\s*blank:\s*["']([^"']+)["'],\s*options:\s*\[([^\]]+)\]/g;
+  let m;
+  while ((m = questionObjRegex.exec(content))) {
+    const sentence = m[1];
+    const blank = m[2];
+    const options = Array.from(m[3].matchAll(/["']([^"']+)["']/g)).map((x) => x[1]);
+    const variants = [...options, '______'];
+    variants.forEach((v) => {
+      let text = sentence.replace(blank, v);
+      if (!unicodeRange.test(text)) return;
+      if (transform) text = transform(text);
+      if (text) texts.add(text);
+    });
+  }
+  return texts;
+}
+
+// lib/poems-data.ts has one top-level key per language (same keys as
+// LANGUAGES below), each an array of { lines: [...] } poems. Runtime speaks
+// `poem.lines.join(" ")` as ONE utterance (app/poems/[lang]/page.tsx), so
+// this returns one joined string per poem, not per line.
+const POEM_LANG_ORDER = ['hindi', 'telugu', 'kannada', 'tamil', 'malayalam', 'sanskrit'];
+
+function extractPoemsForLanguage(langKey) {
+  const filePath = path.join(LIB_DIR, 'poems-data.ts');
+  if (!fs.existsSync(filePath)) return [];
+  const content = fs.readFileSync(filePath, 'utf8');
+
+  const startMarker = `  ${langKey}: [`;
+  const startIdx = content.indexOf(startMarker);
+  if (startIdx === -1) return [];
+
+  const orderIdx = POEM_LANG_ORDER.indexOf(langKey);
+  let endIdx = content.length;
+  if (orderIdx !== -1 && orderIdx + 1 < POEM_LANG_ORDER.length) {
+    const nextMarker = `  ${POEM_LANG_ORDER[orderIdx + 1]}: [`;
+    const found = content.indexOf(nextMarker, startIdx + startMarker.length);
+    if (found !== -1) endIdx = found;
+  }
+
+  const section = content.slice(startIdx, endIdx);
+  const poemTexts = [];
+  const linesBlockRegex = /lines:\s*\[([\s\S]*?)\]/g;
+  let m;
+  while ((m = linesBlockRegex.exec(section))) {
+    const lineStrings = Array.from(m[1].matchAll(/["']([^"']+)["']/g)).map((x) => x[1]);
+    if (lineStrings.length) {
+      poemTexts.push(lineStrings.join(' '));
+    }
+  }
+  return poemTexts;
+}
+
 // ─── Per-language config ───────────────────────────────────────────────────
 // Each language: output dir, Azure voice lang, the unicode range used to
 // filter matches to native-script text, and the { file, patterns, arrayNames }
@@ -158,8 +247,13 @@ const LANGUAGES = {
       },
       { file: 'telugu-letters-data.ts', patterns: [/letter:\s*["']([^"']+)["']/g, /word:\s*["']([^"']+)["']/g] },
       { file: 'telugu-words-by-length-data.ts', patterns: [/letter:\s*["']([^"']+)["']/g, /word:\s*["']([^"']+)["']/g] },
-      { file: 'telugu-riddles-data.ts', patterns: [/letter:\s*["']([^"']+)["']/g, /word:\s*["']([^"']+)["']/g] },
-      { file: 'telugu-comprehension-data.ts', patterns: [/letter:\s*["']([^"']+)["']/g, /word:\s*["']([^"']+)["']/g] },
+      { file: 'telugu-riddles-data.ts', patterns: [/podupu:\s*["']([^"']+)["']/g, /vidupu:\s*["']([^"']+)["']/g] },
+      {
+        file: 'telugu-comprehension-data.ts',
+        patterns: [/question:\s*["']([^"']+)["']/g, /correctAnswer:\s*["']([^"']+)["']/g],
+        repeatedArrayFields: ['passage', 'options'],
+        fillBlank: true,
+      },
       {
         file: 'telugu-vottulu-data.ts',
         patterns: [
@@ -179,7 +273,12 @@ const LANGUAGES = {
     files: [
       { file: 'hindi-vocabulary-data.ts', patterns: [/hindi:\s*["']([^"']+)["']/g, /nameHindi:\s*["']([^"']+)["']/g] },
       { file: 'hindi-letters-data.ts', patterns: [/letter:\s*["']([^"']+)["']/g, /word:\s*["']([^"']+)["']/g], stripGloss: true },
-      { file: 'hindi-comprehension-data.ts', patterns: [/letter:\s*["']([^"']+)["']/g, /word:\s*["']([^"']+)["']/g] },
+      {
+        file: 'hindi-comprehension-data.ts',
+        patterns: [/question:\s*["']([^"']+)["']/g, /correctAnswer:\s*["']([^"']+)["']/g],
+        repeatedArrayFields: ['passage', 'options'],
+        fillBlank: true,
+      },
     ],
   },
   kannada: {
@@ -188,7 +287,12 @@ const LANGUAGES = {
     files: [
       { file: 'kannada-vocabulary-data.ts', patterns: [/kannada:\s*["']([^"']+)["']/g, /nameKannada:\s*["']([^"']+)["']/g] },
       { file: 'kannada-letters-data.ts', patterns: [/letter:\s*["']([^"']+)["']/g, /word:\s*["']([^"']+)["']/g], stripGloss: true },
-      { file: 'kannada-comprehension-data.ts', patterns: [/letter:\s*["']([^"']+)["']/g, /word:\s*["']([^"']+)["']/g] },
+      {
+        file: 'kannada-comprehension-data.ts',
+        patterns: [/question:\s*["']([^"']+)["']/g, /correctAnswer:\s*["']([^"']+)["']/g],
+        repeatedArrayFields: ['passage', 'options'],
+        fillBlank: true,
+      },
     ],
   },
   tamil: {
@@ -197,7 +301,12 @@ const LANGUAGES = {
     files: [
       { file: 'tamil-vocabulary-data.ts', patterns: [/tamil:\s*["']([^"']+)["']/g, /nameTamil:\s*["']([^"']+)["']/g] },
       { file: 'tamil-letters-data.ts', patterns: [/letter:\s*["']([^"']+)["']/g, /word:\s*["']([^"']+)["']/g], stripGloss: true },
-      { file: 'tamil-comprehension-data.ts', patterns: [/letter:\s*["']([^"']+)["']/g, /word:\s*["']([^"']+)["']/g] },
+      {
+        file: 'tamil-comprehension-data.ts',
+        patterns: [/question:\s*["']([^"']+)["']/g, /correctAnswer:\s*["']([^"']+)["']/g],
+        repeatedArrayFields: ['passage', 'options'],
+        fillBlank: true,
+      },
     ],
   },
   malayalam: {
@@ -206,7 +315,12 @@ const LANGUAGES = {
     files: [
       { file: 'malayalam-vocabulary-data.ts', patterns: [/malayalam:\s*["']([^"']+)["']/g, /nameMalayalam:\s*["']([^"']+)["']/g] },
       { file: 'malayalam-letters-data.ts', patterns: [/letter:\s*["']([^"']+)["']/g, /word:\s*["']([^"']+)["']/g], stripGloss: true },
-      { file: 'malayalam-comprehension-data.ts', patterns: [/letter:\s*["']([^"']+)["']/g, /word:\s*["']([^"']+)["']/g] },
+      {
+        file: 'malayalam-comprehension-data.ts',
+        patterns: [/question:\s*["']([^"']+)["']/g, /correctAnswer:\s*["']([^"']+)["']/g],
+        repeatedArrayFields: ['passage', 'options'],
+        fillBlank: true,
+      },
     ],
   },
   sanskrit: {
@@ -221,15 +335,20 @@ const LANGUAGES = {
     files: [
       { file: 'sanskrit-vocabulary-data.ts', patterns: [/sanskrit:\s*["']([^"']+)["']/g, /nameSanskrit:\s*["']([^"']+)["']/g] },
       { file: 'sanskrit-letters-data.ts', patterns: [/letter:\s*["']([^"']+)["']/g, /word:\s*["']([^"']+)["']/g], stripGloss: true },
-      { file: 'sanskrit-comprehension-data.ts', patterns: [/letter:\s*["']([^"']+)["']/g, /word:\s*["']([^"']+)["']/g] },
+      {
+        file: 'sanskrit-comprehension-data.ts',
+        patterns: [/question:\s*["']([^"']+)["']/g, /correctAnswer:\s*["']([^"']+)["']/g],
+        repeatedArrayFields: ['passage', 'options'],
+        fillBlank: true,
+      },
     ],
   },
 };
 
-function extractTextsForLanguage(config) {
+function extractTextsForLanguage(config, langName) {
   const texts = new Set();
 
-  config.files.forEach(({ file, patterns, arrayNames, stripGloss: shouldStripGloss }) => {
+  config.files.forEach(({ file, patterns, arrayNames, repeatedArrayFields, fillBlank, stripGloss: shouldStripGloss }) => {
     const filePath = path.join(LIB_DIR, file);
     const transform = shouldStripGloss ? stripGloss : undefined;
 
@@ -239,9 +358,25 @@ function extractTextsForLanguage(config) {
     if (arrayNames && arrayNames.length) {
       extractTextFromArrays(filePath, arrayNames, config.unicodeRange, transform).forEach((t) => texts.add(t));
     }
+    if (repeatedArrayFields && repeatedArrayFields.length) {
+      repeatedArrayFields.forEach((fieldName) => {
+        extractTextFromRepeatedArrayField(filePath, fieldName, config.unicodeRange, transform).forEach((t) =>
+          texts.add(t)
+        );
+      });
+    }
+    if (fillBlank) {
+      extractFillBlankVariants(filePath, config.unicodeRange, transform).forEach((t) => texts.add(t));
+    }
   });
 
   (config.commonTexts || []).forEach((t) => texts.add(t));
+
+  if (POEM_LANG_ORDER.includes(langName)) {
+    extractPoemsForLanguage(langName).forEach((t) => {
+      if (config.unicodeRange.test(t)) texts.add(t);
+    });
+  }
 
   if (config.transliterateToKannada) {
     return new Set(
@@ -292,7 +427,7 @@ async function generateForLanguage(langName, config, azureKey, azureRegion) {
     console.log(`✓ Created directory: ${outputDir}`);
   }
 
-  const texts = Array.from(extractTextsForLanguage(config)).sort();
+  const texts = Array.from(extractTextsForLanguage(config, langName)).sort();
   console.log(`\n[${langName}] Found ${texts.length} unique texts`);
 
   let successCount = 0;

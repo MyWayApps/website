@@ -6,14 +6,14 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Volume2, Star, RotateCcw } from "lucide-react"
 import { getLessonById } from "@/lib/hindi-comprehension-data"
-import { useTTS } from "@/hooks/use-tts"
+import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 export default function Game2Page() {
   const params = useParams()
   const lessonId = parseInt(params.id as string)
   const lesson = getLessonById(lessonId)
-  const { speakAsync, isSpeaking: isPlayingTTS } = useTTS()
+  const { speakNativeAsync, isSpeaking: isPlayingTTS } = useLanguageSpeak("hindi")
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
@@ -29,7 +29,7 @@ export default function Game2Page() {
   const handlePlayAudio = async (text: string) => {
     if (isPlayingTTS) return
     try {
-      await speakAsync(text, "hi")
+      await speakNativeAsync(text)
     } catch (error) {
       console.log("TTS error:", error)
     }

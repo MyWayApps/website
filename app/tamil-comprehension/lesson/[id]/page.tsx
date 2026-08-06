@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Volume2, CheckCircle, Edit3 } from "lucide-react"
 import Link from "next/link"
 import { getLessonById } from "@/lib/tamil-comprehension-data"
-import { useTTS } from "@/hooks/use-tts"
+import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { useState } from "react"
 
 export default function LessonPage() {
   const params = useParams()
   const lessonId = parseInt(params.id as string)
   const lesson = getLessonById(lessonId)
-  const { speakAsync } = useTTS()
+  const { speakNativeAsync } = useLanguageSpeak("tamil")
   const [isPlayingTTS, setIsPlayingTTS] = useState(false)
 
   const handleBackToMenu = () => {
@@ -27,7 +27,7 @@ export default function LessonPage() {
       setIsPlayingTTS(true)
       // Play each line of the passage
       for (const line of lesson!.passage) {
-        await speakAsync(line, "ta")
+        await speakNativeAsync(line)
         // Small pause between lines
         await new Promise(resolve => setTimeout(resolve, 500))
       }

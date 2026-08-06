@@ -6,8 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Volume2, Star } from "lucide-react"
 import { getLessonById } from "@/lib/sanskrit-comprehension-data"
-import { useTTS } from "@/hooks/use-tts"
-import { transliterateToKannada } from "@/lib/sanskrit-tts"
+import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 // Sanskrit has no TTS voice of its own — questions/options are transliterated
@@ -16,7 +15,7 @@ export default function Game1Page() {
   const params = useParams()
   const lessonId = parseInt(params.id as string)
   const lesson = getLessonById(lessonId)
-  const { speakAsync, isSpeaking: isPlayingTTS } = useTTS()
+  const { speakNativeAsync, isSpeaking: isPlayingTTS } = useLanguageSpeak("sanskrit")
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
@@ -32,7 +31,7 @@ export default function Game1Page() {
   const handlePlayAudio = async (text: string) => {
     if (isPlayingTTS) return
     try {
-      await speakAsync(transliterateToKannada(text), "kn")
+      await speakNativeAsync(text)
     } catch (error) {
       console.log("TTS error:", error)
     }
