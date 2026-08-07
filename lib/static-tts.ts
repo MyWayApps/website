@@ -207,13 +207,25 @@ async function playAudioFromBlobUrl(url: string): Promise<void> {
 /**
  * Plays `text` for a content language: browser neural voice first, then a
  * pre-generated static MP3 keyed by SHA-256 hash under
- * /audio/<lang>/<hash>.mp3, then a live /api/tts?lang=&text= call.
+ * /audio/<staticFolder>/<hash>.mp3, then a live /api/tts?lang=&text= call.
+ *
+ * staticFolder and apiLangCode are deliberately separate: the pre-generated
+ * cache lives under full language-name folders (public/audio/hindi/,
+ * .../telugu/, ...), while /api/tts and the Azure voice map key off short
+ * codes ("hi", "te", ...) — passing one value for both silently 404s every
+ * static lookup and makes every play fall through to a live call.
  *
  * @param text - native-script text to speak
- * @param lang - short lang code matching /audio/<lang>/ and ?lang= (e.g. "te", "hi", "kn", "ta", "ml")
+ * @param staticFolder - full language name matching the public/audio/<name>/ folder on disk (e.g. "hindi", "telugu", "sanskrit")
+ * @param apiLangCode - short lang code for the /api/tts?lang= fallback and browser-voice scoring (e.g. "hi", "te", "kn")
  * @param browserLocalePrefix - BCP-47 prefix to match against browser voices (e.g. "te", "hi-IN")
  */
-export async function playStaticTTS(text: string, lang: string, browserLocalePrefix: string): Promise<void> {
+export async function playStaticTTS(
+  text: string,
+  staticFolder: string,
+  apiLangCode: string,
+  browserLocalePrefix: string
+): Promise<void> {
   if (typeof window === 'undefined') return
   if (!text || text.trim().length === 0) return
 
@@ -226,13 +238,13 @@ export async function playStaticTTS(text: string, lang: string, browserLocalePre
         return
       }
     } catch (err) {
-      console.warn(`[TTS] Browser voice playback failed for lang="${lang}", falling back:`, err)
+      console.warn(`[TTS] Browser voice playback failed for lang="${apiLangCode}", falling back:`, err)
     }
   }
 
   try {
     const hash = await hashText(text)
-    const staticUrl = `/audio/${lang}/${hash}.mp3`
+    const staticUrl = `/audio/${staticFolder}/${hash}.mp3`
 
     const checkResponse = await fetch(staticUrl, { method: 'HEAD' })
     if (checkResponse.ok) {
@@ -241,10 +253,10 @@ export async function playStaticTTS(text: string, lang: string, browserLocalePre
     }
 
     // Fallback to server-side TTS for dynamic/not-yet-pre-generated text
-    const serverUrl = `/api/tts?lang=${lang}&text=${encodeURIComponent(text)}`
+    const serverUrl = `/api/tts?lang=${apiLangCode}&text=${encodeURIComponent(text)}`
     await playAudioFromBlobUrl(serverUrl)
   } catch (err) {
-    console.error(`[TTS] Failed for lang="${lang}":`, err)
+    console.error(`[TTS] Failed for lang="${apiLangCode}":`, err)
     throw err
   }
 }

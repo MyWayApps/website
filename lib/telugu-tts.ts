@@ -9,7 +9,7 @@
 import { playStaticTTS } from './static-tts'
 
 export async function playTeluguTTS(text: string): Promise<void> {
-  return playStaticTTS(text, 'te', 'te')
+  return playStaticTTS(text, 'telugu', 'te', 'te')
 }
 
 /**

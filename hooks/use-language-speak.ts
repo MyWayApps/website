@@ -36,12 +36,15 @@ export function useLanguageSpeak(lang: LanguageCode) {
     }
     if (lang === "sanskrit") {
       // Pre-generated Sanskrit audio is cached under the post-transliteration
-      // Kannada-script text (see scripts/generate-audio.js), so transliterate
-      // before handing off to the same static-cache-first Kannada path.
-      return playStaticTTS(transliterateToKannada(text), "kn", BROWSER_LOCALE_PREFIX.kn)
+      // Kannada-script text (see scripts/generate-audio.js) in its own
+      // public/audio/sanskrit/ folder — spoken with the Kannada voice (no
+      // Sanskrit voice exists), but NOT stored under Kannada's folder.
+      return playStaticTTS(transliterateToKannada(text), "sanskrit", "kn", BROWSER_LOCALE_PREFIX.kn)
     }
     const ttsLang = TTS_LANG_MAP[lang]
-    return playStaticTTS(text, ttsLang, BROWSER_LOCALE_PREFIX[ttsLang])
+    // `lang` here (e.g. "hindi") already matches its public/audio/<lang>/
+    // folder name on disk — only the API/voice code needs the short form.
+    return playStaticTTS(text, lang, ttsLang, BROWSER_LOCALE_PREFIX[ttsLang])
   }
 
   const speakNative = (text: string) => {
