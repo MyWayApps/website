@@ -182,16 +182,22 @@ export default function TeluguVocabularyFlashcards() {
           className="perspective-1000 cursor-pointer"
           onClick={handleCardClick}
         >
-          <Card 
-            className={`min-h-[300px] md:min-h-[350px] shadow-2xl transition-all duration-500 transform-style-preserve-3d ${
+          <Card
+            className={`min-h-[300px] md:min-h-[350px] min-w-[300px] md:min-w-[400px] max-w-[90vw] w-fit mx-auto shadow-2xl transition-all duration-500 transform-style-preserve-3d ${
               isFlipped ? 'rotate-y-180' : ''
             }`}
             style={{
               transformStyle: 'preserve-3d',
               transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-              width: `clamp(300px, ${Math.max(items[index].telugu.length, items[index].english.length) + 4}ch, min(90vw, 700px))`,
             }}
           >
+            {/* Invisible sizer — sets the Card's real width from actual
+                rendered glyph metrics (whichever face is longer) instead
+                of a guessed character-count formula, which undershoots
+                for wide Indic script conjuncts */}
+            <div className="invisible text-5xl md:text-6xl font-bold whitespace-nowrap px-8" aria-hidden="true">
+              {items[index].telugu.length >= items[index].english.length ? items[index].telugu : items[index].english}
+            </div>
             {/* Front - Telugu (now first) */}
             <CardContent 
               className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-teal-100 to-teal-300 rounded-xl backface-hidden"
