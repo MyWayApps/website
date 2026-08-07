@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star, Volume2, Rocket, CheckCircle, XCircle } from "lucide-react"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { speakSpellingWord } from "@/lib/spelling-audio"
 
 interface WordRocketGameProps {
   wordList: string[]
@@ -91,13 +92,7 @@ export default function WordRocketGame({ wordList, onGameComplete, onBackToGames
 
   // Text-to-speech function
   const speakWord = (word: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(word)
-      utterance.rate = 0.8
-      utterance.pitch = 1.2
-      utterance.volume = 0.8
-      speechSynthesis.speak(utterance)
-    }
+    void speakSpellingWord(word)
   }
 
   // Initialize game
@@ -147,24 +142,30 @@ export default function WordRocketGame({ wordList, onGameComplete, onBackToGames
     setRocketPosition(0)
   }
 
-  // Animate rocket movement
+  // Animate rocket movement — driven entirely by rAF with its own easing
+  // curve (previously also had a CSS `transition-all` on top of per-frame
+  // state updates, which fought each other and made the ascent look jerky).
   useEffect(() => {
-    if (isLaunching) {
-      const animate = () => {
-        setRocketPosition(prev => {
-          if (prev >= 100) {
-            setIsLaunching(false)
-            setShowStars(true)
-            return 100
-          }
-          return prev + 2
-        })
+    if (!isLaunching) return
+
+    const duration = 1800
+    const startTime = performance.now()
+
+    const animate = (now: number) => {
+      const t = Math.min(1, (now - startTime) / duration)
+      const eased = 1 - Math.pow(1 - t, 3) // ease-out cubic — fast start, gentle finish
+      setRocketPosition(eased * 100)
+
+      if (t < 1) {
         animationRef.current = requestAnimationFrame(animate)
+      } else {
+        setIsLaunching(false)
+        setShowStars(true)
       }
-      
-      animationRef.current = requestAnimationFrame(animate)
     }
-    
+
+    animationRef.current = requestAnimationFrame(animate)
+
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
@@ -229,7 +230,7 @@ export default function WordRocketGame({ wordList, onGameComplete, onBackToGames
           // Game completed
           handleGameComplete()
         }
-      }, 3000)
+      }, 5000)
     } else {
       playWrongSound()
 
@@ -324,19 +325,34 @@ export default function WordRocketGame({ wordList, onGameComplete, onBackToGames
                   ))}
                 </div>
 
-                {/* Rocket */}
-                <div 
-                  className="absolute transition-all duration-1000 ease-out"
+                {/* Rocket — slight side-to-side wobble and a forward tilt
+                    while ascending, for a livelier launch than a plain
+                    straight-up slide */}
+                <div
+                  className="absolute"
                   style={{
-                    left: '50%',
+                    left: `calc(50% + ${isLaunching ? Math.sin(rocketPosition * 0.3) * 12 : 0}px)`,
                     bottom: `${10 + rocketPosition * 0.6}%`,
-                    transform: 'translateX(-50%)'
+                    transform: `translateX(-50%) rotate(${isLaunching ? -8 + Math.sin(rocketPosition * 0.3) * 6 : 0}deg)`,
                   }}
                 >
                   <div className="text-6xl">🚀</div>
                   {isLaunching && (
-                    <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-                      <div className="w-8 h-12 bg-gradient-to-t from-orange-500 to-yellow-400 rounded-full animate-pulse"></div>
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                      <div className="w-7 h-10 bg-gradient-to-t from-orange-500 via-yellow-400 to-yellow-200 rounded-full animate-pulse" />
+                      {/* Trailing spark particles */}
+                      {[...Array(4)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-1.5 h-1.5 bg-yellow-300 rounded-full animate-ping"
+                          style={{
+                            top: `${8 + i * 6}px`,
+                            left: `${(i % 2 === 0 ? -1 : 1) * (3 + i)}px`,
+                            animationDuration: '0.6s',
+                            animationDelay: `${i * 0.1}s`,
+                          }}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
@@ -348,31 +364,6 @@ export default function WordRocketGame({ wordList, onGameComplete, onBackToGames
                       Ready to Launch!
                     </div>
                   )}
-                </div>
-
-                {/* Selected Letters Display */}
-                <div className="absolute top-4 left-4 right-4">
-                  <div className="bg-white/90 rounded-xl p-4 border-2 border-indigo-300">
-                    <div className="text-lg font-bold text-gray-700 mb-2">Your Word:</div>
-                    <div className="flex gap-2 justify-center">
-                      {selectedLetters.map((letter, index) => (
-                        <div
-                          key={index}
-                          className="w-16 h-16 bg-gradient-to-r from-blue-400 to-indigo-500 text-white rounded-lg flex items-center justify-center text-2xl font-bold border-2 border-white shadow-lg"
-                        >
-                          {letter.letter}
-                        </div>
-                      ))}
-                      {[...Array(currentWord.length - selectedLetters.length)].map((_, index) => (
-                        <div
-                          key={`empty-${index}`}
-                          className="w-16 h-16 bg-gray-200 rounded-lg border-2 border-gray-300 flex items-center justify-center"
-                        >
-                          ?
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 {/* Success Stars */}

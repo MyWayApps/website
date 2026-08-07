@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, Star, Volume2, Delete } from "lucide-react"
+import { ArrowLeft, Star, Volume2 } from "lucide-react"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { speakSpellingWord } from "@/lib/spelling-audio"
 
 interface TypeTheWordGameProps {
   wordList: string[]
@@ -20,55 +21,67 @@ export default function TypeTheWordGame({ wordList, onGameComplete, onBackToGame
   const [isCorrect, setIsCorrect] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [gameComplete, setGameComplete] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const boxRefs = useRef<(HTMLInputElement | null)[]>([])
 
   const currentWord = wordList[currentWordIndex] || ""
 
   // Text-to-speech function
   const speakWord = (word: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(word)
-      utterance.rate = 0.7
-      utterance.pitch = 1.1
-      utterance.volume = 0.9
-      window.speechSynthesis.speak(utterance)
-    }
+    void speakSpellingWord(word)
   }
 
-  // Initialize game and auto-focus
+  // Initialize game and auto-focus the first box
   useEffect(() => {
     if (wordList.length > 0 && currentWord) {
       setTypedWord("")
+      boxRefs.current = []
       setTimeout(() => {
         speakWord(currentWord)
-        inputRef.current?.focus()
+        boxRefs.current[0]?.focus()
       }, 500)
     }
   }, [currentWordIndex, wordList])
 
-  // Handle keyboard input
-  const handleKeyPress = (key: string) => {
+  // One real <input maxLength={1}> per letter, auto-advancing as each is
+  // filled — replaces the on-screen virtual keyboard entirely.
+  const handleBoxChange = (index: number, rawValue: string) => {
+    if (showFeedback) return
+    const char = rawValue.replace(/[^A-Za-z]/g, "").slice(-1).toUpperCase()
+
+    setTypedWord((prev) => {
+      const chars = prev.padEnd(currentWord.length, " ").split("")
+      chars[index] = char || " "
+      return chars.join("").trimEnd()
+    })
+
+    if (char && index < currentWord.length - 1) {
+      boxRefs.current[index + 1]?.focus()
+    }
+  }
+
+  const handleBoxKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (showFeedback) return
 
-    if (key === 'BACKSPACE') {
-      setTypedWord(prev => prev.slice(0, -1))
-      return
-    }
-
-    if (key === 'ENTER') {
+    if (e.key === "Backspace" && !typedWord[index]?.trim() && index > 0) {
+      e.preventDefault()
+      setTypedWord((prev) => {
+        const chars = prev.padEnd(currentWord.length, " ").split("")
+        chars[index - 1] = " "
+        return chars.join("").trimEnd()
+      })
+      boxRefs.current[index - 1]?.focus()
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      boxRefs.current[index - 1]?.focus()
+    } else if (e.key === "ArrowRight" && index < currentWord.length - 1) {
+      boxRefs.current[index + 1]?.focus()
+    } else if (e.key === "Enter") {
       checkAnswer()
-      return
-    }
-
-    if (typedWord.length < currentWord.length && /^[A-Za-z]$/.test(key)) {
-      setTypedWord(prev => prev + key.toUpperCase())
     }
   }
 
   // Check if answer is correct
   const checkAnswer = () => {
-    if (typedWord.length !== currentWord.length) return
+    if (typedWord.length !== currentWord.length || typedWord.includes(" ")) return
 
     const correct = typedWord.toLowerCase() === currentWord.toLowerCase()
     setIsCorrect(correct)
@@ -90,24 +103,17 @@ export default function TypeTheWordGame({ wordList, onGameComplete, onBackToGame
           setGameComplete(true)
           onGameComplete(score + 1)
         }
-      }, 2000)
+      }, 5000)
     } else {
       playWrongSound()
 
       setTimeout(() => {
         setShowFeedback(false)
         setTypedWord("")
-        inputRef.current?.focus()
+        boxRefs.current[0]?.focus()
       }, 1500)
     }
   }
-
-  // Keyboard layout
-  const keyboardRows = [
-    ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-    ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-    ['Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACKSPACE']
-  ]
 
   if (gameComplete) {
     return (
@@ -178,69 +184,39 @@ export default function TypeTheWordGame({ wordList, onGameComplete, onBackToGame
               </Button>
             </div>
 
-            {/* Word Blanks Display */}
-            <div className="flex justify-center gap-2 mb-6">
-              {currentWord.split('').map((letter, index) => (
-                <div
-                  key={index}
-                  className={`w-12 h-14 rounded-xl border-4 flex items-center justify-center text-2xl font-bold transition-all duration-300 ${
-                    typedWord[index]
-                      ? typedWord[index].toLowerCase() === letter.toLowerCase()
-                        ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white border-green-300'
-                        : 'bg-gradient-to-br from-purple-400 to-pink-500 text-white border-purple-300'
-                      : 'bg-gray-100 border-gray-300 border-dashed'
-                  }`}
-                >
-                  {typedWord[index] || ''}
-                </div>
-              ))}
-            </div>
-
-            {/* Hidden input for physical keyboard */}
-            <input
-              ref={inputRef}
-              type="text"
-              className="opacity-0 absolute"
-              value={typedWord}
-              onChange={(e) => {
-                const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '')
-                if (val.length <= currentWord.length) {
-                  setTypedWord(val)
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') checkAnswer()
-              }}
-              autoFocus
-            />
-
-            {/* Virtual Keyboard */}
-            <div className="space-y-2 mb-6">
-              {keyboardRows.map((row, rowIndex) => (
-                <div key={rowIndex} className="flex justify-center gap-1">
-                  {row.map((key) => (
-                    <Button
-                      key={key}
-                      onClick={() => handleKeyPress(key)}
-                      disabled={showFeedback}
-                      className={`font-bold rounded-lg shadow transition-all duration-200 hover:scale-105 ${
-                        key === 'BACKSPACE'
-                          ? 'bg-gradient-to-br from-red-400 to-rose-500 text-white px-4 py-3'
-                          : 'bg-gradient-to-br from-purple-200 to-pink-200 text-purple-800 w-10 h-12 text-lg hover:from-purple-300 hover:to-pink-300'
-                      }`}
-                    >
-                      {key === 'BACKSPACE' ? <Delete className="h-5 w-5" /> : key}
-                    </Button>
-                  ))}
-                </div>
-              ))}
+            {/* Word Blanks — each is a real input, auto-focused and
+                auto-advancing, no on-screen keyboard needed */}
+            <div className="flex justify-center gap-2 mb-8">
+              {currentWord.split('').map((letter, index) => {
+                const typed = (typedWord[index] || '').trim()
+                return (
+                  <input
+                    key={index}
+                    ref={(el) => { boxRefs.current[index] = el }}
+                    type="text"
+                    inputMode="text"
+                    maxLength={1}
+                    disabled={showFeedback}
+                    value={typed}
+                    onChange={(e) => handleBoxChange(index, e.target.value)}
+                    onKeyDown={(e) => handleBoxKeyDown(index, e)}
+                    className={`w-12 h-14 rounded-xl border-4 flex items-center justify-center text-2xl font-bold text-center transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-300 ${
+                      typed
+                        ? typed.toLowerCase() === letter.toLowerCase()
+                          ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white border-green-300'
+                          : 'bg-gradient-to-br from-purple-400 to-pink-500 text-white border-purple-300'
+                        : 'bg-gray-100 border-gray-300 border-dashed'
+                    }`}
+                  />
+                )
+              })}
             </div>
 
             {/* Submit Button */}
             <div className="text-center mb-6">
               <Button
                 onClick={checkAnswer}
-                disabled={typedWord.length !== currentWord.length || showFeedback}
+                disabled={typedWord.length !== currentWord.length || typedWord.includes(' ') || showFeedback}
                 className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-xl px-10 py-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 ✓ Check My Answer

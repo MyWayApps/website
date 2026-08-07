@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, Star, Volume2, BookOpen, Edit3, Sparkles, Brain } from "lucide-react"
+import { ArrowLeft, Star, Volume2, BookOpen, Edit3, Sparkles, Brain, Play } from "lucide-react"
 import BalloonPopGame from "./balloon-pop-game"
 import WordRocketGame from "./word-rocket-game"
 import TreasureHuntGame from "./treasure-hunt-game"
@@ -822,25 +822,35 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {GAME_TYPES.map((game) => (
-                  <Button
+                  <Card
                     key={game.id}
-                    onClick={() => game.implemented ? handleGameSelect(game.id) : null}
-                    disabled={!game.implemented}
-                    className={`h-32 text-lg font-bold border-4 transition-all duration-300 ${
-                      game.implemented 
-                        ? `bg-gradient-to-r ${game.color} text-white border-white shadow-lg hover:shadow-xl transform hover:scale-105` 
-                        : 'bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed opacity-60'
+                    className={`group transition-all duration-300 bg-gradient-to-br ${game.color} border-4 border-white shadow-lg ${
+                      game.implemented
+                        ? "hover:scale-105 hover:shadow-xl cursor-pointer"
+                        : "opacity-60 grayscale cursor-not-allowed"
                     }`}
-                    variant="outline"
+                    onClick={() => (game.implemented ? handleGameSelect(game.id) : null)}
                   >
-                    <div className="flex flex-col items-center gap-2">
-                      <span className="text-4xl">{game.emoji}</span>
-                      <span className="font-sans">{game.name}</span>
-                      <span className="text-sm text-center opacity-90">
-                        {game.implemented ? game.description : 'Coming Soon!'}
-                      </span>
-                    </div>
-                  </Button>
+                    <CardContent className="p-6">
+                      <div className="flex flex-col items-center text-center space-y-3">
+                        <div className="text-5xl mb-1 group-hover:animate-bounce">{game.emoji}</div>
+                        <div className="space-y-1">
+                          <h3 className="text-xl font-bold text-gray-800 font-sans">{game.name}</h3>
+                          <p className="text-sm text-gray-700 min-h-[2.5rem]">
+                            {game.implemented ? game.description : "Coming Soon!"}
+                          </p>
+                        </div>
+                        <Button
+                          disabled={!game.implemented}
+                          className="w-full bg-white/30 hover:bg-white/40 text-gray-800 font-bold border-2 border-white/60 hover:border-white transition-all duration-300 disabled:opacity-60"
+                          variant="outline"
+                        >
+                          <Play className="mr-2 h-4 w-4" />
+                          {game.implemented ? "Play Now" : "Coming Soon"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             </CardContent>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star, Volume2 } from "lucide-react"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { speakSpellingWord } from "@/lib/spelling-audio"
 
 interface SpellTheWordGameProps {
   wordList: string[]
@@ -38,14 +39,7 @@ export default function SpellTheWordGame({ wordList, onGameComplete, onBackToGam
 
   // Text-to-speech function
   const speakWord = (word: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(word)
-      utterance.rate = 0.7
-      utterance.pitch = 1.1
-      utterance.volume = 0.9
-      window.speechSynthesis.speak(utterance)
-    }
+    void speakSpellingWord(word)
   }
 
   // Generate available letters (word letters + distractors)
@@ -110,7 +104,7 @@ export default function SpellTheWordGame({ wordList, onGameComplete, onBackToGam
             setGameComplete(true)
             onGameComplete(score + 1)
           }
-        }, 2000)
+        }, 5000)
       } else {
         playWrongSound()
 
@@ -127,11 +121,11 @@ export default function SpellTheWordGame({ wordList, onGameComplete, onBackToGam
   // Handle removing a selected letter
   const handleRemoveLetter = (index: number) => {
     if (showFeedback) return
-    
+
     const letterToRemove = selectedLetters[index]
     const newSelectedLetters = selectedLetters.filter((_, i) => i !== index)
     setSelectedLetters(newSelectedLetters)
-    
+
     // Find and unmark the letter
     const letterObj = availableLetters.find(l => l.letter === letterToRemove && l.used)
     if (letterObj) {
@@ -140,6 +134,32 @@ export default function SpellTheWordGame({ wordList, onGameComplete, onBackToGam
       )
     }
   }
+
+  // Physical keyboard support — same effect as tapping the matching letter
+  // tile / the last-placed tile, so it stays in sync with the click logic.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (showFeedback) return
+      const key = e.key.toUpperCase()
+
+      if (key === "BACKSPACE") {
+        e.preventDefault()
+        if (selectedLetters.length > 0) {
+          handleRemoveLetter(selectedLetters.length - 1)
+        }
+        return
+      }
+
+      if (key.length === 1 && key >= "A" && key <= "Z") {
+        const match = availableLetters.find((l) => l.letter === key && !l.used)
+        if (match) handleLetterClick(match.id)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableLetters, selectedLetters, showFeedback])
 
   if (gameComplete) {
     return (

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star, Volume2, CheckCircle, XCircle } from "lucide-react"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { speakSpellingWord } from "@/lib/spelling-audio"
 
 interface BalloonPopGameProps {
   wordList: string[]
@@ -103,13 +104,7 @@ export default function BalloonPopGame({ wordList, onGameComplete, onBackToGames
 
   // Text-to-speech function
   const speakWord = (word: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(word)
-      utterance.rate = 0.8
-      utterance.pitch = 1.2
-      utterance.volume = 0.8
-      speechSynthesis.speak(utterance)
-    }
+    void speakSpellingWord(word)
   }
 
   // Initialize game
@@ -159,32 +154,54 @@ export default function BalloonPopGame({ wordList, onGameComplete, onBackToGames
     // Shuffle the balloon letters
     const shuffledBalloonLetters = balloonLetters.sort(() => Math.random() - 0.5)
     
+    // Scatter balloons across a grid of zones (as % of the container, so it
+    // stays correct at any container width) with jitter inside each zone —
+    // real 2D spread instead of a single row, and no two balloons claim the
+    // same zone so they don't stack on top of each other.
+    const GRID_COLS = 4
+    const GRID_ROWS = 2
+    const zones: { xPct: number; yPct: number }[] = []
+    for (let r = 0; r < GRID_ROWS; r++) {
+      for (let c = 0; c < GRID_COLS; c++) {
+        zones.push({
+          xPct: ((c + 0.5) / GRID_COLS) * 100,
+          yPct: ((r + 0.5) / GRID_ROWS) * 100,
+        })
+      }
+    }
+    const shuffledZones = zones.sort(() => Math.random() - 0.5)
+
     // Create balloons for all letters (word letters + 2 distractors)
     for (let i = 0; i < balloonLetters.length; i++) {
       const letter = shuffledBalloonLetters[i] || ''
+      const zone = shuffledZones[i % shuffledZones.length]
+      const jitterX = (Math.random() - 0.5) * (100 / GRID_COLS) * 0.5
+      const jitterY = (Math.random() - 0.5) * (100 / GRID_ROWS) * 0.5
       newBalloons.push({
         id: i,
         letter: letter,
-        x: (i * 80) + 200, // Spread balloons with 80px spacing, starting from 200px
-        y: 120 + (Math.random() * 60), // Keep in visible middle area (120-180px)
+        x: Math.min(92, Math.max(8, zone.xPct + jitterX)),
+        y: Math.min(80, Math.max(10, zone.yPct + jitterY)),
         color: BALLOON_COLORS[i % BALLOON_COLORS.length],
         popped: false,
         floating: true,
         order: i
       })
     }
-    
+
     setBalloons(newBalloons)
   }
 
   // Animate balloons floating
   useEffect(() => {
     const animate = () => {
-      setBalloons(prevBalloons => 
+      // x/y are % of the container now, so nudge in much smaller steps than
+      // the old pixel-based version to keep the bob subtle.
+      setBalloons(prevBalloons =>
         prevBalloons.map(balloon => ({
           ...balloon,
-          y: balloon.floating ? balloon.y + Math.sin(Date.now() * 0.001 + balloon.id) * 0.5 : balloon.y,
-          x: balloon.floating ? balloon.x + Math.cos(Date.now() * 0.0008 + balloon.id) * 0.3 : balloon.x
+          y: balloon.floating ? balloon.y + Math.sin(Date.now() * 0.001 + balloon.id) * 0.08 : balloon.y,
+          x: balloon.floating ? balloon.x + Math.cos(Date.now() * 0.0008 + balloon.id) * 0.05 : balloon.x
         }))
       )
       animationRef.current = requestAnimationFrame(animate)
@@ -248,7 +265,7 @@ export default function BalloonPopGame({ wordList, onGameComplete, onBackToGames
             // Game completed
             handleGameComplete()
           }
-        }, 2000)
+        }, 5000)
       } else {
         setTimeout(() => {
           setShowFeedback(false)
@@ -347,23 +364,34 @@ export default function BalloonPopGame({ wordList, onGameComplete, onBackToGames
                 {balloons.map((balloon) => (
                   <div
                     key={balloon.id}
-                    className={`absolute transition-all duration-500 cursor-pointer ${
-                      balloon.popped 
-                        ? 'opacity-0 scale-0 transform rotate-180' 
+                    className={`absolute transition-all duration-500 cursor-pointer -translate-x-1/2 ${
+                      balloon.popped
+                        ? 'opacity-0 scale-0 transform rotate-180'
                         : 'opacity-100 scale-100 hover:scale-110'
                     } ${balloon.floating ? 'animate-bounce' : ''}`}
                     style={{
-                      left: balloon.x,
-                      top: balloon.y,
-                      transform: balloon.floating ? 'none' : 'translateX(10px) translateY(10px)'
+                      left: `${balloon.x}%`,
+                      top: `${balloon.y}%`,
                     }}
                     onClick={() => handleBalloonClick(balloon.id)}
                   >
-                    <div className={`w-20 h-24 rounded-full bg-gradient-to-b ${balloon.color} border-4 border-white shadow-lg flex items-center justify-center text-white font-bold text-2xl text-center`}>
+                    {/* Balloon body — asymmetric radius (fuller top, tapered
+                        bottom) reads more like a real balloon than a plain circle */}
+                    <div
+                      className={`relative w-20 h-24 bg-gradient-to-b ${balloon.color} border-4 border-white shadow-lg flex items-center justify-center text-white font-bold text-2xl text-center`}
+                      style={{ borderRadius: '50% 50% 50% 50% / 58% 58% 42% 42%' }}
+                    >
                       {balloon.letter.toUpperCase()}
+                      {/* Sheen highlight */}
+                      <div className="absolute top-3 left-4 w-3 h-5 bg-white/40 rounded-full blur-[1px]" />
                     </div>
+                    {/* Knot */}
+                    <div
+                      className="w-2.5 h-2 mx-auto bg-white/90"
+                      style={{ clipPath: 'polygon(50% 100%, 0 0, 100% 0)' }}
+                    />
                     {/* Balloon string */}
-                    <div className="w-0.5 h-16 bg-gray-400 mx-auto"></div>
+                    <div className="w-0.5 h-14 bg-gray-400 mx-auto"></div>
                   </div>
                 ))}
                 

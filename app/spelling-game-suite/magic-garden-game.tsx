@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star, Volume2, CheckCircle, XCircle } from "lucide-react"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { speakSpellingWord } from "@/lib/spelling-audio"
 
 interface MagicGardenGameProps {
   wordList: string[]
@@ -101,13 +102,7 @@ export default function MagicGardenGame({ wordList, onGameComplete, onBackToGame
 
   // Text-to-speech function
   const speakWord = (word: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(word)
-      utterance.rate = 0.8
-      utterance.pitch = 1.2
-      utterance.volume = 0.8
-      speechSynthesis.speak(utterance)
-    }
+    void speakSpellingWord(word)
   }
 
   // Initialize game
@@ -256,7 +251,7 @@ export default function MagicGardenGame({ wordList, onGameComplete, onBackToGame
           // Game completed
           handleGameComplete()
         }
-      }, 2000)
+      }, 5000)
     } else {
       playWrongSound()
 
@@ -357,35 +352,33 @@ export default function MagicGardenGame({ wordList, onGameComplete, onBackToGame
                       {/* Flower design with petals */}
                       <div className={`w-20 h-20 relative ${flower.growing ? 'animate-pulse' : ''}`}>
                         {flower.bloomed ? (
-                          // Bloomed flower with petals
-                          <div className="relative">
-                            {/* Flower petals */}
-                            <div className="absolute inset-0">
-                              {/* Petal 1 */}
-                              <div className={`absolute w-8 h-6 bg-gradient-to-br ${flower.color} rounded-full transform rotate-0 top-1 left-1/2 -translate-x-1/2`}></div>
-                              {/* Petal 2 */}
-                              <div className={`absolute w-8 h-6 bg-gradient-to-br ${flower.color} rounded-full transform rotate-45 top-1/2 right-1 -translate-y-1/2`}></div>
-                              {/* Petal 3 */}
-                              <div className={`absolute w-8 h-6 bg-gradient-to-br ${flower.color} rounded-full transform rotate-90 bottom-1 left-1/2 -translate-x-1/2`}></div>
-                              {/* Petal 4 */}
-                              <div className={`absolute w-8 h-6 bg-gradient-to-br ${flower.color} rounded-full transform rotate-135 top-1/2 left-1 -translate-y-1/2`}></div>
-                              {/* Petal 5 */}
-                              <div className={`absolute w-8 h-6 bg-gradient-to-br ${flower.color} rounded-full transform rotate-22.5 top-2 right-2`}></div>
-                              {/* Petal 6 */}
-                              <div className={`absolute w-8 h-6 bg-gradient-to-br ${flower.color} rounded-full transform rotate-67.5 top-2 left-2`}></div>
-                              {/* Petal 7 */}
-                              <div className={`absolute w-8 h-6 bg-gradient-to-br ${flower.color} rounded-full transform rotate-112.5 bottom-2 right-2`}></div>
-                              {/* Petal 8 */}
-                              <div className={`absolute w-8 h-6 bg-gradient-to-br ${flower.color} rounded-full transform rotate-157.5 bottom-2 left-2`}></div>
-                            </div>
+                          // Bloomed flower — 8 petals rotated + pushed outward
+                          // from a shared center point via inline transforms
+                          // (Tailwind's stock rotate scale has no 22.5°/67.5°
+                          // steps, so a class-only approach silently drops
+                          // half the petals — this radiates correctly at any angle).
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            {[...Array(8)].map((_, i) => (
+                              <div
+                                key={i}
+                                className={`absolute w-8 h-5 bg-gradient-to-br ${flower.color} rounded-full shadow-sm`}
+                                style={{
+                                  top: '50%',
+                                  left: '50%',
+                                  transformOrigin: '0% 50%',
+                                  transform: `rotate(${i * 45}deg) translate(2px, -50%)`,
+                                }}
+                              />
+                            ))}
                             {/* Flower center */}
-                            <div className="absolute w-6 h-6 rounded-full bg-gradient-to-br from-yellow-300 to-orange-400 border-2 border-white top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-lg"></div>
+                            <div className="relative w-6 h-6 rounded-full bg-gradient-to-br from-yellow-300 to-orange-400 border-2 border-white shadow-lg" />
                           </div>
                         ) : (
-                          // Bud (unbloomed flower) - circle design
-                          <div className="relative">
-                            <div className={`w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full border-3 border-green-500 mx-auto shadow-lg flex items-center justify-center`}>
-                              <div className="w-6 h-6 bg-gradient-to-br from-green-200 to-green-400 rounded-full border border-green-300"></div>
+                          // Bud (unbloomed) — centered the same way the
+                          // bloomed flower is, so there's no jump between states
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full border-4 border-green-500 shadow-lg flex items-center justify-center">
+                              <div className="w-6 h-6 bg-gradient-to-br from-green-200 to-green-400 rounded-full border-2 border-green-300" />
                             </div>
                           </div>
                         )}

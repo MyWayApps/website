@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star, Volume2 } from "lucide-react"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { speakSpellingWord } from "@/lib/spelling-audio"
 
 interface SearchTheWordGameProps {
   wordList: string[]
@@ -45,14 +46,7 @@ export default function SearchTheWordGame({ wordList, onGameComplete, onBackToGa
 
   // Text-to-speech function
   const speakWord = (word: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(word)
-      utterance.rate = 0.7
-      utterance.pitch = 1.1
-      utterance.volume = 0.9
-      window.speechSynthesis.speak(utterance)
-    }
+    void speakSpellingWord(word)
   }
 
   // Generate options (correct word + distractors)
@@ -107,7 +101,7 @@ export default function SearchTheWordGame({ wordList, onGameComplete, onBackToGa
           setGameComplete(true)
           onGameComplete(score + 1)
         }
-      }, 2000)
+      }, 5000)
     } else {
       playWrongSound()
 

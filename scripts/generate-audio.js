@@ -195,6 +195,23 @@ function extractFillBlankVariants(filePath, unicodeRange, transform) {
   return texts;
 }
 
+// Spelling Game Suite's practice words live outside lib/ (app/spelling-game-suite/
+// spelling-game-suite.tsx's WORD_LISTS object), unlike everything else this
+// script covers — kept as its own extractor rather than forcing it through
+// the lib/-relative file config shape the other languages use.
+function extractSpellingWords() {
+  const filePath = path.join(__dirname, '../app/spelling-game-suite/spelling-game-suite.tsx');
+  if (!fs.existsSync(filePath)) return [];
+  const content = fs.readFileSync(filePath, 'utf8');
+  const match = content.match(/const WORD_LISTS[^=]*=\s*\{([\s\S]*?)\n\}/);
+  if (!match) return [];
+  const words = new Set();
+  for (const m of match[1].matchAll(/["']([a-zA-Z]+)["']/g)) {
+    words.add(m[1].toLowerCase());
+  }
+  return Array.from(words);
+}
+
 // lib/poems-data.ts has one top-level key per language (same keys as
 // LANGUAGES below), each an array of { lines: [...] } poems. Runtime speaks
 // `poem.lines.join(" ")` as ONE utterance (app/poems/[lang]/page.tsx), so
@@ -343,9 +360,21 @@ const LANGUAGES = {
       },
     ],
   },
+  // English spelling-practice words (Spelling Game Suite) — small, bounded
+  // vocabulary, unlike the free-text/AI-generated words also used there,
+  // which stay on the live /api/tts path since they can't be known ahead of time.
+  spelling: {
+    azureLang: 'en',
+    unicodeRange: /[a-zA-Z]/,
+    customExtract: extractSpellingWords,
+  },
 };
 
 function extractTextsForLanguage(config, langName) {
+  if (config.customExtract) {
+    return new Set(config.customExtract());
+  }
+
   const texts = new Set();
 
   config.files.forEach(({ file, patterns, arrayNames, repeatedArrayFields, fillBlank, stripGloss: shouldStripGloss }) => {
