@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ArrowRight, Volume2 } from "lucide-react"
-import { useTTS } from "@/hooks/use-tts"
+import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { getCategoryById, VocabularyItem } from "@/lib/malayalam-vocabulary-data"
 
 // Function to play English TTS
@@ -27,7 +27,7 @@ const playEnglishTTS = (text: string): Promise<void> => {
 export default function MalayalamVocabularyFlashcards() {
   const searchParams = useSearchParams()
   const categoryId = searchParams.get("category") || "days"
-  const { speak, isSpeaking } = useTTS()
+  const { speakNative: speak, isSpeaking } = useLanguageSpeak("malayalam")
 
   const [items, setItems] = useState<VocabularyItem[]>([])
   const [categoryName, setCategoryName] = useState({ malayalam: "", english: "" })
@@ -49,7 +49,7 @@ export default function MalayalamVocabularyFlashcards() {
   // Play Malayalam audio
   const playMalayalamAudio = () => {
     if (items.length === 0) return
-    speak(items[index].malayalam, "ml")
+    speak(items[index].malayalam)
   }
 
   // Play English audio
@@ -177,12 +177,13 @@ export default function MalayalamVocabularyFlashcards() {
           onClick={handleCardClick}
         >
           <Card
-            className={`w-[300px] md:w-[400px] h-[300px] md:h-[350px] shadow-2xl transition-all duration-500 transform-style-preserve-3d ${
+            className={`min-h-[300px] md:min-h-[350px] shadow-2xl transition-all duration-500 transform-style-preserve-3d ${
               isFlipped ? 'rotate-y-180' : ''
             }`}
             style={{
               transformStyle: 'preserve-3d',
               transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+              width: `clamp(300px, ${Math.max(items[index].malayalam.length, items[index].english.length) + 4}ch, min(90vw, 700px))`,
             }}
           >
             {/* Front - Malayalam */}
@@ -191,7 +192,7 @@ export default function MalayalamVocabularyFlashcards() {
               style={{ backfaceVisibility: 'hidden' }}
             >
               <div className="text-sm text-cyan-600 mb-2 font-semibold">മലയാളം</div>
-              <div className="text-5xl md:text-6xl font-bold text-cyan-800 text-center mb-6">
+              <div className="text-5xl md:text-6xl font-bold break-words text-cyan-800 text-center mb-6">
                 {items[index].malayalam}
               </div>
               <Button

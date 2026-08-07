@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star } from "lucide-react"
-import { useTTS } from "@/hooks/use-tts"
+import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { getLettersByType, getLetterTypeLabel, LetterType, MalayalamLetter } from "@/lib/malayalam-letters-data"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 import { pickUnseenRandom } from "@/lib/question-history"
@@ -33,7 +33,7 @@ function randomChoiceIndices(correctIndex: number, total: number): number[] {
 export default function MalayalamLettersGame() {
   const searchParams = useSearchParams()
   const letterType = (searchParams.get("type") as LetterType) || "vowels"
-  const { speak, isSpeaking } = useTTS()
+  const { speakNative: speak, isSpeaking } = useLanguageSpeak("malayalam")
 
   const [letters, setLetters] = useState<MalayalamLetter[]>([])
   const [score, setScore] = useState(0)
@@ -55,7 +55,7 @@ export default function MalayalamLettersGame() {
 
   const playLetterAudio = (letterIdx: number) => {
     if (letters.length === 0) return
-    speak(letters[letterIdx].letter, "ml")
+    speak(letters[letterIdx].letter)
   }
 
   useEffect(() => {

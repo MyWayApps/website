@@ -5,8 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star } from "lucide-react"
-import { useTTS } from "@/hooks/use-tts"
-import { transliterateToKannada } from "@/lib/sanskrit-tts"
+import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { getLettersByType, getLetterTypeLabel, LetterType, SanskritLetter } from "@/lib/sanskrit-letters-data"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 import { pickUnseenRandom } from "@/lib/question-history"
@@ -34,7 +33,7 @@ function randomChoiceIndices(correctIndex: number, total: number): number[] {
 export default function SanskritLettersGame() {
   const searchParams = useSearchParams()
   const letterType = (searchParams.get("type") as LetterType) || "vowels"
-  const { speak, isSpeaking } = useTTS()
+  const { speakNative: speak, isSpeaking } = useLanguageSpeak("sanskrit")
 
   const [letters, setLetters] = useState<SanskritLetter[]>([])
   const [score, setScore] = useState(0)
@@ -56,7 +55,7 @@ export default function SanskritLettersGame() {
 
   const playLetterAudio = (letterIdx: number) => {
     if (letters.length === 0) return
-    speak(transliterateToKannada(letters[letterIdx].letter), "kn")
+    speak(letters[letterIdx].letter)
   }
 
   useEffect(() => {

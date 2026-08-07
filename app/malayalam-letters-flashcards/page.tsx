@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, Volume2 } from "lucide-react"
-import { useTTS } from "@/hooks/use-tts"
+import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { WiggleEmoji } from "@/components/animated-mascots"
 import { malayalamVowels, malayalamConsonants, LetterType } from "@/lib/malayalam-letters-data"
 
@@ -11,7 +11,7 @@ export default function MalayalamLettersFlashcardsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const initialType = (searchParams.get("type") as LetterType) || "vowels"
-  const { speak, isSpeaking } = useTTS()
+  const { speakNative: speak, isSpeaking } = useLanguageSpeak("malayalam")
   const [selected, setSelected] = useState<string | null>(null)
   const [tab, setTab] = useState<"vowels" | "consonants">(initialType === "consonants" ? "consonants" : "vowels")
 
@@ -21,7 +21,7 @@ export default function MalayalamLettersFlashcardsPage() {
     setSelected(letter)
     const item = letters.find((l) => l.letter === letter)
     const word = item?.word ?? ""
-    speak(`${letter}. ${word.split("(")[0].trim()}`, "ml")
+    speak(`${letter}. ${word.split("(")[0].trim()}`)
   }
 
   return (

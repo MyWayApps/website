@@ -183,12 +183,13 @@ export default function TeluguVocabularyFlashcards() {
           onClick={handleCardClick}
         >
           <Card 
-            className={`w-[300px] md:w-[400px] h-[300px] md:h-[350px] shadow-2xl transition-all duration-500 transform-style-preserve-3d ${
+            className={`min-h-[300px] md:min-h-[350px] shadow-2xl transition-all duration-500 transform-style-preserve-3d ${
               isFlipped ? 'rotate-y-180' : ''
             }`}
             style={{
               transformStyle: 'preserve-3d',
               transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+              width: `clamp(300px, ${Math.max(items[index].telugu.length, items[index].english.length) + 4}ch, min(90vw, 700px))`,
             }}
           >
             {/* Front - Telugu (now first) */}
@@ -197,7 +198,7 @@ export default function TeluguVocabularyFlashcards() {
               style={{ backfaceVisibility: 'hidden' }}
             >
               <div className="text-sm text-teal-600 mb-2 font-semibold">తెలుగు</div>
-              <div className="text-5xl md:text-6xl font-bold text-teal-800 text-center mb-6">
+              <div className="text-5xl md:text-6xl font-bold break-words text-teal-800 text-center mb-6">
                 {items[index].telugu}
               </div>
               <Button 

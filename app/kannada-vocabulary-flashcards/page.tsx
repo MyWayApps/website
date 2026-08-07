@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ArrowRight, Volume2 } from "lucide-react"
-import { useTTS } from "@/hooks/use-tts"
+import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { TalkingMascot } from "@/components/animated-mascots"
 import { getCategoryById, VocabularyItem } from "@/lib/kannada-vocabulary-data"
 
@@ -28,7 +28,7 @@ const playEnglishTTS = (text: string): Promise<void> => {
 export default function KannadaVocabularyFlashcards() {
   const searchParams = useSearchParams()
   const categoryId = searchParams.get("category") || "days"
-  const { speak, isSpeaking } = useTTS()
+  const { speakNative: speak, isSpeaking } = useLanguageSpeak("kannada")
 
   const [items, setItems] = useState<VocabularyItem[]>([])
   const [categoryName, setCategoryName] = useState({ kannada: "", english: "" })
@@ -50,7 +50,7 @@ export default function KannadaVocabularyFlashcards() {
   // Play Kannada audio
   const playKannadaAudio = () => {
     if (items.length === 0) return
-    speak(items[index].kannada, "kn")
+    speak(items[index].kannada)
   }
 
   // Play English audio
@@ -179,12 +179,13 @@ export default function KannadaVocabularyFlashcards() {
           onClick={handleCardClick}
         >
           <Card
-            className={`w-[300px] md:w-[400px] h-[300px] md:h-[350px] shadow-2xl transition-all duration-500 transform-style-preserve-3d ${
+            className={`min-h-[300px] md:min-h-[350px] shadow-2xl transition-all duration-500 transform-style-preserve-3d ${
               isFlipped ? 'rotate-y-180' : ''
             }`}
             style={{
               transformStyle: 'preserve-3d',
               transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+              width: `clamp(300px, ${Math.max(items[index].kannada.length, items[index].english.length) + 4}ch, min(90vw, 700px))`,
             }}
           >
             {/* Front - Kannada */}
@@ -193,7 +194,7 @@ export default function KannadaVocabularyFlashcards() {
               style={{ backfaceVisibility: 'hidden' }}
             >
               <div className="text-sm text-amber-600 mb-2 font-semibold">ಕನ್ನಡ</div>
-              <div className="text-5xl md:text-6xl font-bold text-amber-800 text-center mb-6">
+              <div className="text-5xl md:text-6xl font-bold break-words text-amber-800 text-center mb-6">
                 {items[index].kannada}
               </div>
               <Button

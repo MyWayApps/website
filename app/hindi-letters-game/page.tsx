@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star } from "lucide-react"
-import { useTTS } from "@/hooks/use-tts"
+import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { getLettersByType, getLetterTypeLabel, LetterType, HindiLetter } from "@/lib/hindi-letters-data"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 import { pickUnseenRandom } from "@/lib/question-history"
@@ -33,7 +33,7 @@ function randomChoiceIndices(correctIndex: number, total: number): number[] {
 export default function HindiLettersGame() {
   const searchParams = useSearchParams()
   const letterType = (searchParams.get("type") as LetterType) || "vowels"
-  const { speak, isSpeaking } = useTTS()
+  const { speakNative: speak, isSpeaking } = useLanguageSpeak("hindi")
 
   const [letters, setLetters] = useState<HindiLetter[]>([])
   const [score, setScore] = useState(0)
@@ -55,7 +55,7 @@ export default function HindiLettersGame() {
 
   const playLetterAudio = (letterIdx: number) => {
     if (letters.length === 0) return
-    speak(letters[letterIdx].letter, "hi")
+    speak(letters[letterIdx].letter)
   }
 
   useEffect(() => {

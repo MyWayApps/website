@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ArrowRight, Volume2 } from "lucide-react"
-import { useTTS } from "@/hooks/use-tts"
+import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { getCategoryById, VocabularyItem } from "@/lib/tamil-vocabulary-data"
 
 // Function to play English TTS
@@ -27,7 +27,7 @@ const playEnglishTTS = (text: string): Promise<void> => {
 export default function TamilVocabularyFlashcards() {
   const searchParams = useSearchParams()
   const categoryId = searchParams.get("category") || "days"
-  const { speak, isSpeaking } = useTTS()
+  const { speakNative: speak, isSpeaking } = useLanguageSpeak("tamil")
 
   const [items, setItems] = useState<VocabularyItem[]>([])
   const [categoryName, setCategoryName] = useState({ tamil: "", english: "" })
@@ -49,7 +49,7 @@ export default function TamilVocabularyFlashcards() {
   // Play Tamil audio
   const playTamilAudio = () => {
     if (items.length === 0) return
-    speak(items[index].tamil, "ta")
+    speak(items[index].tamil)
   }
 
   // Play English audio
@@ -177,12 +177,13 @@ export default function TamilVocabularyFlashcards() {
           onClick={handleCardClick}
         >
           <Card
-            className={`w-[300px] md:w-[400px] h-[300px] md:h-[350px] shadow-2xl transition-all duration-500 transform-style-preserve-3d ${
+            className={`min-h-[300px] md:min-h-[350px] shadow-2xl transition-all duration-500 transform-style-preserve-3d ${
               isFlipped ? 'rotate-y-180' : ''
             }`}
             style={{
               transformStyle: 'preserve-3d',
               transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+              width: `clamp(300px, ${Math.max(items[index].tamil.length, items[index].english.length) + 4}ch, min(90vw, 700px))`,
             }}
           >
             {/* Front - Tamil */}
@@ -191,7 +192,7 @@ export default function TamilVocabularyFlashcards() {
               style={{ backfaceVisibility: 'hidden' }}
             >
               <div className="text-sm text-pink-600 mb-2 font-semibold">தமிழ்</div>
-              <div className="text-5xl md:text-6xl font-bold text-pink-800 text-center mb-6">
+              <div className="text-5xl md:text-6xl font-bold break-words text-pink-800 text-center mb-6">
                 {items[index].tamil}
               </div>
               <Button

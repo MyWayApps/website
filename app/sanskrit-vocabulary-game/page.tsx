@@ -9,8 +9,7 @@ import { getCategoryById, VocabularyItem } from "@/lib/sanskrit-vocabulary-data"
 import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
 import type { User, Application } from "@/lib/database-supabase"
 import { saveGameScore } from "@/lib/scoring"
-import { useTTS } from "@/hooks/use-tts"
-import { transliterateToKannada } from "@/lib/sanskrit-tts"
+import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { pickUnseenRandom } from "@/lib/question-history"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
@@ -57,7 +56,7 @@ function getRandomChoices(correctIndex: number, totalItems: number, numChoices: 
 export default function SanskritVocabularyGame() {
   const searchParams = useSearchParams()
   const categoryId = searchParams.get("category") || "days"
-  const { speak, isSpeaking } = useTTS()
+  const { speakNative: speak, isSpeaking } = useLanguageSpeak("sanskrit")
 
   const [items, setItems] = useState<VocabularyItem[]>([])
   const [categoryName, setCategoryName] = useState({ sanskrit: "", english: "" })
@@ -164,7 +163,7 @@ export default function SanskritVocabularyGame() {
 
   const playSanskritAudio = (itemIndex: number) => {
     if (items.length === 0) return
-    speak(transliterateToKannada(items[itemIndex].sanskrit), "kn")
+    speak(items[itemIndex].sanskrit)
   }
 
   const handleCardClick = (idx: number) => {

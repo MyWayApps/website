@@ -3,15 +3,14 @@
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, Volume2 } from "lucide-react"
-import { useTTS } from "@/hooks/use-tts"
-import { transliterateToKannada } from "@/lib/sanskrit-tts"
+import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { sanskritVowels, sanskritConsonants, LetterType } from "@/lib/sanskrit-letters-data"
 
 export default function SanskritLettersFlashcardsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const initialType = (searchParams.get("type") as LetterType) || "vowels"
-  const { speak, isSpeaking } = useTTS()
+  const { speakNative: speak, isSpeaking } = useLanguageSpeak("sanskrit")
   const [selected, setSelected] = useState<string | null>(null)
   const [tab, setTab] = useState<"vowels" | "consonants">(initialType === "consonants" ? "consonants" : "vowels")
 
@@ -19,7 +18,7 @@ export default function SanskritLettersFlashcardsPage() {
 
   const handleTap = (letter: string) => {
     setSelected(letter)
-    speak(transliterateToKannada(letter), "kn")
+    speak(letter)
   }
 
   return (
