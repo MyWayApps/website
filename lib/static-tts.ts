@@ -1,9 +1,10 @@
 /**
- * Static-cache-first TTS, generalized across all content languages:
- * browser neural voice first, pre-generated Azure static file as backup,
- * live /api/tts (Azure, falling back to espeak) for anything not yet
- * pre-generated. Extracted from the Telugu-only implementation this app
- * started with — lib/telugu-tts.ts is now a thin wrapper around this.
+ * Azure-first TTS, generalized across all content languages: pre-generated
+ * Azure static file first, live /api/tts (Azure, falling back to espeak)
+ * for anything not yet pre-generated, and the browser's own voice only as
+ * a last resort if both Azure paths are unreachable. Extracted from the
+ * Telugu-only implementation this app started with — lib/telugu-tts.ts is
+ * now a thin wrapper around this.
  */
 
 // Track current audio element to prevent overlapping playback
@@ -205,15 +206,22 @@ async function playAudioFromBlobUrl(url: string): Promise<void> {
 }
 
 /**
- * Plays `text` for a content language: browser neural voice first, then a
- * pre-generated static MP3 keyed by SHA-256 hash under
- * /audio/<staticFolder>/<hash>.mp3, then a live /api/tts?lang=&text= call.
+ * Plays `text` for a content language: pre-generated Azure static MP3 first
+ * (/audio/<staticFolder>/<hash>.mp3), then a live /api/tts?lang=&text= Azure
+ * call for anything not yet pre-generated, and only as a last resort — if
+ * both Azure paths are unreachable — the browser's own built-in voice.
+ *
+ * Azure is deliberately the default, not the browser voice: device/OS voices
+ * vary wildly in quality with no floor we control (some platforms' only
+ * available voice for a language is a low-quality robotic one), while the
+ * pre-generated cache and live Azure calls are consistently good. Browser
+ * voice exists purely as an offline/network-outage safety net now.
  *
  * staticFolder and apiLangCode are deliberately separate: the pre-generated
  * cache lives under full language-name folders (public/audio/hindi/,
  * .../telugu/, ...), while /api/tts and the Azure voice map key off short
  * codes ("hi", "te", ...) — passing one value for both silently 404s every
- * static lookup and makes every play fall through to a live call.
+ * static lookup and makes every play fall through unnecessarily.
  *
  * @param text - native-script text to speak
  * @param staticFolder - full language name matching the public/audio/<name>/ folder on disk (e.g. "hindi", "telugu", "sanskrit")
@@ -229,19 +237,6 @@ export async function playStaticTTS(
   if (typeof window === 'undefined') return
   if (!text || text.trim().length === 0) return
 
-  // Try the browser's own neural voice first
-  if (window.speechSynthesis) {
-    try {
-      const voice = await getBestVoice(browserLocalePrefix)
-      if (voice) {
-        await speakWithBrowserVoice(text, voice)
-        return
-      }
-    } catch (err) {
-      console.warn(`[TTS] Browser voice playback failed for lang="${apiLangCode}", falling back:`, err)
-    }
-  }
-
   try {
     const hash = await hashText(text)
     const staticUrl = `/audio/${staticFolder}/${hash}.mp3`
@@ -252,11 +247,25 @@ export async function playStaticTTS(
       return
     }
 
-    // Fallback to server-side TTS for dynamic/not-yet-pre-generated text
+    // Not yet pre-generated — ask the server for a live Azure synthesis
+    // (app/api/tts/route.ts itself falls back to eSpeak only if Azure is
+    // unconfigured or fails, so this is still "Azure by default").
     const serverUrl = `/api/tts?lang=${apiLangCode}&text=${encodeURIComponent(text)}`
     await playAudioFromBlobUrl(serverUrl)
+    return
   } catch (err) {
-    console.error(`[TTS] Failed for lang="${apiLangCode}":`, err)
-    throw err
+    console.warn(`[TTS] Azure cache/live call failed for lang="${apiLangCode}", falling back to browser voice:`, err)
   }
+
+  // Last resort: both Azure paths failed (e.g. offline) — try the device's
+  // own voice rather than staying silent.
+  if (window.speechSynthesis) {
+    const voice = await getBestVoice(browserLocalePrefix)
+    if (voice) {
+      await speakWithBrowserVoice(text, voice)
+      return
+    }
+  }
+
+  throw new Error(`[TTS] No playback method available for lang="${apiLangCode}"`)
 }
