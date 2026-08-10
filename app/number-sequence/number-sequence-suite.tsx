@@ -9,6 +9,7 @@ import ForwardBackwardTopic from "./forward-backward-topic"
 import CountingShapesTopic from "./counting-shapes-topic"
 import NumberNeighborsTopic from "./number-neighbors-topic"
 import NumberCompareTopic from "./number-compare-topic"
+import WhoHasMoreTopic from "./who-has-more-topic"
 import PlaceValueTopic from "./place-value-topic"
 import NeighborGridTopic from "./neighbor-grid-topic"
 import NumberWordsTopic from "./number-words-topic"
@@ -49,6 +50,13 @@ const TOPICS: TopicMeta[] = [
     emoji: "⚖️",
     description: "Compare two numbers with >, < or =",
     gradient: "from-violet-400 to-fuchsia-600",
+  },
+  {
+    id: "who-has-more",
+    label: "Who Has More?",
+    emoji: "🆚",
+    description: "Compare two people's amounts and pick who has more or fewer",
+    gradient: "from-cyan-400 to-blue-600",
   },
   {
     id: "place-value",
@@ -98,6 +106,9 @@ export default function NumberSequenceSuite({ onGameComplete, onBackToHome }: Nu
   }
   if (activeTopic === "number-compare") {
     return <NumberCompareTopic onRoundComplete={handleRoundComplete} onBackToTopics={handleBackToTopics} />
+  }
+  if (activeTopic === "who-has-more") {
+    return <WhoHasMoreTopic onRoundComplete={handleRoundComplete} onBackToTopics={handleBackToTopics} />
   }
   if (activeTopic === "place-value") {
     return <PlaceValueTopic onRoundComplete={handleRoundComplete} onBackToTopics={handleBackToTopics} />

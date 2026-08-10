@@ -1,227 +1,119 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, ArrowRight, Volume2 } from "lucide-react"
-import { playTeluguTTS } from "@/lib/telugu-tts"
-import { getLettersByType, getLetterTypeLabel, LetterType, TeluguLetterWithWord } from "@/lib/telugu-letters-data"
+import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { ArrowLeft, Volume2 } from "lucide-react"
+import { useLanguageSpeak } from "@/hooks/use-language-speak"
+import { WiggleEmoji } from "@/components/animated-mascots"
+import { teluguVowels, teluguConsonants, LetterType } from "@/lib/telugu-letters-data"
+import { romanize } from "@/lib/transliteration"
 
-export default function TeluguFlashCards() {
+export default function TeluguLettersFlashcardsPage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
-  const letterType = (searchParams.get("type") as LetterType) || "vowels"
-  
-  const [letters, setLetters] = useState<TeluguLetterWithWord[]>([])
-  const [index, setIndex] = useState(0)
-  const [showWord, setShowWord] = useState(false)
-  const [isPlaying, setIsPlaying] = useState(false)
+  const initialType = (searchParams.get("type") as LetterType) || "vowels"
+  const { speakNative: speak, isSpeaking } = useLanguageSpeak("telugu")
+  const [tab, setTab] = useState<"vowels" | "consonants">(initialType === "consonants" ? "consonants" : "vowels")
+  const initialLetters = initialType === "consonants" ? teluguConsonants : teluguVowels
+  const [selected, setSelected] = useState<string | null>(initialLetters[0]?.letter ?? null)
 
-  // Initialize letters based on type
-  useEffect(() => {
-    const letterData = getLettersByType(letterType)
-    setLetters(letterData)
-    setIndex(0)
-  }, [letterType])
+  const letters = tab === "vowels" ? teluguVowels : teluguConsonants
+  const selectedItem = selected ? letters.find((l) => l.letter === selected) : undefined
 
-  const typeLabel = getLetterTypeLabel(letterType)
-
-  // Play audio for current letter using TTS
-  const playAudio = async () => {
-    if (isPlaying || letters.length === 0) return
-    
-    try {
-      setIsPlaying(true)
-      const textToSpeak = letters[index].letter
-      await playTeluguTTS(textToSpeak)
-    } catch (error) {
-      console.error("TTS play failed:", error)
-    } finally {
-      setIsPlaying(false)
-    }
-  }
-
-  // Play word audio using TTS
-  const playWordAudio = async (word: string) => {
-    try {
-      await playTeluguTTS(word)
-    } catch (error) {
-      console.error("TTS play failed for word:", error)
-    }
-  }
-
-  // Handle letter click - replace letter with word, play audio, then bounce back
-  const handleLetterClick = () => {
-    if (letters.length === 0) return
-    setShowWord(true)
-    
-    // Play the word audio
-    const word = letters[index].word
-    if (word && word !== letters[index].letter) {
-      playWordAudio(word)
-    }
-    
-    // Hide word and bounce back to letter after 2.5 seconds
-    setTimeout(() => {
-      setShowWord(false)
-    }, 2500)
-  }
-
-  // Auto-play audio when index changes
-  useEffect(() => {
-    if (letters.length === 0) return
-    if (isPlaying) return // Don't auto-play if already playing
-    
-    // Small delay to ensure component is ready
-    const timer = setTimeout(() => {
-      playAudio()
-    }, 400)
-    return () => clearTimeout(timer)
-  }, [index, letters])
-
-
-  // Add keyboard event listeners for arrow keys
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowLeft') {
-        setShowWord(false) // Clear word display immediately
-        prev()
-      } else if (event.key === 'ArrowRight') {
-        setShowWord(false) // Clear word display immediately
-        next()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyPress)
-    return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [letters])
-
-  // Go back to Telugu Letters page
-  const onBackToHome = () => {
-    window.location.href = "/telugu-letters"
-  }
-
-  // Reset the flashcards game
-  const resetGame = () => {
-    setIndex(0)
-  }
-
-  const prev = () => {
-    if (letters.length === 0) return
-    setShowWord(false) // Clear any word display immediately
-    setIndex((i) => {
-      const newIndex = i === 0 ? letters.length - 1 : i - 1
-      return newIndex
-    })
-  }
-  
-  const next = () => {
-    if (letters.length === 0) return
-    setShowWord(false) // Clear any word display immediately
-    setIndex((i) => {
-      const newIndex = i === letters.length - 1 ? 0 : i + 1
-      return newIndex
-    })
-  }
-
-  if (letters.length === 0) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-yellow-200 to-amber-400">
-        <div className="text-2xl text-amber-800">Loading...</div>
-      </div>
-    )
+  const handleTap = (letter: string) => {
+    setSelected(letter)
+    const item = letters.find((l) => l.letter === letter)
+    const word = item?.word ?? ""
+    speak(`${letter}. ${word.split("(")[0].trim()}`)
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-yellow-200 to-amber-400 relative overflow-hidden">
-      {/* Decorative Character */}
-      <img 
-        src="/characters/aligator.png" 
-        alt="Chick" 
-        className="absolute bottom-0 left-30 w-36 h-36 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain opacity-90 pointer-events-none z-10"
-      />
-      
-      {/* Header - Aligned with rectangle */}
-      <div className="w-1/2 min-w-[400px] mb-6 flex items-center justify-between">
-        <Button
-          onClick={onBackToHome}
-          className="bg-white/20 hover:bg-white/30 text-amber-800 border-2 border-white font-bold text-lg px-6 py-3"
-          variant="outline"
-        >
-          <ArrowLeft className="mr-2 h-5 w-5" />
-          Back to Telugu Letters
-        </Button>
-        <div className="bg-white/30 px-4 py-2 rounded-full">
-          <span className="text-amber-800 font-bold text-lg">{typeLabel.telugu}</span>
-          <span className="text-amber-600 ml-2">({typeLabel.english})</span>
+    <div className="min-h-screen bg-gradient-to-br from-amber-300 via-orange-400 to-red-400">
+      <header className="bg-white/15 backdrop-blur-sm border-b-2 border-white/30 px-4 py-4">
+        <div className="max-w-4xl mx-auto flex items-center gap-3">
+          <button
+            onClick={() => router.push("/telugu-letters")}
+            className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-black text-white drop-shadow">Telugu Letters</h1>
+            <p className="text-white/80 text-sm font-semibold">తెలుగు అక్షరాలు — Tap a letter to hear it!</p>
+          </div>
+          <div className="ml-auto text-4xl">
+            <WiggleEmoji emoji="అ" />
+          </div>
         </div>
-      </div>
+      </header>
 
-      {/* Title */}
-      <div className="text-center mb-6">
-        <h1 className="text-4xl font-bold text-amber-900">
-          Tap the letter
-        </h1>
-        <p className="text-lg text-amber-700 mt-2">
-          {index + 1} / {letters.length}
-        </p>
-      </div>
-
-      <div className="flex items-center justify-center">
-        {/* Back Button - Left of Rectangle */}
-        <Button 
-          onClick={prev} 
-          variant="outline" 
-          className="bg-amber-100 hover:bg-amber-200 text-amber-800 border-2 border-amber-400 font-bold text-lg px-6 py-3 mr-8"
-        >
-          <ArrowLeft className="mr-2 h-5 w-5" />
-          Back
-        </Button>
-        
-        <Card className="w-1/2 h-1/2 min-w-[400px] min-h-[400px] flex flex-col items-center justify-center shadow-2xl bg-white/90 backdrop-blur-sm border-0">
-          <CardContent className="flex flex-col items-center justify-center h-full p-8">
-            {/* Clickable Telugu Letter/Word Container */}
-            <div 
-              className="text-9xl font-bold mb-4 text-amber-800 cursor-pointer hover:scale-110 transition-all duration-300 select-none min-h-[120px] flex items-center justify-center"
-              onClick={handleLetterClick}
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {selected && (
+          <div className="mb-8 bg-white/20 backdrop-blur-sm rounded-3xl p-6 text-center border-2 border-white/40 shadow-xl">
+            <div className="text-8xl font-black text-white mb-2 drop-shadow-lg">{selected}</div>
+            <div className="text-lg text-white/70 italic mb-2">{romanize(selected, "telugu")}</div>
+            {selectedItem?.word && (
+              <div className="text-xl text-white/90 font-bold mb-1">{selectedItem.word}</div>
+            )}
+            {selectedItem?.word && (
+              <div className="text-base text-white/70 italic mb-4">
+                {romanize(selectedItem.word.split("(")[0].trim(), "telugu")}
+              </div>
+            )}
+            <button
+              onClick={() => handleTap(selected)}
+              disabled={isSpeaking}
+              className="inline-flex items-center gap-2 bg-white text-amber-600 font-black px-6 py-3 rounded-2xl shadow-lg hover:scale-105 transition-all disabled:opacity-60"
             >
-              {showWord && letters[index].word && letters[index].word !== letters[index].letter ? (
-                <div className="text-6xl font-bold text-amber-700 text-center bg-yellow-200 px-8 py-6 rounded-xl shadow-lg">
-                  <div className="text-2xl text-amber-600 mb-2">పదం</div>
-                  <div>{letters[index].word}</div>
-                </div>
-              ) : (
-                letters[index].letter
-              )}
-            </div>
-            
-            {/* Volume Button - Center */}
-            <div className="flex items-center justify-center w-full px-4">
-              <Button 
-                onClick={playAudio} 
-                variant="outline" 
-                className="bg-amber-200 hover:bg-amber-300 text-amber-800 border-2 border-amber-400 px-8 py-6 text-xl font-bold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-70"
-                disabled={isPlaying}
-              >
-                {isPlaying ? (
-                  <Volume2 className="h-8 w-8 animate-pulse" />
-                ) : (
-                  <Volume2 className="h-8 w-8" />
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Next Button - Right of Rectangle */}
-        <Button 
-          onClick={next} 
-          variant="outline" 
-          className="bg-amber-100 hover:bg-amber-200 text-amber-800 border-2 border-amber-400 font-bold text-lg px-6 py-3 ml-8"
-        >
-          <ArrowRight className="mr-2 h-5 w-5" />
-          Next
-        </Button>
+              <Volume2 className="h-5 w-5" />
+              {isSpeaking ? "Playing…" : "Hear it again"}
+            </button>
+          </div>
+        )}
+
+        <div className="flex gap-2 mb-6">
+          {(["vowels", "consonants"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => {
+                setTab(t)
+                const newLetters = t === "vowels" ? teluguVowels : teluguConsonants
+                setSelected(newLetters[0]?.letter ?? null)
+              }}
+              className={`flex-1 py-3 rounded-2xl font-black text-sm transition-all ${
+                tab === t ? "bg-white text-amber-600 shadow-lg scale-105" : "bg-white/20 text-white hover:bg-white/30"
+              }`}
+            >
+              {t === "vowels" ? "అచ్చులు (Vowels)" : "హల్లులు (Consonants)"}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+          {letters.map(({ letter }) => (
+            <button
+              key={letter}
+              onClick={() => handleTap(letter)}
+              aria-label={`Letter ${letter}`}
+              className={`
+                rounded-2xl flex flex-col items-center justify-center gap-0.5 py-3
+                text-3xl font-black border-4 transition-all duration-200
+                hover:scale-110 active:scale-95 shadow-md hover:shadow-xl
+                ${
+                  selected === letter
+                    ? "bg-white text-amber-600 border-white scale-110 shadow-xl"
+                    : "bg-white/25 text-white border-white/40 hover:bg-white/40"
+                }
+              `}
+            >
+              <span>{letter}</span>
+              <span className="text-xs font-normal opacity-70">{romanize(letter, "telugu")}</span>
+            </button>
+          ))}
+        </div>
+
+        <p className="text-center text-white/60 text-sm mt-8 font-semibold">💡 Tap any letter to hear it spoken in Telugu</p>
       </div>
     </div>
   )

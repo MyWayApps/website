@@ -6,9 +6,10 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, RotateCcw, Star, Volume2 } from "lucide-react"
 import { QuizResults } from "@/components/quiz-results"
 import { CategoryPicker } from "@/components/language-games/category-picker"
-import { getGridFriendlyCategories, getGridFriendlyWordPairs, type LanguageCode } from "@/lib/language-games-data"
+import { getGridFriendlyCategories, getGridFriendlyWordPairs, LANGUAGE_SCRIPT, type LanguageCode } from "@/lib/language-games-data"
 import { buildCrossword } from "@/lib/word-grid"
 import { useLanguageSpeak } from "@/hooks/use-language-speak"
+import { romanize } from "@/lib/transliteration"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
 interface CrosswordGameProps {
@@ -203,8 +204,15 @@ export function CrosswordGame({ lang, gradientClass, onBackToModes, onComplete }
                       className={`flex items-center justify-between gap-2 p-2 rounded-xl ${solved ? "bg-green-100" : "bg-gray-50"}`}
                     >
                       <span className={`font-semibold ${solved ? "text-green-700" : "text-gray-700"}`}>
-                        {p.number}. {pair?.native ?? p.word}{" "}
-                        <span className="text-xs text-gray-400 font-normal">({p.direction})</span>
+                        <div>
+                          {p.number}. {pair?.native ?? p.word}{" "}
+                          <span className="text-xs text-gray-400 font-normal">({p.direction})</span>
+                        </div>
+                        {pair?.native && (
+                          <div className="text-xs text-gray-400 font-normal italic">
+                            {romanize(pair.native, LANGUAGE_SCRIPT[lang])}
+                          </div>
+                        )}
                       </span>
                       <button onClick={() => speakNative(pair?.native ?? "")} className="text-indigo-500 hover:text-indigo-700 shrink-0">
                         <Volume2 className="h-5 w-5" />

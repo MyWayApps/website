@@ -7,6 +7,7 @@ import { ArrowLeft, Volume2, CheckCircle, Edit3 } from "lucide-react"
 import Link from "next/link"
 import { getLessonById } from "@/lib/malayalam-comprehension-data"
 import { useLanguageSpeak } from "@/hooks/use-language-speak"
+import { romanize } from "@/lib/transliteration"
 import { useState } from "react"
 
 export default function LessonPage() {
@@ -103,9 +104,10 @@ export default function LessonPage() {
             {/* Passage */}
             <div className="space-y-4">
               {lesson.passage.map((line, index) => (
-                <p key={index} className="text-2xl text-cyan-900 leading-relaxed">
-                  {line}
-                </p>
+                <div key={index}>
+                  <p className="text-2xl text-cyan-900 leading-relaxed">{line}</p>
+                  <p className="text-base text-cyan-600/70 italic leading-relaxed">{romanize(line, "malayalam")}</p>
+                </div>
               ))}
             </div>
           </CardContent>

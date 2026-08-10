@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star, Volume2 } from "lucide-react"
 import { getCategoryById, VocabularyItem } from "@/lib/tamil-vocabulary-data"
+import { romanize } from "@/lib/transliteration"
 import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
 import type { User, Application } from "@/lib/database-supabase"
 import { saveGameScore } from "@/lib/scoring"
@@ -341,7 +342,12 @@ export default function TamilVocabularyGame() {
                     }`}
                     onClick={() => handleCardClick(idx)}
                   >
-                    <span className="text-pink-800">{items[itemIdx].tamil}</span>
+                    <div className="flex flex-col items-center">
+                      <span className="text-pink-800">{items[itemIdx].tamil}</span>
+                      <span className="text-base md:text-lg font-normal text-pink-600/80 italic mt-1">
+                        {romanize(items[itemIdx].tamil, "tamil")}
+                      </span>
+                    </div>
                   </Card>
                 ))}
               </div>

@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star, Volume2 } from "lucide-react"
 import { getCategoryById, VocabularyItem } from "@/lib/kannada-vocabulary-data"
+import { romanize } from "@/lib/transliteration"
 import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
 import type { User, Application } from "@/lib/database-supabase"
 import { saveGameScore } from "@/lib/scoring"
@@ -341,7 +342,12 @@ export default function KannadaVocabularyGame() {
                     }`}
                     onClick={() => handleCardClick(idx)}
                   >
-                    <span className="text-amber-800">{items[itemIdx].kannada}</span>
+                    <div className="flex flex-col items-center">
+                      <span className="text-amber-800">{items[itemIdx].kannada}</span>
+                      <span className="text-base md:text-lg font-normal text-amber-600/80 italic mt-1">
+                        {romanize(items[itemIdx].kannada, "kannada")}
+                      </span>
+                    </div>
                   </Card>
                 ))}
               </div>

@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star, Volume2 } from "lucide-react"
 import { getCategoryById, vocabularyCategories, VocabularyItem } from "@/lib/telugu-vocabulary-data"
+import { romanize } from "@/lib/transliteration"
 import { pickUnseenRandom } from "@/lib/question-history"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 
@@ -273,7 +274,12 @@ export default function TeluguVocabularyGame() {
                     }`}
                     onClick={() => handleCardClick(idx)}
                   >
-                    <span className="text-teal-800">{items[itemIdx].telugu}</span>
+                    <div className="flex flex-col items-center">
+                      <span className="text-teal-800">{items[itemIdx].telugu}</span>
+                      <span className="text-base md:text-lg font-normal text-teal-600/80 italic mt-1">
+                        {romanize(items[itemIdx].telugu, "telugu")}
+                      </span>
+                    </div>
                   </Card>
                 ))}
               </div>

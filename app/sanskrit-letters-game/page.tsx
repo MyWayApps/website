@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star } from "lucide-react"
 import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { getLettersByType, getLetterTypeLabel, LetterType, SanskritLetter } from "@/lib/sanskrit-letters-data"
+import { romanize } from "@/lib/transliteration"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 import { pickUnseenRandom } from "@/lib/question-history"
 
@@ -164,7 +165,7 @@ export default function SanskritLettersGame() {
                 {choices.map((letterIdx, idx) => (
                   <Card
                     key={idx}
-                    className={`w-36 h-44 flex items-center justify-center text-7xl font-bold cursor-pointer transition-all duration-200 ${
+                    className={`w-36 h-52 flex flex-col items-center justify-center gap-1 text-7xl font-bold cursor-pointer transition-all duration-200 ${
                       showResult && choices[idx] === correctIdx && showResult === "correct"
                         ? "bg-green-200 border-green-500 scale-110"
                         : showResult && idx === choices.findIndex((i) => i === correctIdx) && showResult === "wrong"
@@ -173,7 +174,10 @@ export default function SanskritLettersGame() {
                     }`}
                     onClick={() => handleCardClick(idx)}
                   >
-                    {letters[letterIdx].letter}
+                    <span>{letters[letterIdx].letter}</span>
+                    <span className="text-base font-normal opacity-70">
+                      {romanize(letters[letterIdx].letter, "devanagari")}
+                    </span>
                   </Card>
                 ))}
               </div>

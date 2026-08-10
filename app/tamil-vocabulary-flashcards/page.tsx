@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, ArrowRight, Volume2 } from "lucide-react"
 import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { getCategoryById, VocabularyItem } from "@/lib/tamil-vocabulary-data"
+import { romanize } from "@/lib/transliteration"
 
 // Function to play English TTS
 const playEnglishTTS = (text: string): Promise<void> => {
@@ -177,7 +178,7 @@ export default function TamilVocabularyFlashcards() {
           onClick={handleCardClick}
         >
           <Card
-            className={`min-h-[300px] md:min-h-[350px] min-w-[300px] md:min-w-[400px] max-w-[90vw] w-fit mx-auto shadow-2xl transition-all duration-500 transform-style-preserve-3d ${
+            className={`min-h-[340px] md:min-h-[390px] min-w-[300px] md:min-w-[400px] max-w-[90vw] w-fit mx-auto shadow-2xl transition-all duration-500 transform-style-preserve-3d ${
               isFlipped ? 'rotate-y-180' : ''
             }`}
             style={{
@@ -198,8 +199,11 @@ export default function TamilVocabularyFlashcards() {
               style={{ backfaceVisibility: 'hidden' }}
             >
               <div className="text-sm text-pink-600 mb-2 font-semibold">தமிழ்</div>
-              <div className="text-5xl md:text-6xl font-bold break-words text-pink-800 text-center mb-6">
+              <div className="text-5xl md:text-6xl font-bold break-words text-pink-800 text-center mb-1">
                 {items[index].tamil}
+              </div>
+              <div className="text-lg md:text-xl text-pink-600/80 italic text-center mb-6">
+                {romanize(items[index].tamil, "tamil")}
               </div>
               <Button
                 onClick={(e) => {

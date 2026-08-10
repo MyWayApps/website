@@ -6,8 +6,9 @@ import { Volume2 } from "lucide-react"
 import { VisualMCQGame, type MCQQuestion } from "@/components/math-topics/visual-mcq-game"
 import { CategoryPicker } from "@/components/language-games/category-picker"
 import { pickUnseen } from "@/lib/question-history"
-import { getPicturableCategories, getPicturableWordPairs, type LanguageCode } from "@/lib/language-games-data"
+import { getPicturableCategories, getPicturableWordPairs, LANGUAGE_SCRIPT, type LanguageCode } from "@/lib/language-games-data"
 import { useLanguageSpeak } from "@/hooks/use-language-speak"
+import { romanize } from "@/lib/transliteration"
 
 interface PictureVocabularyGameProps {
   lang: LanguageCode
@@ -71,7 +72,15 @@ export function PictureVocabularyGame({ lang, gradientClass, onBackToModes, onCo
     }
     const choices = [target, ...distractors].map((w) => w.native).sort(() => Math.random() - 0.5)
     setTimeout(() => speakNative(target.native), 300)
-    return { emoji: target.emoji, englishWord: target.english, nativeWord: target.native, prompt: null, choices, correctChoice: target.native }
+    return {
+      emoji: target.emoji,
+      englishWord: target.english,
+      nativeWord: target.native,
+      prompt: null,
+      choices,
+      correctChoice: target.native,
+      choiceSubtext: (choice: string) => romanize(choice, LANGUAGE_SCRIPT[lang]),
+    }
   }
 
   return (

@@ -8,6 +8,7 @@ import { ArrowLeft, Volume2, Star } from "lucide-react"
 import { getLessonById } from "@/lib/kannada-comprehension-data"
 import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { romanize } from "@/lib/transliteration"
 
 export default function Game1Page() {
   const params = useParams()
@@ -141,9 +142,10 @@ export default function Game1Page() {
         <Card className="bg-gradient-to-br from-green-100 to-emerald-200 border-4 border-white shadow-2xl">
           <CardContent className="p-8">
             <div className="flex items-center justify-between gap-4">
-              <h2 className="text-3xl font-bold text-green-900 flex-1">
-                {currentQuestion.question}
-              </h2>
+              <div className="flex-1">
+                <h2 className="text-3xl font-bold text-green-900">{currentQuestion.question}</h2>
+                <p className="text-base text-green-700/70 italic mt-1">{romanize(currentQuestion.question, "kannada")}</p>
+              </div>
               <Button
                 onClick={() => handlePlayAudio(currentQuestion.question)}
                 disabled={isPlayingTTS}
@@ -181,10 +183,13 @@ export default function Game1Page() {
               >
                 <CardContent className="p-6 flex items-center justify-between">
                   <div className="flex items-center gap-4 flex-1">
-                    <div className="text-3xl font-bold text-gray-700 bg-gray-100 rounded-full w-12 h-12 flex items-center justify-center">
+                    <div className="text-3xl font-bold text-gray-700 bg-gray-100 rounded-full w-12 h-12 flex items-center justify-center shrink-0">
                       {String.fromCharCode(65 + index)}
                     </div>
-                    <p className="text-2xl font-bold text-gray-800">{option}</p>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-800">{option}</p>
+                      <p className="text-sm text-gray-500 italic">{romanize(option, "kannada")}</p>
+                    </div>
                   </div>
 
                   {isAnswered && (

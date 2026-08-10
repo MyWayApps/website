@@ -6,16 +6,19 @@ import { ArrowLeft, Volume2 } from "lucide-react"
 import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { WiggleEmoji } from "@/components/animated-mascots"
 import { kannadaVowels, kannadaConsonants, LetterType } from "@/lib/kannada-letters-data"
+import { romanize } from "@/lib/transliteration"
 
 export default function KannadaLettersFlashcardsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const initialType = (searchParams.get("type") as LetterType) || "vowels"
   const { speakNative: speak, isSpeaking } = useLanguageSpeak("kannada")
-  const [selected, setSelected] = useState<string | null>(null)
   const [tab, setTab] = useState<"vowels" | "consonants">(initialType === "consonants" ? "consonants" : "vowels")
+  const initialLetters = initialType === "consonants" ? kannadaConsonants : kannadaVowels
+  const [selected, setSelected] = useState<string | null>(initialLetters[0]?.letter ?? null)
 
   const letters = tab === "vowels" ? kannadaVowels : kannadaConsonants
+  const selectedItem = selected ? letters.find((l) => l.letter === selected) : undefined
 
   const handleTap = (letter: string) => {
     setSelected(letter)
@@ -49,8 +52,14 @@ export default function KannadaLettersFlashcardsPage() {
         {selected && (
           <div className="mb-8 bg-white/20 backdrop-blur-sm rounded-3xl p-6 text-center border-2 border-white/40 shadow-xl">
             <div className="text-8xl font-black text-white mb-2 drop-shadow-lg">{selected}</div>
-            {letters.find((l) => l.letter === selected)?.word && (
-              <div className="text-xl text-white/90 font-bold mb-4">{letters.find((l) => l.letter === selected)?.word}</div>
+            <div className="text-lg text-white/70 italic mb-2">{romanize(selected, "kannada")}</div>
+            {selectedItem?.word && (
+              <div className="text-xl text-white/90 font-bold mb-1">{selectedItem.word}</div>
+            )}
+            {selectedItem?.word && (
+              <div className="text-base text-white/70 italic mb-4">
+                {romanize(selectedItem.word.split("(")[0].trim(), "kannada")}
+              </div>
             )}
             <button
               onClick={() => handleTap(selected)}
@@ -69,7 +78,8 @@ export default function KannadaLettersFlashcardsPage() {
               key={t}
               onClick={() => {
                 setTab(t)
-                setSelected(null)
+                const newLetters = t === "vowels" ? kannadaVowels : kannadaConsonants
+                setSelected(newLetters[0]?.letter ?? null)
               }}
               className={`flex-1 py-3 rounded-2xl font-black text-sm transition-all ${
                 tab === t ? "bg-white text-amber-600 shadow-lg scale-105" : "bg-white/20 text-white hover:bg-white/30"
@@ -87,7 +97,7 @@ export default function KannadaLettersFlashcardsPage() {
               onClick={() => handleTap(letter)}
               aria-label={`Letter ${letter}`}
               className={`
-                aspect-square rounded-2xl flex items-center justify-center
+                rounded-2xl flex flex-col items-center justify-center gap-0.5 py-3
                 text-3xl font-black border-4 transition-all duration-200
                 hover:scale-110 active:scale-95 shadow-md hover:shadow-xl
                 ${
@@ -97,7 +107,8 @@ export default function KannadaLettersFlashcardsPage() {
                 }
               `}
             >
-              {letter}
+              <span>{letter}</span>
+              <span className="text-xs font-normal opacity-70">{romanize(letter, "kannada")}</span>
             </button>
           ))}
         </div>

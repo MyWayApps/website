@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, Volume2, CheckCircle, XCircle } from "lucide-react"
 import { playTeluguTTS } from "@/lib/telugu-tts"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { romanize } from "@/lib/transliteration"
 
 // All Telugu words data organized by groups
 const teluguWordsData = {
@@ -645,7 +646,8 @@ export default function ListenPointGame() {
                       : 'bg-purple-100 border-purple-400 text-purple-800 hover:bg-purple-200 hover:border-purple-500 cursor-pointer'
                   }`}
                 >
-                  {word.word}
+                  <div>{word.word}</div>
+                  <div className="text-base font-normal opacity-70 mt-1">{romanize(word.word, "telugu")}</div>
                 </button>
               ))}
             </div>

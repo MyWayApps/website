@@ -13,6 +13,8 @@ export interface MCQQuestion {
   prompt: ReactNode
   choices: string[]
   correctChoice: string
+  /** Optional per-choice subtext (e.g. romanized pronunciation for native-script choices) — unused by non-language topics. */
+  choiceSubtext?: (choice: string) => string
 }
 
 interface VisualMCQGameProps {
@@ -132,7 +134,14 @@ export function VisualMCQGame({ title, gradientClass, roundLength = 5, generateQ
                     className={`h-20 md:h-24 text-2xl md:text-3xl font-bold border-2 rounded-2xl shadow-md ${cardClass}`}
                     variant="outline"
                   >
-                    {choice}
+                    {question.choiceSubtext ? (
+                      <div className="flex flex-col items-center">
+                        <span>{choice}</span>
+                        <span className="text-xs md:text-sm font-normal opacity-70">{question.choiceSubtext(choice)}</span>
+                      </div>
+                    ) : (
+                      choice
+                    )}
                   </Button>
                 )
               })}

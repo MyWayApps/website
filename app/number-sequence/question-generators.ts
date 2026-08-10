@@ -162,6 +162,71 @@ export function generateCompareQuestion(maxNumber = 100): CompareQuestion {
   return { a, b, correct }
 }
 
+// ─── Who has more / fewer? (word-problem comparison) ───────────────────────
+
+const COMPARE_NAMES = ["Nisha", "Shruti", "Ravi", "Meera", "Arjun", "Priya", "Kabir", "Ananya", "Dev", "Isha"]
+
+interface CompareObject {
+  label: string
+  emoji: string
+}
+
+const COMPARE_OBJECTS: CompareObject[] = [
+  { label: "board games", emoji: "🎲" },
+  { label: "chocolates", emoji: "🍫" },
+  { label: "marbles", emoji: "🔵" },
+  { label: "stickers", emoji: "⭐" },
+  { label: "pencils", emoji: "✏️" },
+  { label: "balloons", emoji: "🎈" },
+  { label: "apples", emoji: "🍎" },
+  { label: "toy cars", emoji: "🚗" },
+  { label: "flowers", emoji: "🌸" },
+  { label: "cookies", emoji: "🍪" },
+]
+
+export interface WhoHasMoreQuestion {
+  name1: string
+  name2: string
+  count1: number
+  count2: number
+  objectLabel: string
+  objectEmoji: string
+  comparison: "more" | "fewer"
+  correctName: string
+}
+
+export function generateWhoHasMoreQuestion(index: number): WhoHasMoreQuestion {
+  const maxNumber = index < 2 ? 10 : index < 4 ? 20 : 50
+
+  const name1 = COMPARE_NAMES[randInt(0, COMPARE_NAMES.length - 1)]
+  let name2 = name1
+  while (name2 === name1) {
+    name2 = COMPARE_NAMES[randInt(0, COMPARE_NAMES.length - 1)]
+  }
+  const object = COMPARE_OBJECTS[randInt(0, COMPARE_OBJECTS.length - 1)]
+
+  const count1 = pickUnseenRandom(`number-sequence:who-has-more:a:${maxNumber}`, 1, maxNumber)
+  let count2 = pickUnseenRandom(`number-sequence:who-has-more:b:${maxNumber}`, 1, maxNumber)
+  while (count2 === count1) {
+    count2 = randInt(1, maxNumber)
+  }
+
+  const comparison: "more" | "fewer" = Math.random() < 0.5 ? "more" : "fewer"
+  const name1Wins = comparison === "more" ? count1 > count2 : count1 < count2
+  const correctName = name1Wins ? name1 : name2
+
+  return {
+    name1,
+    name2,
+    count1,
+    count2,
+    objectLabel: object.label,
+    objectEmoji: object.emoji,
+    comparison,
+    correctName,
+  }
+}
+
 // ─── Place value ─────────────────────────────────────────────────────────────
 
 export type Place = "hundreds" | "tens" | "ones"

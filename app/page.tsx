@@ -372,6 +372,12 @@ const fallbackApplications: Application[] = [
     icon_emoji: "🎬", color_scheme: "from-purple-200 to-pink-500",
     route: "/english-grammar", created_at: new Date().toISOString(),
   },
+  {
+    id: "en-3", name: "Reading Coach", category: "Education", subcategory: "English",
+    description: "Read a story out loud and get instant feedback",
+    icon_emoji: "🎤", color_scheme: "from-amber-200 to-orange-500",
+    route: "/english-reading", created_at: new Date().toISOString(),
+  },
   // ── Science ───────────────────────────────────────────────────────────────
   {
     id: "sci-1", name: "Science", category: "Education", subcategory: "Science",
@@ -405,6 +411,12 @@ const fallbackApplications: Application[] = [
     description: "Click the animals to score points!",
     icon_emoji: "🐰", color_scheme: "from-purple-200 to-pink-500",
     route: "/counting-game", created_at: new Date().toISOString(),
+  },
+  {
+    id: "10s", name: "Sudoku", category: "Games", subcategory: "",
+    description: "4x4 and 6x6 puzzles with numbers or pictures",
+    icon_emoji: "🧩", color_scheme: "from-cyan-200 to-blue-500",
+    route: "/sudoku", created_at: new Date().toISOString(),
   },
 ]
 

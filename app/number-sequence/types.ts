@@ -3,6 +3,7 @@ export type TopicId =
   | "counting-shapes"
   | "number-neighbors"
   | "number-compare"
+  | "who-has-more"
   | "place-value"
   | "neighbor-grid"
   | "number-words"

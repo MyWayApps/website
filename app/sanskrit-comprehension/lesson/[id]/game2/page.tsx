@@ -8,6 +8,7 @@ import { ArrowLeft, Volume2, Star, RotateCcw } from "lucide-react"
 import { getLessonById } from "@/lib/sanskrit-comprehension-data"
 import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { romanize } from "@/lib/transliteration"
 
 // Sanskrit has no TTS voice of its own — the sentence is transliterated to
 // Kannada script and spoken with the Kannada voice/fallback (lib/sanskrit-tts.ts).
@@ -175,9 +176,10 @@ export default function Game2Page() {
         }`}>
           <CardContent className="p-8">
             <div className="flex items-center justify-between gap-4">
-              <h2 className="text-3xl font-bold text-purple-900 flex-1">
-                {getSentenceWithAnswer()}
-              </h2>
+              <div className="flex-1">
+                <h2 className="text-3xl font-bold text-purple-900">{getSentenceWithAnswer()}</h2>
+                <p className="text-base text-purple-700/70 italic mt-1">{romanize(getSentenceWithAnswer(), "devanagari")}</p>
+              </div>
               <Button
                 onClick={() => handlePlayAudio(getSentenceWithAnswer())}
                 disabled={isPlayingTTS}
@@ -243,6 +245,7 @@ export default function Game2Page() {
               >
                 <CardContent className="p-6 text-center">
                   <p className="text-2xl font-bold text-gray-800">{option}</p>
+                  <p className="text-sm text-gray-500 italic">{romanize(option, "devanagari")}</p>
                   {isAnswered && isCorrect && (
                     <div className="mt-2 text-3xl">✅</div>
                   )}

@@ -61,8 +61,7 @@ export default function PoemsPage() {
 
         <Card className="bg-white/95 backdrop-blur-sm shadow-2xl border-0">
           <CardContent className="p-10 md:p-14 text-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-1">{poem.title}</h2>
-            <p className="text-base text-gray-500 mb-8">{poem.titleEnglish}</p>
+            <h2 className="text-3xl md:text-4xl font-black text-fuchsia-700 mb-8 tracking-tight">{poem.title}</h2>
 
             <div className="space-y-3 mb-8">
               {poem.lines.map((line, i) => (

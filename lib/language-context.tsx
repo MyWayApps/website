@@ -14,7 +14,7 @@ interface LanguageContextType {
 
 const translations: Record<Language, Record<string, string>> = {
   en: {
-    "app.welcome": "Welcome to MyWayApps! 🌈",
+    "app.welcome": "Welcome! 🌈",
     "app.subtitle": "A Colorful World of Learning!",
     "app.loading": "Loading MyWayApps...",
     "app.portal": "Educational Games Portal",
@@ -33,7 +33,7 @@ const translations: Record<Language, Record<string, string>> = {
     "hi.letters.desc": "Learn Hindi alphabet with flashcards and games",
   },
   hi: {
-    "app.welcome": "MyWayApps में आपका स्वागत है! 🌈",
+    "app.welcome": "स्वागत है! 🌈",
     "app.subtitle": "सीखने की एक रंगीन दुनिया!",
     "app.loading": "MyWayApps लोड हो रहा है...",
     "app.portal": "शैक्षिक खेल पोर्टल",
@@ -51,7 +51,7 @@ const translations: Record<Language, Record<string, string>> = {
     "hi.letters.desc": "फ्लैशकार्ड और खेलों के साथ हिंदी वर्णमाला सीखें",
   },
   kn: {
-    "app.welcome": "MyWayApps ಗೆ ಸ್ವಾಗತ! 🌈",
+    "app.welcome": "ಸ್ವಾಗತ! 🌈",
     "app.subtitle": "ಕಲಿಕೆಯ ಬಣ್ಣಮಯ ಜಗತ್ತು!",
     "app.loading": "MyWayApps ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
     "app.portal": "ಶೈಕ್ಷಣಿಕ ಆಟಗಳ ಪೋರ್ಟಲ್",

@@ -23,6 +23,16 @@ export const LANGUAGE_LABELS: Record<LanguageCode, string> = {
   sanskrit: "Sanskrit",
 }
 
+/** Maps each language to the script lib/transliteration.ts's romanize() needs — hindi and sanskrit both use Devanagari. */
+export const LANGUAGE_SCRIPT: Record<LanguageCode, "devanagari" | "telugu" | "kannada" | "tamil" | "malayalam"> = {
+  telugu: "telugu",
+  hindi: "devanagari",
+  kannada: "kannada",
+  tamil: "tamil",
+  malayalam: "malayalam",
+  sanskrit: "devanagari",
+}
+
 interface RawVocabCategory {
   id: string
   nameEnglish: string
