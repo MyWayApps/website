@@ -355,16 +355,16 @@ const fallbackApplications: Application[] = [
   },
   // ── English ───────────────────────────────────────────────────────────────
   {
-    id: "9e", name: "English Phonics", category: "Education", subcategory: "English",
-    description: "Master English sounds and pronunciation",
-    icon_emoji: "🔤", color_scheme: "from-purple-200 to-pink-500",
-    route: "/english-phonics", created_at: new Date().toISOString(),
-  },
-  {
-    id: "12", name: "Spelling Game Suite", category: "Education", subcategory: "English",
+    id: "12", name: "English Spelling Game Suite", category: "Education", subcategory: "English",
     description: "Master spelling with 10 fun interactive games!",
     icon_emoji: "✨", color_scheme: "from-blue-200 to-indigo-400",
     route: "/spelling-game-suite", created_at: new Date().toISOString(),
+  },
+  {
+    id: "en-4", name: "English Sentences", category: "Education", subcategory: "English",
+    description: "Build, type, and listen to sentences!",
+    icon_emoji: "📝", color_scheme: "from-cyan-200 to-blue-500",
+    route: "/english-sentences", created_at: new Date().toISOString(),
   },
   {
     id: "en-2", name: "English Grammar", category: "Education", subcategory: "English",

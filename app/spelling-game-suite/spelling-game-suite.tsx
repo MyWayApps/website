@@ -20,8 +20,15 @@ import TypeTheWordGame from "./type-the-word-game"
 import SearchTheWordGame from "./search-the-word-game"
 import { generateWords, generateWordsLocal } from "@/lib/word-generator"
 import { pickUnseen } from "@/lib/question-history"
-import { WORD_LISTS, type LetterCount } from "@/lib/spelling-words"
+import { WORD_LISTS, isSightWord, type LetterCount } from "@/lib/spelling-words"
 import { isWordFullyComplete, markWordGameComplete } from "@/lib/spelling-progress"
+import {
+  getCustomWordLists,
+  addCustomWordList,
+  deleteCustomWordList,
+  parseWordsInput,
+  type CustomWordList,
+} from "@/lib/spelling-custom-lists"
 
 type GameMode = "menu" | "word-selection" | "game-selection" | "playing"
 type WordSource = "custom" | "letter-count" | "ai-generated"
@@ -162,15 +169,18 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
   const [currentMode, setCurrentMode] = useState<GameMode>("menu")
   const [wordSource, setWordSource] = useState<WordSource>("letter-count")
   const [selectedLetterCount, setSelectedLetterCount] = useState<LetterCount>(3)
-  const [customWords, setCustomWords] = useState<string[]>(() => {
-    // Load custom words from localStorage on component mount
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('spelling-game-custom-words')
-      return saved ? JSON.parse(saved) : []
-    }
-    return []
-  })
+  // The list currently being built in the "Custom Words" tab — not saved
+  // until "Confirm Words" is clicked, at which point it becomes a new dated
+  // entry in savedWordLists.
+  const [draftWords, setDraftWords] = useState<string[]>([])
   const [customWordInput, setCustomWordInput] = useState("")
+  const [savedWordLists, setSavedWordLists] = useState<CustomWordList[]>([])
+
+  // Saved lists live in localStorage, so load them after mount (SSR has no
+  // window/localStorage to read from).
+  useEffect(() => {
+    setSavedWordLists(getCustomWordLists())
+  }, [])
   const [selectedGame, setSelectedGame] = useState<string>("")
   const [currentWordList, setCurrentWordList] = useState<string[]>([])
   const [score, setScore] = useState(0)
@@ -335,37 +345,39 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
     }
   }
 
-  // Save custom words to localStorage whenever they change
-  const saveCustomWordsToStorage = (words: string[]) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('spelling-game-custom-words', JSON.stringify(words))
-    }
-  }
-
   const handleCustomWordAdd = () => {
-    const word = customWordInput.trim().toLowerCase()
-    if (word && !customWords.includes(word) && customWords.length < 20) {
-      const newCustomWords = [...customWords, word]
-      setCustomWords(newCustomWords)
-      saveCustomWordsToStorage(newCustomWords)
-      setCustomWordInput("")
-    }
+    // Splits on commas/newlines too, so pasting "cat, dog, sun" adds all 3
+    // words instead of gluing them into a single "word".
+    const newWords = parseWordsInput(customWordInput).filter((w) => !draftWords.includes(w))
+    if (newWords.length === 0) return
+    const merged = [...draftWords, ...newWords].slice(0, 20)
+    setDraftWords(merged)
+    setCustomWordInput("")
   }
 
   const handleCustomWordRemove = (index: number) => {
-    const newCustomWords = customWords.filter((_, i) => i !== index)
-    setCustomWords(newCustomWords)
-    saveCustomWordsToStorage(newCustomWords)
+    setDraftWords((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleCustomWordsConfirm = () => {
-    if (customWords.length >= 1) {
-      // Ensure no duplicates in custom words
-      const uniqueCustomWords = [...new Set(customWords)]
+    if (draftWords.length >= 1) {
+      const savedList = addCustomWordList(draftWords)
+      setSavedWordLists((prev) => [savedList, ...prev])
       // Use up to 5 words, but allow fewer if that's all the user provided
-      setCurrentWordList(uniqueCustomWords.slice(0, Math.min(5, uniqueCustomWords.length)))
+      setCurrentWordList(savedList.words.slice(0, Math.min(5, savedList.words.length)))
+      setDraftWords([])
       setCurrentMode("game-selection")
     }
+  }
+
+  const handleUseSavedWordList = (list: CustomWordList) => {
+    setCurrentWordList(list.words.slice(0, Math.min(5, list.words.length)))
+    setCurrentMode("game-selection")
+  }
+
+  const handleDeleteSavedWordList = (id: string) => {
+    deleteCustomWordList(id)
+    setSavedWordLists((prev) => prev.filter((l) => l.id !== id))
   }
 
   const handleLetterCountConfirm = () => {
@@ -651,7 +663,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
 
                     <div className="mt-6 p-4 bg-white/40 rounded-2xl border-2 border-white">
                       <p className="text-sm font-bold text-gray-600 mb-3">
-                        {selectedLetterCount} letter words — ✅ means you've mastered it in all 6 games
+                        {selectedLetterCount} letter words — 📌 is a high-priority sight word, ✅ means you've mastered it in all 6 games
                       </p>
                       <div className="flex flex-wrap gap-2 justify-center">
                         {WORD_LISTS[selectedLetterCount].map((word) => (
@@ -659,6 +671,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
                             key={word}
                             className="bg-white/70 px-3 py-1 rounded-full text-sm font-medium border-2 border-gray-200 flex items-center gap-1"
                           >
+                            {isSightWord(word) && <span title="High-priority sight word">📌</span>}
                             {word}
                             {isWordFullyComplete(word) && <span title="Mastered — completed in all 6 games">✅</span>}
                           </span>
@@ -682,93 +695,105 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
 
                 {/* Custom Words Input */}
                 {wordSource === "custom" && (
-                  <div className="text-center">
-                    <h3 className="text-2xl font-bold text-gray-700 mb-6">Enter Your Words</h3>
-                    
-                    {/* Previously Saved Custom Words */}
-                    {customWords.length > 0 && (
-                      <div className="mb-8">
-                        <h4 className="text-lg font-semibold text-gray-600 mb-4">Previously Saved Words</h4>
-                        <div className="flex flex-wrap gap-2 justify-center mb-4">
-                          {customWords.map((word, index) => (
-                            <Button
+                  <div className="text-center space-y-10">
+                    {/* Words currently being built — the input trails the
+                        growing list rather than sitting above it */}
+                    <div className="space-y-4">
+                      {draftWords.length > 0 && (
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          {draftWords.map((word, index) => (
+                            <div
                               key={index}
-                              onClick={() => {
-                                if (customWords.length >= 5) {
-                                  setCurrentWordList(customWords.slice(0, 5))
-                                  setCurrentMode("game-selection")
-                                }
-                              }}
-                              className="bg-gradient-to-r from-rose-100 to-pink-100 text-rose-800 border-2 border-rose-300 hover:from-rose-200 hover:to-pink-200 px-4 py-2 rounded-full"
+                              className="bg-gradient-to-r from-rose-100 to-pink-100 px-3 py-1 rounded-full border-2 border-rose-300 flex items-center gap-2"
                             >
-                              {word}
-                            </Button>
+                              <span className="text-lg font-medium">{word}</span>
+                              <button
+                                onClick={() => handleCustomWordRemove(index)}
+                                className="text-red-500 hover:text-red-700 font-bold"
+                              >
+                                ×
+                              </button>
+                            </div>
                           ))}
                         </div>
-                        <p className="text-sm text-gray-600 mb-4">
-                          Click any word above to use your saved words, or add new words below
-                        </p>
-                        <div className="border-t border-gray-300 pt-4">
-                          <h4 className="text-lg font-semibold text-gray-600 mb-4">Add New Words</h4>
-                        </div>
-                      </div>
-                    )}
-                    <div className="space-y-4">
+                      )}
+
                       <div className="flex gap-2 max-w-md mx-auto">
                         <Input
                           value={customWordInput}
                           onChange={(e) => setCustomWordInput(e.target.value)}
-                          placeholder="Enter a word..."
+                          placeholder="Type a word, or paste several separated by commas..."
                           className="text-lg rounded-2xl"
                           onKeyPress={(e) => e.key === 'Enter' && handleCustomWordAdd()}
                         />
                         <Button
                           onClick={handleCustomWordAdd}
-                          disabled={!customWordInput.trim() || customWords.length >= 20}
+                          disabled={!customWordInput.trim() || draftWords.length >= 20}
                           className="bg-gradient-to-r from-rose-400 to-pink-500 text-white rounded-2xl"
                         >
                           Add
                         </Button>
                       </div>
-                      <p className="text-sm text-gray-600">Add up to 20 words (need at least 5 to play)</p>
-                      
-                      {/* Display added words */}
-                      {customWords.length > 0 && (
-                        <div className="mt-4">
-                          <div className="flex flex-wrap gap-2 justify-center">
-                            {customWords.map((word, index) => (
-                              <div
-                                key={index}
-                                className="bg-gradient-to-r from-rose-100 to-pink-100 px-3 py-1 rounded-full border-2 border-rose-300 flex items-center gap-2"
-                              >
-                                <span className="text-lg font-medium">{word}</span>
-                                <button
-                                  onClick={() => handleCustomWordRemove(index)}
-                                  className="text-red-500 hover:text-red-700 font-bold"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                          <p className="text-sm text-gray-600 mt-2">
-                            {customWords.length}/20 words added
-                          </p>
-                        </div>
-                      )}
+                      <p className="text-sm text-gray-600">{draftWords.length}/20 words added</p>
 
-                      <div className="mt-6">
-                        <Button
-                          onClick={handleCustomWordsConfirm}
-                          disabled={customWords.length < 1}
-                          className="h-16 text-2xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white px-12 py-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span>Confirm Words ({customWords.length})</span>
-                          </div>
-                        </Button>
-                      </div>
+                      <Button
+                        onClick={handleCustomWordsConfirm}
+                        disabled={draftWords.length < 1}
+                        className="h-16 text-2xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white px-12 py-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span>Confirm Words ({draftWords.length})</span>
+                        </div>
+                      </Button>
                     </div>
+
+                    {/* Previously saved lists, most recent first */}
+                    {savedWordLists.length > 0 && (
+                      <div className="border-t border-gray-300 pt-8">
+                        <h3 className="text-2xl font-bold text-gray-700 mb-2">Your Saved Word Lists</h3>
+                        <p className="text-sm text-gray-600 mb-6">Pick a list below to practice it again</p>
+                        <div className="space-y-4 max-w-xl mx-auto">
+                          {savedWordLists.map((list) => (
+                            <Card key={list.id} className="bg-white/70 border-2 border-rose-200 rounded-2xl text-left">
+                              <CardContent className="p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-bold text-gray-500">
+                                    {new Date(list.createdAt).toLocaleDateString(undefined, {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })}
+                                  </span>
+                                  <button
+                                    onClick={() => handleDeleteSavedWordList(list.id)}
+                                    className="text-red-500 hover:text-red-700 text-sm font-bold"
+                                    aria-label="Delete this list"
+                                  >
+                                    🗑 Delete
+                                  </button>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5 mb-3">
+                                  {list.words.map((word) => (
+                                    <span
+                                      key={word}
+                                      className="bg-rose-50 text-rose-800 px-2 py-0.5 rounded-full text-sm border border-rose-200"
+                                    >
+                                      {word}
+                                    </span>
+                                  ))}
+                                </div>
+                                <Button
+                                  onClick={() => handleUseSavedWordList(list)}
+                                  className="bg-gradient-to-r from-emerald-400 to-teal-500 text-white rounded-2xl w-full"
+                                >
+                                  Practice This List
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -819,6 +844,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
                         key={index}
                         className="bg-gradient-to-r from-purple-200 to-pink-200 px-3 py-1 rounded-full text-lg font-medium border-2 border-purple-300 flex items-center gap-1"
                       >
+                        {isSightWord(word) && <span title="High-priority sight word">📌</span>}
                         {word}
                         {isWordFullyComplete(word) && <span title="Mastered — completed in all 6 games">✅</span>}
                       </span>
