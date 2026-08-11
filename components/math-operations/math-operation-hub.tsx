@@ -89,7 +89,8 @@ export default function MathOperationHub({ operation, title, emoji, gradient, ap
   }
 
   const handleBackToHome = () => {
-    window.location.href = "/"
+    // Return to the Math section on the homepage instead of the very top.
+    window.location.href = "/#math"
   }
 
   const handlePickDigitLevel = (level: DigitLevel) => {

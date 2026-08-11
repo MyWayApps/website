@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type CSSProperties } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,7 +9,7 @@ import { QuizResults } from "@/components/quiz-results"
 import { MathScratchpad } from "@/components/math-operations/math-scratchpad"
 import { TablePicker } from "./table-picker"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
-import { generateRandomFact, generateRandomFactInTable, ANIMATED_THEME, type TableOperation, type Fact } from "@/lib/math-tables-data"
+import { generateRandomFact, generateRandomFactInTable, getAnimatedTheme, type TableOperation, type Fact } from "@/lib/math-tables-data"
 
 const ROUND_LENGTH = 5
 const INTRO_MS = 900
@@ -24,27 +24,40 @@ interface AnimatedOperationGameProps {
   onComplete: (score: number, maxScore: number) => void
 }
 
-function Icon({ emoji, delayMs = 0, fading = false }: { emoji: string; delayMs?: number; fading?: boolean }) {
+function Icon({
+  emoji,
+  delayMs = 0,
+  leaving = false,
+  leaveIndex = 0,
+}: {
+  emoji: string
+  delayMs?: number
+  /** True once this icon should visibly leave the scene (fly/run/float off), rather than just fading in place. */
+  leaving?: boolean
+  /** Alternates the exit direction per icon so a group leaving together scatters instead of all sliding the same way. */
+  leaveIndex?: number
+}) {
+  const driftX = leaveIndex % 2 === 0 ? 34 : -34
   return (
     <span
-      className={`text-4xl inline-block ${fading ? "table-icon-fade" : "table-icon-pop"}`}
-      style={{ animationDelay: `${delayMs}ms` }}
+      className={`text-4xl inline-block ${leaving ? "table-icon-leave" : "table-icon-pop"}`}
+      style={{ animationDelay: `${delayMs}ms`, "--drift-x": `${driftX}px` } as CSSProperties}
     >
       {emoji}
     </span>
   )
 }
 
-const TABLE_SCOPED = new Set<TableOperation>(["add", "subtract", "multiply"])
+const TABLE_SCOPED = new Set<TableOperation>(["add", "subtract", "multiply", "divide"])
 
 export function AnimatedOperationGame({ operation, gradientClass, onBackToModes, onComplete }: AnimatedOperationGameProps) {
   const gameKey = `math-tables:${operation}:animated`
-  const theme = ANIMATED_THEME[operation]
   const needsTable = TABLE_SCOPED.has(operation)
 
   const [tableNumber, setTableNumber] = useState<number | null>(null)
   const [phase, setPhase] = useState<"playing" | "results">("playing")
   const [roundIndex, setRoundIndex] = useState(0)
+  const theme = getAnimatedTheme(operation, tableNumber)
   const [score, setScore] = useState(0)
   const [fact, setFact] = useState<Fact | null>(null)
   const [stage, setStage] = useState<Stage>("intro")
@@ -56,17 +69,21 @@ export function AnimatedOperationGame({ operation, gradientClass, onBackToModes,
     if (needsTable && tableNumber === null) return
     const nextFact =
       needsTable && tableNumber !== null
-        ? generateRandomFactInTable(operation as "add" | "subtract" | "multiply", tableNumber, gameKey)
+        ? generateRandomFactInTable(operation, tableNumber, gameKey)
         : generateRandomFact(operation, gameKey)
     setFact(nextFact)
     setStage("intro")
     setTypedAnswer("")
     setShowResult(null)
+    // Division's one-at-a-time distribution can involve a lot more items
+    // than a fixed pace suits (up to 10 groups of 10) — give it more time,
+    // capped so a big fact still finishes at a reasonable pace.
+    const actionMs = operation === "divide" ? Math.min(1300 + nextFact.a * 45, 4500) : ACTION_MS
     const t1 = setTimeout(() => setStage("action"), INTRO_MS)
     const t2 = setTimeout(() => {
       setStage("ask")
       inputRef.current?.focus()
-    }, INTRO_MS + ACTION_MS)
+    }, INTRO_MS + actionMs)
     return () => {
       clearTimeout(t1)
       clearTimeout(t2)
@@ -109,12 +126,7 @@ export function AnimatedOperationGame({ operation, gradientClass, onBackToModes,
 
   if (needsTable && tableNumber === null) {
     return (
-      <TablePicker
-        operation={operation as "add" | "subtract" | "multiply"}
-        gradientClass={gradientClass}
-        onBack={onBackToModes}
-        onPick={setTableNumber}
-      />
+      <TablePicker operation={operation} gradientClass={gradientClass} onBack={onBackToModes} onPick={setTableNumber} />
     )
   }
 
@@ -136,13 +148,29 @@ export function AnimatedOperationGame({ operation, gradientClass, onBackToModes,
   const storyLine = () => {
     switch (operation) {
       case "add":
-        return stage === "action" ? `+ ${fact.b} more ${theme.emoji} swim in!` : stage === "ask" ? "How many now?" : `${fact.a} fish`
+        return stage === "action"
+          ? `+ ${fact.b} more ${fact.b === 1 ? theme.noun : theme.pluralNoun} ${theme.actionVerb}!`
+          : stage === "ask"
+            ? `How many ${theme.pluralNoun}?`
+            : `${fact.a} ${fact.a === 1 ? theme.noun : theme.pluralNoun}`
       case "subtract":
-        return stage === "action" ? `${fact.b} fly away!` : stage === "ask" ? "How many are left?" : `${fact.a} chicks`
+        return stage === "action"
+          ? `${fact.b} ${fact.b === 1 ? theme.noun : theme.pluralNoun} ${theme.actionVerb}!`
+          : stage === "ask"
+            ? `How many ${theme.pluralNoun} are left?`
+            : `${fact.a} ${fact.a === 1 ? theme.noun : theme.pluralNoun}`
       case "multiply":
-        return stage === "action" ? `${fact.a} groups of ${fact.b}` : stage === "ask" ? "How many apples in total?" : "Watch the groups form"
+        return stage === "action"
+          ? `${fact.a} groups of ${fact.b} ${theme.pluralNoun}`
+          : stage === "ask"
+            ? `How many ${theme.pluralNoun} in total?`
+            : "Watch the groups form"
       case "divide":
-        return stage === "action" ? `Share equally among ${fact.b} friends!` : stage === "ask" ? "How many does each friend get?" : `${fact.a} cookies`
+        return stage === "action"
+          ? `Each ${theme.noun} flies into a ${theme.recipientNoun}!`
+          : stage === "ask"
+            ? `How many ${theme.pluralNoun} does each ${theme.recipientNoun} get?`
+            : `Share ${fact.a} ${theme.pluralNoun} equally between ${fact.b} ${fact.b === 1 ? theme.recipientNoun : theme.recipientPluralNoun}.`
     }
   }
 
@@ -175,57 +203,125 @@ export function AnimatedOperationGame({ operation, gradientClass, onBackToModes,
             {/* Visual story */}
             <div className="mb-8 min-h-[100px] flex items-center justify-center">
               {operation === "add" && (
-                <div className="flex flex-wrap justify-center gap-2 max-w-lg">
-                  {Array.from({ length: fact.a }, (_, i) => (
-                    <Icon key={`a-${i}`} emoji={theme.emoji} delayMs={i * 80} />
-                  ))}
-                  {stage !== "intro" &&
-                    Array.from({ length: fact.b }, (_, i) => <Icon key={`b-${i}`} emoji={theme.emoji} delayMs={i * 120} />)}
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex flex-wrap items-center justify-center gap-2 max-w-lg">
+                    {Array.from({ length: fact.a }, (_, i) => (
+                      <Icon key={`a-${i}`} emoji={theme.emoji} delayMs={i * 80} />
+                    ))}
+                    {stage !== "intro" && (
+                      <>
+                        <span className="text-4xl font-bold text-gray-400 mx-1">+</span>
+                        {Array.from({ length: fact.b }, (_, i) => (
+                          <Icon key={`b-${i}`} emoji={theme.emoji} delayMs={i * 120} />
+                        ))}
+                      </>
+                    )}
+                  </div>
+                  {stage === "ask" && (
+                    <div className="text-2xl font-bold text-gray-600">
+                      {fact.a} + {fact.b}
+                    </div>
+                  )}
                 </div>
               )}
 
               {operation === "subtract" && (
-                <div className="flex flex-wrap justify-center gap-2 max-w-lg">
-                  {Array.from({ length: fact.a }, (_, i) => (
-                    <Icon key={i} emoji={theme.emoji} delayMs={i * 80} fading={stage !== "intro" && i >= fact.a - fact.b} />
-                  ))}
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex flex-wrap justify-center gap-2 max-w-lg">
+                    {Array.from({ length: fact.a }, (_, i) => (
+                      <Icon
+                        key={i}
+                        emoji={theme.emoji}
+                        delayMs={i * 80}
+                        leaving={stage !== "intro" && i >= fact.a - fact.b}
+                        leaveIndex={i}
+                      />
+                    ))}
+                  </div>
+                  {stage === "ask" && (
+                    <div className="text-2xl font-bold text-gray-600">
+                      {fact.a} {fact.a === 1 ? theme.noun : theme.pluralNoun} − {fact.b} {fact.b === 1 ? theme.noun : theme.pluralNoun}
+                    </div>
+                  )}
                 </div>
               )}
 
               {operation === "multiply" && (
-                <div className="flex flex-col items-center gap-2">
-                  {Array.from({ length: fact.a }, (_, row) => (
-                    <div key={row} className="flex gap-2">
-                      {stage !== "intro" || row === 0
-                        ? Array.from({ length: fact.b }, (_, col) => (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex flex-wrap justify-center gap-3 max-w-xl">
+                    {Array.from({ length: fact.a }, (_, row) =>
+                      stage !== "intro" || row === 0 ? (
+                        <div
+                          key={row}
+                          className="flex flex-wrap items-center justify-center gap-1.5 p-3 rounded-2xl border-4 border-indigo-200 bg-indigo-50"
+                        >
+                          {Array.from({ length: fact.b }, (_, col) => (
                             <Icon key={col} emoji={theme.emoji} delayMs={row * 200 + col * 60} />
-                          ))
-                        : null}
+                          ))}
+                        </div>
+                      ) : null
+                    )}
+                  </div>
+                  {stage === "ask" && (
+                    <div className="flex flex-col items-center gap-1 text-2xl font-bold text-gray-600">
+                      <div>
+                        {fact.a} {fact.a === 1 ? "group" : "groups"} of {fact.b} {theme.pluralNoun}
+                      </div>
+                      <div>
+                        {fact.a} x {fact.b}
+                      </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
 
               {operation === "divide" && (
-                <div>
-                  {stage === "intro" ? (
-                    <div className="flex flex-wrap justify-center gap-2 max-w-lg">
-                      {Array.from({ length: fact.a }, (_, i) => (
-                        <Icon key={i} emoji={theme.emoji} delayMs={i * 60} />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap justify-center gap-6">
+                <div className="flex flex-col items-center gap-4">
+                  {/* Pool square — items visibly leave one at a time once sharing starts. */}
+                  <div className="flex flex-wrap justify-center gap-1.5 p-4 rounded-2xl border-4 border-amber-200 bg-amber-50 max-w-xs min-h-[3.5rem]">
+                    {Array.from({ length: fact.a }, (_, i) => (
+                      <Icon
+                        key={i}
+                        emoji={theme.emoji}
+                        // Same delay formula as the matching basket arrival below,
+                        // so an item "leaving" the pool and its twin "arriving" in
+                        // a basket happen at the same moment — the closest a pure
+                        // CSS animation gets to a real point-to-point flight.
+                        delayMs={i * 45}
+                        leaving={stage !== "intro"}
+                        leaveIndex={i}
+                      />
+                    ))}
+                  </div>
+
+                  {stage !== "intro" && (
+                    <div className="flex flex-wrap justify-center gap-4">
                       {Array.from({ length: fact.b }, (_, groupIdx) => (
-                        <div key={groupIdx} className="flex flex-col items-center gap-1">
-                          <div className="flex flex-wrap justify-center gap-1 max-w-[120px]">
+                        <div
+                          key={groupIdx}
+                          className="flex flex-col items-center gap-1.5 p-2.5 rounded-2xl border-4 border-emerald-200 bg-emerald-50"
+                        >
+                          <span className="text-3xl">{theme.recipientEmoji}</span>
+                          <div className="flex flex-wrap justify-center gap-1 w-[90px] min-h-[2.5rem]">
                             {Array.from({ length: fact.answer }, (_, i) => (
-                              <Icon key={i} emoji={theme.emoji} delayMs={groupIdx * 150 + i * 60} />
+                              <Icon
+                                key={i}
+                                emoji={theme.emoji}
+                                // Round-robin delay: one item lands per recipient in
+                                // turn (basket 1, basket 2, basket 1, ...), so they
+                                // visibly fill up one at a time rather than all at once.
+                                delayMs={(i * fact.b + groupIdx) * 45}
+                              />
                             ))}
                           </div>
-                          <span className="text-4xl">{theme.recipientEmoji}</span>
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {stage === "ask" && (
+                    <div className="text-2xl font-bold text-gray-600">
+                      {fact.a} ÷ {fact.b}
                     </div>
                   )}
                 </div>
@@ -296,18 +392,18 @@ export function AnimatedOperationGame({ operation, gradientClass, onBackToModes,
         .table-icon-pop {
           animation: table-icon-pop-in 0.4s ease-out both;
         }
-        @keyframes table-icon-fade-out {
+        @keyframes table-icon-leave {
           0% {
-            transform: scale(1);
+            transform: translate(0, 0) scale(1);
             opacity: 1;
           }
           100% {
-            transform: scale(0.4);
-            opacity: 0.15;
+            transform: translate(var(--drift-x, 30px), -55px) scale(0.5);
+            opacity: 0;
           }
         }
-        .table-icon-fade {
-          animation: table-icon-fade-out 0.6s ease-in forwards;
+        .table-icon-leave {
+          animation: table-icon-leave 0.8s ease-in forwards;
         }
       `}</style>
     </div>

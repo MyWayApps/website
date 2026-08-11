@@ -8,7 +8,7 @@ import { scienceLessons } from "@/lib/science-videos-data"
 
 export default function ScienceHub() {
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#science"
   }
 
   return (

@@ -11,7 +11,7 @@ export default function MalayalamVocabulary() {
   const [selectedCategory, setSelectedCategory] = useState<string>("days")
 
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#malayalam"
   }
 
   const selectedCategoryData = vocabularyCategories.find(cat => cat.id === selectedCategory)

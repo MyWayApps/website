@@ -11,6 +11,7 @@ interface SpellTheWordGameProps {
   wordList: string[]
   onGameComplete: (score: number) => void
   onBackToGames: () => void
+  onWordComplete?: (word: string) => void
 }
 
 // Letter button colors
@@ -25,7 +26,7 @@ const LETTER_COLORS = [
   "from-indigo-400 to-blue-500"
 ]
 
-export default function SpellTheWordGame({ wordList, onGameComplete, onBackToGames }: SpellTheWordGameProps) {
+export default function SpellTheWordGame({ wordList, onGameComplete, onBackToGames, onWordComplete }: SpellTheWordGameProps) {
   const [currentWordIndex, setCurrentWordIndex] = useState(0)
   const [score, setScore] = useState(0)
   const [selectedLetters, setSelectedLetters] = useState<string[]>([])
@@ -93,6 +94,7 @@ export default function SpellTheWordGame({ wordList, onGameComplete, onBackToGam
         setScore(score + 1)
         setShowConfetti(true)
         playCorrectSound()
+        onWordComplete?.(currentWord)
 
         setTimeout(() => {
           setShowFeedback(false)
@@ -192,9 +194,6 @@ export default function SpellTheWordGame({ wordList, onGameComplete, onBackToGam
           </Button>
 
           <div className="flex items-center gap-3 bg-white/20 px-5 py-3 rounded-full backdrop-blur-sm flex-wrap">
-            <span className="text-lg font-bold text-teal-800 mr-1">
-              Word {currentWordIndex + 1}/{wordList.length}
-            </span>
             {Array.from({ length: wordList.length }, (_, i) => (
               <Star
                 key={i}
@@ -211,23 +210,18 @@ export default function SpellTheWordGame({ wordList, onGameComplete, onBackToGam
               <h2 className="text-4xl font-bold text-teal-700 mb-2">
                 ✨ Spell the Word
               </h2>
-              <p className="text-lg text-teal-600">
-                Listen and tap the letters to spell the word!
-              </p>
-              <div className="text-md text-gray-500 mt-2">
-                Word {currentWordIndex + 1} of {wordList.length}
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-lg text-teal-600">
+                  Listen and tap the letters to spell the word!
+                </p>
+                <button
+                  onClick={() => speakWord(currentWord)}
+                  aria-label="Listen to the word"
+                  className="text-teal-600 hover:text-teal-800 hover:scale-110 transition-transform"
+                >
+                  <Volume2 className="h-6 w-6" />
+                </button>
               </div>
-            </div>
-
-            {/* Listen Button */}
-            <div className="text-center mb-8">
-              <Button
-                onClick={() => speakWord(currentWord)}
-                className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-bold text-xl px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-              >
-                <Volume2 className="mr-3 h-7 w-7" />
-                🔊 Listen to the Word
-              </Button>
             </div>
 
             {/* Blanks Display */}
@@ -239,6 +233,8 @@ export default function SpellTheWordGame({ wordList, onGameComplete, onBackToGam
                   className={`w-14 h-16 rounded-xl border-4 flex items-center justify-center text-3xl font-bold transition-all duration-300 cursor-pointer ${
                     selectedLetters[index]
                       ? 'bg-gradient-to-br from-teal-400 to-cyan-500 text-white border-teal-300 shadow-lg hover:scale-105'
+                      : index === selectedLetters.length
+                      ? 'bg-gray-100 border-teal-400 border-solid ring-4 ring-teal-200 animate-pulse'
                       : 'bg-gray-100 border-gray-300 border-dashed'
                   }`}
                 >

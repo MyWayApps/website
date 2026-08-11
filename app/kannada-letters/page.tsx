@@ -11,7 +11,7 @@ export default function KannadaLetters() {
   const [selectedType, setSelectedType] = useState<LetterType>("vowels")
 
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#kannada"
   }
 
   const letterTypes: { type: LetterType; native: string; english: string; description: string }[] = [

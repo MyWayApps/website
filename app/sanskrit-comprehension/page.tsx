@@ -8,7 +8,7 @@ import { comprehensionLessons } from "@/lib/sanskrit-comprehension-data"
 
 export default function SanskritComprehensionMain() {
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#sanskrit"
   }
 
   return (

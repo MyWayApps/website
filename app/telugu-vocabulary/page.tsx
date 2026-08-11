@@ -11,7 +11,7 @@ export default function TeluguVocabulary() {
   const [selectedCategory, setSelectedCategory] = useState<string>("days")
 
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#telugu"
   }
 
   const selectedCategoryData = vocabularyCategories.find(cat => cat.id === selectedCategory)

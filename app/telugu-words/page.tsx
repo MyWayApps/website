@@ -7,7 +7,7 @@ import Link from "next/link"
 
 export default function TeluguWordsMain() {
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#telugu"
   }
 
   return (

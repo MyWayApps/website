@@ -84,7 +84,9 @@ export default function TopicHub({ title, emoji, gradient, applicationName, mode
   }
 
   const handleBackToHome = () => {
-    window.location.href = "/"
+    // Return to this topic's own section on the homepage (it already has a
+    // matching `id`, see app/page.tsx's topicSlug()) instead of the very top.
+    window.location.href = `/#${subject.toLowerCase().replace(/\s+/g, "-")}`
   }
 
   const handlePickMode = (modeId: string) => {

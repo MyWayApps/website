@@ -42,7 +42,7 @@ export default function PoemsPage() {
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <Button
-            onClick={() => (window.location.href = "/")}
+            onClick={() => (window.location.href = `/#${lang}`)}
             className="bg-white/20 hover:bg-white/30 text-white border-2 border-white font-bold text-lg px-6 py-3"
             variant="outline"
           >

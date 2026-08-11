@@ -88,7 +88,7 @@ export default function SanskritLettersFlashcardsPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+        <div className={`grid gap-3 ${tab === "consonants" ? "grid-cols-5" : "grid-cols-4 sm:grid-cols-6"}`}>
           {letters.map(({ letter }) => (
             <button
               key={letter}
@@ -101,7 +101,7 @@ export default function SanskritLettersFlashcardsPage() {
                 ${
                   selected === letter
                     ? "bg-white text-orange-600 border-white scale-110 shadow-xl"
-                    : "bg-white/25 text-white border-white/40 hover:bg-white/40"
+                    : "bg-white/90 text-gray-700 border-white/70 hover:bg-white"
                 }
               `}
             >

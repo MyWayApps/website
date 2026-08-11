@@ -108,7 +108,7 @@ export default function CookingRecipesPage() {
         </div>
       </div>
 
-      <CookingRecipesApp user={user} onRecipeComplete={handleRecipeComplete} onBackToHome={() => router.push("/")} />
+      <CookingRecipesApp user={user} onRecipeComplete={handleRecipeComplete} onBackToHome={() => router.push("/#life-skills")} />
     </div>
   )
 }

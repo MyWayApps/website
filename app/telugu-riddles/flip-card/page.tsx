@@ -24,7 +24,7 @@ export default function FlipCardGame() {
   const currentRiddle = riddlesList[currentRiddleIndex]
 
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#telugu"
   }
 
   const handleBackToMenu = () => {

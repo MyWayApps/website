@@ -130,7 +130,10 @@ export async function startContinuousReadingAssessment(
   // These two fire purely from local audio/VAD, before any network round
   // trip to recognize words — they're the clearest proof the mic itself is
   // being read, independent of whether recognition ever resolves any text.
-  recognition.onaudiostart = () => log("mic audio capture started")
+  recognition.onaudiostart = () => {
+    log("mic audio capture started")
+    callbacks.onProgress?.(0)
+  }
   recognition.onspeechstart = () => {
     log("speech detected (browser heard sound that looks like speech)")
     callbacks.onStatus?.("speech-detected")
@@ -148,7 +151,20 @@ export async function startContinuousReadingAssessment(
 
       if (!result.isFinal) {
         log("interim transcript:", transcript)
-        callbacks.onInterim?.(transcript)
+        const said: string[] = transcript.trim().split(/\s+/).filter(Boolean)
+        const remaining = expectedWords.slice(pointer)
+        // Simple left-to-right prefix match (not the full LCS diff) — good
+        // enough for a live "how far has the reader gotten" pointer, and
+        // deliberately cheap/stable since this runs on every interim event.
+        let matchedCount = 0
+        while (
+          matchedCount < said.length &&
+          matchedCount < remaining.length &&
+          normalize(remaining[matchedCount]) === normalize(said[matchedCount])
+        ) {
+          matchedCount++
+        }
+        callbacks.onProgress?.(matchedCount)
         continue
       }
 
@@ -161,6 +177,7 @@ export async function startContinuousReadingAssessment(
       pointer += words.filter((w) => w.errorType !== "Insertion").length
       log("diff vs expected:", words)
 
+      callbacks.onProgress?.(0)
       const utterance: UtteranceResult = {
         words,
         accuracyScore: 0,

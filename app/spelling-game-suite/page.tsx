@@ -108,7 +108,7 @@ export default function SpellingGameSuitePage() {
         </div>
       </div>
 
-      <SpellingGameSuite user={user} onGameComplete={handleGameComplete} onBackToHome={() => router.push("/")} />
+      <SpellingGameSuite user={user} onGameComplete={handleGameComplete} onBackToHome={() => router.push("/#english")} />
     </div>
   )
 }

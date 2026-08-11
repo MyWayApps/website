@@ -56,5 +56,5 @@ export default function SkipCountingPage() {
     })
   }
 
-  return <SkipCountingGame user={user} onGameComplete={handleGameComplete} onBackToHome={() => router.push("/")} />
+  return <SkipCountingGame user={user} onGameComplete={handleGameComplete} onBackToHome={() => router.push("/#math")} />
 }

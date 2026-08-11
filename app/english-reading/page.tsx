@@ -8,7 +8,7 @@ import { readingPassages } from "@/lib/english-reading-data"
 
 export default function EnglishReadingMain() {
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#english"
   }
 
   return (

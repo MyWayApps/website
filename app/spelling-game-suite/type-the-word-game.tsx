@@ -11,9 +11,10 @@ interface TypeTheWordGameProps {
   wordList: string[]
   onGameComplete: (score: number) => void
   onBackToGames: () => void
+  onWordComplete?: (word: string) => void
 }
 
-export default function TypeTheWordGame({ wordList, onGameComplete, onBackToGames }: TypeTheWordGameProps) {
+export default function TypeTheWordGame({ wordList, onGameComplete, onBackToGames, onWordComplete }: TypeTheWordGameProps) {
   const [currentWordIndex, setCurrentWordIndex] = useState(0)
   const [score, setScore] = useState(0)
   const [typedWord, setTypedWord] = useState("")
@@ -91,6 +92,7 @@ export default function TypeTheWordGame({ wordList, onGameComplete, onBackToGame
       setScore(score + 1)
       setShowConfetti(true)
       playCorrectSound()
+      onWordComplete?.(currentWord)
 
       setTimeout(() => {
         setShowFeedback(false)
@@ -146,9 +148,6 @@ export default function TypeTheWordGame({ wordList, onGameComplete, onBackToGame
           </Button>
 
           <div className="flex items-center gap-3 bg-white/20 px-5 py-3 rounded-full backdrop-blur-sm flex-wrap">
-            <span className="text-lg font-bold text-purple-800 mr-1">
-              Word {currentWordIndex + 1}/{wordList.length}
-            </span>
             {Array.from({ length: wordList.length }, (_, i) => (
               <Star
                 key={i}
@@ -165,23 +164,18 @@ export default function TypeTheWordGame({ wordList, onGameComplete, onBackToGame
               <h2 className="text-4xl font-bold text-purple-700 mb-2">
                 ⌨️ Type the Word
               </h2>
-              <p className="text-lg text-purple-600">
-                Listen and type the word you hear!
-              </p>
-              <div className="text-md text-gray-500 mt-2">
-                Word {currentWordIndex + 1} of {wordList.length}
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-lg text-purple-600">
+                  Listen and type the word you hear!
+                </p>
+                <button
+                  onClick={() => speakWord(currentWord)}
+                  aria-label="Listen to the word"
+                  className="text-purple-600 hover:text-purple-800 hover:scale-110 transition-transform"
+                >
+                  <Volume2 className="h-6 w-6" />
+                </button>
               </div>
-            </div>
-
-            {/* Listen Button */}
-            <div className="text-center mb-6">
-              <Button
-                onClick={() => speakWord(currentWord)}
-                className="bg-gradient-to-r from-purple-500 to-pink-600 text-white font-bold text-xl px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-              >
-                <Volume2 className="mr-3 h-7 w-7" />
-                🔊 Listen to the Word
-              </Button>
             </div>
 
             {/* Word Blanks — each is a real input, auto-focused and

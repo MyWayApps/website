@@ -19,7 +19,7 @@ import {
 } from "@/lib/reading-coach/session-aggregator"
 
 type Status = "idle" | "listening" | "finished"
-type WordStatus = "pending" | "correct" | "incorrect"
+type WordStatus = "pending" | "correct" | "incorrect" | "tentative" | "pointer"
 
 function speakWord(word: string) {
   playStaticTTS(word, "english", "en", "en-IN").catch((err) =>
@@ -27,50 +27,62 @@ function speakWord(word: string) {
   )
 }
 
-// Colors each word of the original passage text green/red based on whether
-// it was read correctly — the word itself never changes, only its color,
-// so the sentence stays visually stable while the child reads.
-function sentenceWordStatuses(
-  sentenceText: string,
-  progress: SentenceProgress | undefined
-): { word: string; status: WordStatus }[] {
-  const expectedWords = sentenceText.trim().split(/\s+/)
-  const consumed = (progress?.timeline ?? []).filter((w) => w.errorType !== "Insertion")
-  return expectedWords.map((word, i) => {
-    const result = consumed[i]
-    if (!result) return { word, status: "pending" as WordStatus }
-    const status: WordStatus = result.errorType === "None" ? "correct" : "incorrect"
-    return { word, status }
-  })
+// Flattens the whole passage into one status-per-word timeline: committed
+// correct/incorrect words from the aggregator, then a run of "tentative"
+// words matched by the current in-progress (not yet final) utterance, then
+// a single "pointer" word marking where the reader is expected to be next.
+function buildFlatStatuses(
+  wordCountsPerSentence: number[],
+  sentenceProgress: SentenceProgress[],
+  tentativeCount: number
+): WordStatus[] {
+  const committed: WordStatus[] = []
+  for (const sp of sentenceProgress) {
+    for (const w of sp.timeline) {
+      if (w.errorType === "Insertion") continue
+      committed.push(w.errorType === "None" ? "correct" : "incorrect")
+    }
+  }
+
+  const total = wordCountsPerSentence.reduce((a, b) => a + b, 0)
+  const statuses: WordStatus[] = []
+  for (let i = 0; i < total; i++) {
+    if (i < committed.length) statuses.push(committed[i])
+    else if (i < committed.length + tentativeCount) statuses.push("tentative")
+    else if (i === committed.length + tentativeCount) statuses.push("pointer")
+    else statuses.push("pending")
+  }
+  return statuses
 }
 
-function SentenceView({
-  sentenceText,
-  progress,
-}: {
-  sentenceText: string
-  progress: SentenceProgress | undefined
-}) {
-  const words = sentenceWordStatuses(sentenceText, progress)
+function SentenceView({ sentenceText, statuses }: { sentenceText: string; statuses: WordStatus[] }) {
+  const words = sentenceText.trim().split(/\s+/)
 
   return (
     <p className="text-2xl leading-relaxed mb-4">
-      {words.map((w, i) => (
-        <span
-          key={i}
-          onClick={w.status === "incorrect" ? () => speakWord(w.word) : undefined}
-          title={w.status === "incorrect" ? "Tap to hear the correct pronunciation" : undefined}
-          className={
-            w.status === "correct"
-              ? "text-green-600 font-semibold"
-              : w.status === "incorrect"
-              ? "text-red-600 font-semibold underline decoration-2 cursor-pointer"
-              : "text-blue-900/50"
-          }
-        >
-          {w.word}{" "}
-        </span>
-      ))}
+      {words.map((word, i) => {
+        const status = statuses[i] ?? "pending"
+        return (
+          <span
+            key={i}
+            onClick={status === "incorrect" ? () => speakWord(word) : undefined}
+            title={status === "incorrect" ? "Tap to hear the correct pronunciation" : undefined}
+            className={
+              status === "correct"
+                ? "text-green-600 font-semibold"
+                : status === "tentative"
+                ? "text-green-400 font-semibold"
+                : status === "incorrect"
+                ? "text-red-600 font-semibold underline decoration-2 cursor-pointer"
+                : status === "pointer"
+                ? "text-blue-900 font-semibold bg-yellow-200 rounded px-1 ring-2 ring-yellow-400 animate-pulse"
+                : "text-blue-900/50"
+            }
+          >
+            {word}{" "}
+          </span>
+        )
+      })}
     </p>
   )
 }
@@ -89,10 +101,10 @@ export default function EnglishReadingLessonPage() {
 
   const [status, setStatus] = useState<Status>("idle")
   const [sentenceProgress, setSentenceProgress] = useState<SentenceProgress[]>([])
+  const [tentativeCount, setTentativeCount] = useState(0)
   const [summary, setSummary] = useState<SessionSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [micStatus, setMicStatus] = useState<string>("")
-  const [interimTranscript, setInterimTranscript] = useState<string>("")
 
   const aggregatorRef = useRef<ReadingSessionAggregator | null>(null)
   const sessionRef = useRef<ReadingSession | null>(null)
@@ -109,7 +121,7 @@ export default function EnglishReadingLessonPage() {
     setError(null)
     setSummary(null)
     setMicStatus("starting…")
-    setInterimTranscript("")
+    setTentativeCount(0)
     aggregatorRef.current = new ReadingSessionAggregator(passage.passage)
     setSentenceProgress(aggregatorRef.current.getSentenceProgress())
     setStatus("listening")
@@ -122,13 +134,13 @@ export default function EnglishReadingLessonPage() {
           onUtterance: (result) => {
             aggregatorRef.current?.addUtterance(result)
             setSentenceProgress([...(aggregatorRef.current?.getSentenceProgress() ?? [])])
-            setInterimTranscript("")
+            setTentativeCount(0)
           },
           onError: (err) => {
             setError(err.message)
           },
-          onInterim: (transcript) => {
-            setInterimTranscript(transcript)
+          onProgress: (matchedCount) => {
+            setTentativeCount(matchedCount)
           },
           onStatus: (s) => {
             setMicStatus(s)
@@ -145,7 +157,7 @@ export default function EnglishReadingLessonPage() {
     await sessionRef.current?.stop()
     sessionRef.current = null
     setMicStatus("")
-    setInterimTranscript("")
+    setTentativeCount(0)
     setSummary(aggregatorRef.current?.getSummary() ?? null)
     setStatus("finished")
   }
@@ -201,9 +213,17 @@ export default function EnglishReadingLessonPage() {
               </Button>
             </div>
 
-            {passage.passage.map((sentence, i) => (
-              <SentenceView key={i} sentenceText={sentence} progress={sentenceProgress[i]} />
-            ))}
+            {(() => {
+              const wordCounts = passage.passage.map((s) => s.trim().split(/\s+/).length)
+              const flatStatuses = buildFlatStatuses(wordCounts, sentenceProgress, tentativeCount)
+              let offset = 0
+              return passage.passage.map((sentence, i) => {
+                const count = wordCounts[i]
+                const slice = flatStatuses.slice(offset, offset + count)
+                offset += count
+                return <SentenceView key={i} sentenceText={sentence} statuses={slice} />
+              })
+            })()}
           </CardContent>
         </Card>
 
@@ -229,15 +249,12 @@ export default function EnglishReadingLessonPage() {
 
         {status === "listening" && (
           <div className="text-center mb-6">
-            <div className="inline-block bg-white/70 rounded-full px-4 py-1 text-orange-800 font-semibold text-sm mb-2">
+            <div className="inline-block bg-white/70 rounded-full px-4 py-1 text-orange-800 font-semibold text-sm">
               {micStatus === "speech-detected" && "🗣️ Speech detected"}
               {micStatus === "processing" && "⏳ Processing…"}
               {micStatus === "listening" && "🎤 Listening…"}
               {!micStatus && "🎤 Starting…"}
             </div>
-            {interimTranscript && (
-              <p className="text-orange-900/70 italic">Hearing: "{interimTranscript}"</p>
-            )}
           </div>
         )}
 

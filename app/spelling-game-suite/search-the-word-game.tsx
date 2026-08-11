@@ -11,6 +11,7 @@ interface SearchTheWordGameProps {
   wordList: string[]
   onGameComplete: (score: number) => void
   onBackToGames: () => void
+  onWordComplete?: (word: string) => void
 }
 
 // Distractor words pool
@@ -32,7 +33,7 @@ const CARD_COLORS = [
   "from-red-400 to-pink-500"
 ]
 
-export default function SearchTheWordGame({ wordList, onGameComplete, onBackToGames }: SearchTheWordGameProps) {
+export default function SearchTheWordGame({ wordList, onGameComplete, onBackToGames, onWordComplete }: SearchTheWordGameProps) {
   const [currentWordIndex, setCurrentWordIndex] = useState(0)
   const [score, setScore] = useState(0)
   const [options, setOptions] = useState<string[]>([])
@@ -56,8 +57,8 @@ export default function SearchTheWordGame({ wordList, onGameComplete, onBackToGa
       w => !wordList.includes(w) && w !== correctWord
     )
     
-    // Pick 3-5 random distractors (depending on screen size, we'll show 4-6 options)
-    const numDistractors = Math.min(4, availableDistractors.length)
+    // Pick up to 5 random distractors so, with the correct word, a round has 6 options
+    const numDistractors = Math.min(5, availableDistractors.length)
     const shuffledDistractors = availableDistractors.sort(() => Math.random() - 0.5)
     const selectedDistractors = shuffledDistractors.slice(0, numDistractors)
     
@@ -89,6 +90,7 @@ export default function SearchTheWordGame({ wordList, onGameComplete, onBackToGa
       setScore(score + 1)
       setShowConfetti(true)
       playCorrectSound()
+      onWordComplete?.(currentWord)
 
       setTimeout(() => {
         setShowFeedback(false)
@@ -143,9 +145,6 @@ export default function SearchTheWordGame({ wordList, onGameComplete, onBackToGa
           </Button>
 
           <div className="flex items-center gap-3 bg-white/20 px-5 py-3 rounded-full backdrop-blur-sm flex-wrap">
-            <span className="text-lg font-bold text-orange-800 mr-1">
-              Word {currentWordIndex + 1}/{wordList.length}
-            </span>
             {Array.from({ length: wordList.length }, (_, i) => (
               <Star
                 key={i}
@@ -162,23 +161,18 @@ export default function SearchTheWordGame({ wordList, onGameComplete, onBackToGa
               <h2 className="text-4xl font-bold text-orange-700 mb-2">
                 🔍 Search the Word
               </h2>
-              <p className="text-lg text-orange-600">
-                Listen and find the correct word!
-              </p>
-              <div className="text-md text-gray-500 mt-2">
-                Word {currentWordIndex + 1} of {wordList.length}
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-lg text-orange-600">
+                  Listen and find the correct word!
+                </p>
+                <button
+                  onClick={() => speakWord(currentWord)}
+                  aria-label="Listen to the word"
+                  className="text-orange-600 hover:text-orange-800 hover:scale-110 transition-transform"
+                >
+                  <Volume2 className="h-6 w-6" />
+                </button>
               </div>
-            </div>
-
-            {/* Listen Button */}
-            <div className="text-center mb-8">
-              <Button
-                onClick={() => speakWord(currentWord)}
-                className="bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold text-xl px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-              >
-                <Volume2 className="mr-3 h-7 w-7" />
-                🔊 Listen to the Word
-              </Button>
             </div>
 
             {/* Word Options Grid */}

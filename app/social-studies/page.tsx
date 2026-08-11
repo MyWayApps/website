@@ -8,7 +8,7 @@ import { YouTubeEmbed } from "@/components/youtube-embed"
 
 export default function SocialStudiesPage() {
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#social-studies"
   }
 
   return (

@@ -11,6 +11,7 @@ interface WordRocketGameProps {
   wordList: string[]
   onGameComplete: (score: number) => void
   onBackToGames: () => void
+  onWordComplete?: (word: string) => void
 }
 
 interface Letter {
@@ -26,7 +27,7 @@ interface Letter {
 const rocketSoundFreqs = [440, 554.37, 659.25, 783.99, 1046.5] // A4, C#5, E5, G5, C6
 const successSoundFreqs = [523.25, 659.25, 783.99, 1046.5] // Success melody
 
-export default function WordRocketGame({ wordList, onGameComplete, onBackToGames }: WordRocketGameProps) {
+export default function WordRocketGame({ wordList, onGameComplete, onBackToGames, onWordComplete }: WordRocketGameProps) {
   const [currentWordIndex, setCurrentWordIndex] = useState(0)
   const [currentWord, setCurrentWord] = useState("")
   const [scrambledLetters, setScrambledLetters] = useState<Letter[]>([])
@@ -204,6 +205,7 @@ export default function WordRocketGame({ wordList, onGameComplete, onBackToGames
     if (correct) {
       setScore(score + 1)
       playCorrectSound()
+      onWordComplete?.(currentWord)
 
       // Launch rocket
       setTimeout(() => {
@@ -280,9 +282,6 @@ export default function WordRocketGame({ wordList, onGameComplete, onBackToGames
           </Button>
 
           <div className="flex items-center gap-3 bg-white/20 px-5 py-3 rounded-full backdrop-blur-sm flex-wrap">
-            <span className="text-lg font-bold text-indigo-800 mr-1">
-              Word {currentWordIndex + 1}/{wordList.length}
-            </span>
             {Array.from({ length: wordList.length }, (_, i) => (
               <Star
                 key={i}
@@ -298,16 +297,23 @@ export default function WordRocketGame({ wordList, onGameComplete, onBackToGames
               <h2 className="text-4xl font-bold text-indigo-800 mb-4 font-sans">
                 🚀 Word Rocket Game
               </h2>
-              <p className="text-lg text-indigo-700 font-medium">
-                Listen to the word and drag letters to spell it correctly!
-              </p>
-              <div className="text-lg text-indigo-600 mt-2">
-                Word {currentWordIndex + 1} of {wordList.length}
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-lg text-indigo-700 font-medium">
+                  Listen to the word and click letters to spell it correctly!
+                </p>
+                <button
+                  onClick={() => speakWord(currentWord)}
+                  aria-label="Listen to the word"
+                  className="text-indigo-700 hover:text-indigo-900 hover:scale-110 transition-transform"
+                >
+                  <Volume2 className="h-6 w-6" />
+                </button>
               </div>
             </div>
 
-            {/* Game Area */}
-            <div className="relative mb-8">
+            {/* Game Area — rocket pane on the left (it only moves vertically),
+                letters + controls on the right */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               {/* Space Background */}
               <div className="relative h-80 bg-gradient-to-b from-indigo-800 via-purple-800 to-indigo-900 rounded-2xl border-4 border-white shadow-lg overflow-hidden">
                 {/* Stars */}
@@ -385,54 +391,46 @@ export default function WordRocketGame({ wordList, onGameComplete, onBackToGames
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Word Display and Controls */}
-            <div className="text-center mb-6">
-              <div className="flex items-center justify-center gap-6 mb-4">
-                <Button
-                  onClick={() => speakWord(currentWord)}
-                  className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-lg px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                >
-                  <Volume2 className="mr-2 h-6 w-6" />
-                  Listen to Word
-                </Button>
-                <Button
-                  onClick={removeLastLetter}
-                  disabled={selectedLetters.length === 0}
-                  className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-lg px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Remove Last Letter
-                </Button>
-              </div>
-              
-              <div className="flex items-center justify-center gap-6 mb-4">
-                <div className="text-2xl font-bold text-gray-700">
-                  Spell: <span className="text-indigo-600">{currentWord.toUpperCase()}</span>
+              {/* Word Display, Controls and Scrambled Letters */}
+              <div className="flex flex-col justify-center bg-white/60 rounded-2xl border-4 border-white shadow-lg p-6">
+                <div className="text-center mb-4">
+                  <div className="flex items-center justify-center gap-4 mb-4 flex-wrap">
+                    <Button
+                      onClick={removeLastLetter}
+                      disabled={selectedLetters.length === 0}
+                      className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-lg px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Remove Last Letter
+                    </Button>
+                  </div>
+
+                  <div className="text-2xl font-bold text-gray-700 mb-4">
+                    Spell: <span className="text-indigo-600">{currentWord.toUpperCase()}</span>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Scrambled Letters */}
-            <div className="text-center mb-6">
-              <div className="text-lg font-bold text-gray-700 mb-4">Click the letters in order:</div>
-              <div className="flex flex-wrap justify-center gap-3">
-                {scrambledLetters.map((letter) => (
-                  <Button
-                    key={letter.id}
-                    onClick={() => handleLetterClick(letter)}
-                    disabled={letter.used}
-                    className={`w-16 h-16 text-2xl font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ${
-                      letter.used
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : letter.correct
-                        ? 'bg-gradient-to-r from-green-400 to-emerald-500 text-white hover:from-green-500 hover:to-emerald-600'
-                        : 'bg-gradient-to-r from-blue-400 to-indigo-500 text-white hover:from-blue-500 hover:to-indigo-600'
-                    }`}
-                  >
-                    {letter.letter}
-                  </Button>
-                ))}
+                <div className="text-center">
+                  <div className="text-lg font-bold text-gray-700 mb-4">Click the letters in order:</div>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    {scrambledLetters.map((letter) => (
+                      <Button
+                        key={letter.id}
+                        onClick={() => handleLetterClick(letter)}
+                        disabled={letter.used}
+                        className={`w-16 h-16 text-2xl font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ${
+                          letter.used
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : letter.correct
+                            ? 'bg-gradient-to-r from-green-400 to-emerald-500 text-white hover:from-green-500 hover:to-emerald-600'
+                            : 'bg-gradient-to-r from-blue-400 to-indigo-500 text-white hover:from-blue-500 hover:to-indigo-600'
+                        }`}
+                      >
+                        {letter.letter}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 

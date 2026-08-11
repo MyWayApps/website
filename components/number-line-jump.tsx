@@ -59,12 +59,17 @@ export function NumberLineJump({ start, end, max, character = "frog", className 
         style={{
           left: `${percentFor(position)}%`,
           transform: "translateX(-50%)",
-          transition: `left ${TRAVEL_DURATION_MS}ms ease-in-out`,
+          // Only animate the actual hop (start -> end). Without this guard,
+          // resetting `position` back to the new round's start also picks up
+          // this transition, making the character visibly slide backward
+          // from the previous round's end position before hopping forward
+          // again — the reset needs to be instant instead.
+          transition: isHopping ? `left ${TRAVEL_DURATION_MS}ms ease-in-out` : "none",
         }}
       >
         <div
           className={`text-5xl inline-block ${isHopping ? "number-line-hop" : ""}`}
-          style={{ transform: `scaleX(${direction})` }}
+          style={{ transform: `scaleX(${-direction})` }}
         >
           {CHARACTER_EMOJI[character]}
         </div>
@@ -78,6 +83,7 @@ export function NumberLineJump({ start, end, max, character = "frog", className 
             className="absolute top-1/2 flex flex-col items-center"
             style={{ left: `${percentFor(n)}%`, transform: "translate(-50%, -50%)" }}
           >
+            {n === start && <div className="absolute -top-4 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white shadow-md" />}
             <div className={`w-1 rounded-full ${n === end ? "h-4 bg-emerald-600" : "h-2 bg-gray-700"}`} />
             {n % labelStep === 0 && <span className="mt-1 text-xs font-bold text-gray-800">{n}</span>}
           </div>

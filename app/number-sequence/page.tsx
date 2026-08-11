@@ -93,7 +93,7 @@ export default function NumberSequencePage() {
         </div>
       </div>
 
-      <NumberSequenceSuite onGameComplete={handleGameComplete} onBackToHome={() => router.push("/")} />
+      <NumberSequenceSuite onGameComplete={handleGameComplete} onBackToHome={() => router.push("/#math")} />
     </div>
   )
 }

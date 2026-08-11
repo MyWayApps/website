@@ -11,7 +11,7 @@ export default function TeluguLetters() {
   const [selectedType, setSelectedType] = useState<LetterType>("vowels")
 
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#telugu"
   }
 
   const letterTypes: { type: LetterType; telugu: string; english: string; description: string; note?: string }[] = [

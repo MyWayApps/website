@@ -23,7 +23,7 @@ export function TableReferencePanel({ operation, gradientClass, onBackToModes }:
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${gradientClass} p-4 relative overflow-hidden`}>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Button
             onClick={onBackToModes}
@@ -36,19 +36,19 @@ export function TableReferencePanel({ operation, gradientClass, onBackToModes }:
         </div>
 
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow">All the Tables</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow">📖 Table Book</h1>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
             <Card key={n} className="bg-white/95 shadow-xl border-0">
               <CardContent className="p-6">
-                <h2 className="text-xl font-bold text-gray-800 text-center mb-4">{TABLE_LABEL[operation](n)}</h2>
-                <div className="space-y-1">
+                <h2 className="text-2xl font-bold text-gray-800 text-center mb-4">{TABLE_LABEL[operation](n)}</h2>
+                <div className="space-y-0.5">
                   {Array.from({ length: 10 }, (_, i) => i + 1).map((pos) => {
                     const f = generateTableFact(operation, n, pos)
                     return (
-                      <div key={pos} className="flex justify-between font-mono text-base font-semibold text-gray-700">
+                      <div key={pos} className="flex items-baseline justify-center gap-2 font-mono text-2xl font-semibold text-gray-700">
                         <span>
                           {f.a} {symbol} {f.b}
                         </span>

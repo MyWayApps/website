@@ -38,7 +38,8 @@ function modesForOperation(operation: TableOperation): TopicMode[] {
   const numberLine: TopicMode = {
     id: "number-line",
     label: "Number Line Hop",
-    emoji: "🦘",
+    // Matches the character NumberLineTableGame actually plays with below (kangaroo for add, rabbit for subtract).
+    emoji: operation === "subtract" ? "🐇" : "🦘",
     description: "Watch the hop, then type the answer",
     render: ({ onBackToModes, onComplete }) => (
       <NumberLineTableGame
@@ -52,9 +53,9 @@ function modesForOperation(operation: TableOperation): TopicMode[] {
 
   const mcq: TopicMode = {
     id: "mcq",
-    label: "Multiple Choice",
-    emoji: "✅",
-    description: "Pick a table, then practice it in order",
+    label: "Final Test",
+    emoji: "🏆",
+    description: "Master a table with a mix of quiz questions",
     render: ({ onBackToModes, onComplete }) => (
       <TableMcqGame
         operation={operation as "add" | "subtract" | "multiply"}
@@ -67,8 +68,8 @@ function modesForOperation(operation: TableOperation): TopicMode[] {
 
   const allTables: TopicMode = {
     id: "all-tables",
-    label: "All Tables",
-    emoji: "📋",
+    label: "Table Book",
+    emoji: "📖",
     description: "Browse every fact, table by table",
     render: ({ onBackToModes }) => (
       <TableReferencePanel operation={operation as "add" | "subtract" | "multiply"} gradientClass={GRADIENT} onBackToModes={onBackToModes} />
@@ -107,7 +108,7 @@ export default function MathTablesPage() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Button
-            onClick={() => (window.location.href = "/")}
+            onClick={() => (window.location.href = "/#math")}
             className="bg-white/20 hover:bg-white/30 text-white border-2 border-white font-bold text-lg px-6 py-3"
             variant="outline"
           >

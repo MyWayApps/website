@@ -8,7 +8,7 @@ import { satakamList } from "@/lib/telugu-satakamalu-data"
 
 export default function TeluguSatakamaluPage() {
   const handleBackHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#telugu"
   }
 
   return (

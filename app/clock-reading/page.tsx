@@ -107,7 +107,7 @@ export default function ClockReadingPage() {
         </div>
       </div>
 
-      <ClockReadingGame user={user} onGameComplete={handleGameComplete} onBackToHome={() => router.push("/")} />
+      <ClockReadingGame user={user} onGameComplete={handleGameComplete} onBackToHome={() => router.push("/#math")} />
     </div>
   )
 }

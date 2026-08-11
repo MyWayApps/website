@@ -145,7 +145,7 @@ export default function SudokuGame({ onGameComplete, onBackToHome }: SudokuGameP
               <div className="flex justify-center">
                 <Button
                   onClick={() => setMode("setup")}
-                  className="h-32 text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 hover:scale-105 transform transition-all duration-300 text-white border-4 border-white shadow-lg hover:shadow-xl px-12"
+                  className="h-32 rounded-2xl text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 hover:scale-105 transform transition-all duration-300 text-white border-4 border-white shadow-lg hover:shadow-xl px-12"
                 >
                   <div className="flex flex-col items-center gap-3">
                     <span className="text-4xl">🚀</span>
@@ -192,74 +192,80 @@ export default function SudokuGame({ onGameComplete, onBackToHome }: SudokuGameP
               <div className="space-y-10">
                 <div className="text-center">
                   <h3 className="text-2xl font-bold text-gray-700 mb-6">Grid Size</h3>
-                  <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                  <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
                     {([4, 6] as SudokuSize[]).map((s) => (
-                      <Button
+                      <Card
                         key={s}
                         onClick={() => setSize(s)}
-                        className={`h-24 text-xl font-bold border-4 transition-all duration-300 ${
+                        className={`cursor-pointer border-2 rounded-xl shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg ${
                           size === s
-                            ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-white shadow-lg scale-105"
-                            : "bg-white/20 text-gray-700 border-gray-300 hover:bg-white/30"
+                            ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-white border-white scale-105 shadow-lg"
+                            : "bg-white/70 text-gray-700 border-white/60 hover:bg-white"
                         }`}
-                        variant="outline"
                       >
-                        {s} x {s}
-                      </Button>
+                        <CardContent className="p-3 flex flex-col items-center gap-1">
+                          <span className="text-2xl">{s === 4 ? "🔳" : "🔲"}</span>
+                          <span className="text-base font-bold">{s} x {s}</span>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
                 </div>
 
                 <div className="text-center">
                   <h3 className="text-2xl font-bold text-gray-700 mb-6">Style</h3>
-                  <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-                    <Button
+                  <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
+                    <Card
                       onClick={() => setVariant("numbers")}
-                      className={`h-28 text-lg font-bold border-4 transition-all duration-300 ${
+                      className={`cursor-pointer border-2 rounded-xl shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg ${
                         variant === "numbers"
-                          ? "bg-gradient-to-r from-green-400 to-emerald-500 text-white border-white shadow-lg scale-105"
-                          : "bg-white/20 text-gray-700 border-gray-300 hover:bg-white/30"
+                          ? "bg-gradient-to-br from-green-400 to-emerald-500 text-white border-white scale-105 shadow-lg"
+                          : "bg-white/70 text-gray-700 border-white/60 hover:bg-white"
                       }`}
-                      variant="outline"
                     >
-                      <div className="flex flex-col items-center">
-                        <span className="text-3xl">🔢</span>
-                        <span>Numbers</span>
-                      </div>
-                    </Button>
-                    <Button
+                      <CardContent className="p-3 flex flex-col items-center gap-1">
+                        <span className="text-2xl">🔢</span>
+                        <span className="text-base font-bold">Numbers</span>
+                      </CardContent>
+                    </Card>
+                    <Card
                       onClick={() => setVariant("pictures")}
-                      className={`h-28 text-lg font-bold border-4 transition-all duration-300 ${
+                      className={`cursor-pointer border-2 rounded-xl shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg ${
                         variant === "pictures"
-                          ? "bg-gradient-to-r from-pink-400 to-rose-500 text-white border-white shadow-lg scale-105"
-                          : "bg-white/20 text-gray-700 border-gray-300 hover:bg-white/30"
+                          ? "bg-gradient-to-br from-pink-400 to-rose-500 text-white border-white scale-105 shadow-lg"
+                          : "bg-white/70 text-gray-700 border-white/60 hover:bg-white"
                       }`}
-                      variant="outline"
                     >
-                      <div className="flex flex-col items-center">
-                        <span className="text-3xl">🍎</span>
-                        <span>Pictures</span>
-                      </div>
-                    </Button>
+                      <CardContent className="p-3 flex flex-col items-center gap-1">
+                        <span className="text-2xl">🍎</span>
+                        <span className="text-base font-bold">Pictures</span>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
 
                 <div className="text-center">
                   <h3 className="text-2xl font-bold text-gray-700 mb-6">Level</h3>
-                  <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
-                    {(["easy", "medium", "tough"] as SudokuDifficulty[]).map((d) => (
-                      <Button
-                        key={d}
-                        onClick={() => setDifficulty(d)}
-                        className={`h-20 text-lg font-bold border-4 capitalize transition-all duration-300 ${
-                          difficulty === d
-                            ? "bg-gradient-to-r from-violet-400 to-fuchsia-500 text-white border-white shadow-lg scale-105"
-                            : "bg-white/20 text-gray-700 border-gray-300 hover:bg-white/30"
+                  <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto">
+                    {([
+                      { level: "easy" as const, stars: "⭐" },
+                      { level: "medium" as const, stars: "⭐⭐" },
+                      { level: "tough" as const, stars: "⭐⭐⭐" },
+                    ]).map(({ level, stars }) => (
+                      <Card
+                        key={level}
+                        onClick={() => setDifficulty(level)}
+                        className={`cursor-pointer border-2 rounded-xl shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg ${
+                          difficulty === level
+                            ? "bg-gradient-to-br from-violet-400 to-fuchsia-500 text-white border-white scale-105 shadow-lg"
+                            : "bg-white/70 text-gray-700 border-white/60 hover:bg-white"
                         }`}
-                        variant="outline"
                       >
-                        {d}
-                      </Button>
+                        <CardContent className="p-2 flex flex-col items-center gap-1">
+                          <span className="text-sm">{stars}</span>
+                          <span className="text-sm font-bold capitalize">{level}</span>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
                 </div>

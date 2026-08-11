@@ -40,7 +40,7 @@ export default function NavigationMenu() {
   const pathname = usePathname()
 
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#telugu"
   }
 
   return (

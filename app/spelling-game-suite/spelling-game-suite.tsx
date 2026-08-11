@@ -20,10 +20,11 @@ import TypeTheWordGame from "./type-the-word-game"
 import SearchTheWordGame from "./search-the-word-game"
 import { generateWords, generateWordsLocal } from "@/lib/word-generator"
 import { pickUnseen } from "@/lib/question-history"
+import { WORD_LISTS, type LetterCount } from "@/lib/spelling-words"
+import { isWordFullyComplete, markWordGameComplete } from "@/lib/spelling-progress"
 
 type GameMode = "menu" | "word-selection" | "game-selection" | "playing"
 type WordSource = "custom" | "letter-count" | "ai-generated"
-type LetterCount = 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
 
 interface User {
   id: string
@@ -42,18 +43,6 @@ interface SpellingGameSuiteProps {
   user?: User | null
   onGameComplete?: (score: number, maxScore: number, gameData: GameData) => void
   onBackToHome?: () => void
-}
-
-// Static word lists by letter count
-const WORD_LISTS: Record<LetterCount, string[]> = {
-  3: ["cat", "dog", "sun", "hat", "car", "cup", "pen", "box", "key", "toy", "run", "fun", "big", "red", "hot"],
-  4: ["book", "tree", "bird", "fish", "hand", "foot", "moon", "star", "blue", "pink", "play", "jump", "walk", "talk", "sing"],
-  5: ["house", "water", "happy", "green", "black", "white", "small", "large", "light", "heavy", "quick", "slow", "young", "old", "clean"],
-  6: ["purple", "orange", "yellow", "brown", "friend", "family", "school", "garden", "forest", "castle", "dragon", "prince", "princess", "magic", "wonder"],
-  7: ["rainbow", "butterfly", "elephant", "giraffe", "penguin", "dolphin", "octopus", "library", "kitchen", "bedroom", "bathroom", "mountain", "ocean", "forest", "village"],
-  8: ["adventure", "treasure", "mountain", "butterfly", "elephant", "giraffe", "penguin", "dolphin", "octopus", "library", "kitchen", "bedroom", "bathroom", "village", "computer"],
-  9: ["adventure", "treasure", "mountain", "butterfly", "elephant", "giraffe", "penguin", "dolphin", "octopus", "library", "kitchen", "bedroom", "bathroom", "village", "computer"],
-  10: ["adventure", "treasure", "mountain", "butterfly", "elephant", "giraffe", "penguin", "dolphin", "octopus", "library", "kitchen", "bedroom", "bathroom", "village", "computer"]
 }
 
 // Game types with descriptions and emojis
@@ -470,7 +459,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
               <div className="text-center">
                 <Button
                   onClick={handleStartGame}
-                  className="h-32 text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 hover:scale-105 transform transition-all duration-300 text-white border-4 border-white shadow-lg hover:shadow-xl px-12"
+                  className="h-48 w-48 rounded-3xl text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 hover:scale-105 transform transition-all duration-300 text-white border-4 border-white shadow-lg hover:shadow-xl"
                 >
                   <div className="flex flex-col items-center gap-3">
                     <span className="text-4xl">🎮</span>
@@ -526,7 +515,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <Button
                       onClick={() => handleWordSourceSelect("letter-count")}
-                      className={`h-24 text-xl font-bold border-4 transition-all duration-300 ${
+                      className={`h-24 rounded-2xl text-xl font-bold border-4 transition-all duration-300 ${
                         wordSource === "letter-count"
                           ? "bg-gradient-to-r from-blue-400 to-cyan-500 text-white border-white shadow-lg scale-105"
                           : "bg-white/20 text-gray-700 border-gray-300 hover:bg-white/30"
@@ -542,7 +531,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
 
                     <Button
                       onClick={() => handleWordSourceSelect("custom")}
-                      className={`h-24 text-xl font-bold border-4 transition-all duration-300 ${
+                      className={`h-24 rounded-2xl text-xl font-bold border-4 transition-all duration-300 ${
                         wordSource === "custom"
                           ? "bg-gradient-to-r from-green-400 to-emerald-500 text-white border-white shadow-lg scale-105"
                           : "bg-white/20 text-gray-700 border-gray-300 hover:bg-white/30"
@@ -558,7 +547,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
 
                     <Button
                       onClick={() => handleWordSourceSelect("ai-generated")}
-                      className={`h-24 text-xl font-bold border-4 transition-all duration-300 ${
+                      className={`h-24 rounded-2xl text-xl font-bold border-4 transition-all duration-300 ${
                         wordSource === "ai-generated"
                           ? "bg-gradient-to-r from-purple-400 to-pink-500 text-white border-white shadow-lg scale-105"
                           : "bg-white/20 text-gray-700 border-gray-300 hover:bg-white/30"
@@ -578,13 +567,13 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
                 {wordSource === "ai-generated" && (
                   <div className="text-center">
                     <h3 className="text-2xl font-bold text-gray-700 mb-6">Choose Letter Count for AI Words</h3>
-                    <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
-                      {[3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
+                    <div className="grid grid-cols-3 md:grid-cols-9 gap-4">
+                      {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
                         <Button
                           key={count}
                           onClick={() => handleLetterCountSelect(count as LetterCount)}
                           disabled={isGeneratingWords}
-                          className={`h-20 text-xl font-bold border-4 transition-all duration-300 ${
+                          className={`h-20 rounded-2xl text-xl font-bold border-4 transition-all duration-300 ${
                             selectedLetterCount === count
                               ? "bg-gradient-to-r from-rose-300 to-pink-400 text-white border-white shadow-lg scale-105"
                               : "bg-white/20 text-gray-700 border-gray-300 hover:bg-white/30"
@@ -640,26 +629,43 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
                 {/* Letter Count Selection */}
                 {wordSource === "letter-count" && (
                   <div className="text-center">
-                    <h3 className="text-2xl font-bold text-gray-700 mb-6">Choose Letter Count</h3>
-                    <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
-                      {[3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
-                        <Button
+                    <h3 className="text-2xl font-bold text-gray-700 mb-6">Choose Word Length</h3>
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
+                      {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
+                        <Card
                           key={count}
                           onClick={() => handleLetterCountSelect(count as LetterCount)}
-                          className={`h-20 text-xl font-bold border-4 transition-all duration-300 ${
+                          className={`rounded-2xl border-4 cursor-pointer transition-all duration-300 ${
                             selectedLetterCount === count
                               ? "bg-gradient-to-r from-rose-300 to-pink-400 text-white border-white shadow-lg scale-105"
-                              : "bg-white/20 text-gray-700 border-gray-300 hover:bg-white/30"
+                              : "bg-white/60 text-gray-700 border-gray-300 hover:bg-white/80 hover:scale-105"
                           }`}
-                          variant="outline"
                         >
-                          <div className="flex flex-col items-center gap-1">
+                          <CardContent className="p-4 flex flex-col items-center gap-1">
                             <span className="text-2xl">🔤</span>
-                            <span>{count} letters</span>
-                          </div>
-                        </Button>
+                            <span className="text-lg font-bold">{count} letter words</span>
+                          </CardContent>
+                        </Card>
                       ))}
                     </div>
+
+                    <div className="mt-6 p-4 bg-white/40 rounded-2xl border-2 border-white">
+                      <p className="text-sm font-bold text-gray-600 mb-3">
+                        {selectedLetterCount} letter words — ✅ means you've mastered it in all 6 games
+                      </p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {WORD_LISTS[selectedLetterCount].map((word) => (
+                          <span
+                            key={word}
+                            className="bg-white/70 px-3 py-1 rounded-full text-sm font-medium border-2 border-gray-200 flex items-center gap-1"
+                          >
+                            {word}
+                            {isWordFullyComplete(word) && <span title="Mastered — completed in all 6 games">✅</span>}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="mt-6">
                       <Button
                         onClick={handleLetterCountConfirm}
@@ -713,13 +719,13 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
                           value={customWordInput}
                           onChange={(e) => setCustomWordInput(e.target.value)}
                           placeholder="Enter a word..."
-                          className="text-lg"
+                          className="text-lg rounded-2xl"
                           onKeyPress={(e) => e.key === 'Enter' && handleCustomWordAdd()}
                         />
                         <Button
                           onClick={handleCustomWordAdd}
                           disabled={!customWordInput.trim() || customWords.length >= 20}
-                          className="bg-gradient-to-r from-rose-400 to-pink-500 text-white"
+                          className="bg-gradient-to-r from-rose-400 to-pink-500 text-white rounded-2xl"
                         >
                           Add
                         </Button>
@@ -811,9 +817,10 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
                     {currentWordList.map((word, index) => (
                       <span
                         key={index}
-                        className="bg-gradient-to-r from-purple-200 to-pink-200 px-3 py-1 rounded-full text-lg font-medium border-2 border-purple-300"
+                        className="bg-gradient-to-r from-purple-200 to-pink-200 px-3 py-1 rounded-full text-lg font-medium border-2 border-purple-300 flex items-center gap-1"
                       >
                         {word}
+                        {isWordFullyComplete(word) && <span title="Mastered — completed in all 6 games">✅</span>}
                       </span>
                     ))}
                   </div>
@@ -869,6 +876,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
           wordList={currentWordList}
           onGameComplete={handleGameComplete}
           onBackToGames={() => setCurrentMode("game-selection")}
+          onWordComplete={(word) => markWordGameComplete(word, "spell-the-word")}
         />
       )
     }
@@ -880,6 +888,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
           wordList={currentWordList}
           onGameComplete={handleGameComplete}
           onBackToGames={() => setCurrentMode("game-selection")}
+          onWordComplete={(word) => markWordGameComplete(word, "type-the-word")}
         />
       )
     }
@@ -891,6 +900,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
           wordList={currentWordList}
           onGameComplete={handleGameComplete}
           onBackToGames={() => setCurrentMode("game-selection")}
+          onWordComplete={(word) => markWordGameComplete(word, "search-the-word")}
         />
       )
     }
@@ -902,6 +912,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
           wordList={currentWordList}
           onGameComplete={handleGameComplete}
           onBackToGames={() => setCurrentMode("game-selection")}
+          onWordComplete={(word) => markWordGameComplete(word, "balloon-pop")}
         />
       )
     }
@@ -913,6 +924,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
           wordList={currentWordList}
           onGameComplete={handleGameComplete}
           onBackToGames={() => setCurrentMode("game-selection")}
+          onWordComplete={(word) => markWordGameComplete(word, "word-rocket")}
         />
       )
     }
@@ -934,6 +946,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
           wordList={currentWordList}
           onGameComplete={handleGameComplete}
           onBackToGames={() => setCurrentMode("game-selection")}
+          onWordComplete={(word) => markWordGameComplete(word, "magic-garden")}
         />
       )
     }

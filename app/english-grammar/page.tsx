@@ -8,7 +8,7 @@ import { englishGrammarLessons } from "@/lib/english-grammar-data"
 
 export default function EnglishGrammarHub() {
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#english"
   }
 
   return (

@@ -6,16 +6,19 @@ import { ArrowLeft } from "lucide-react"
 import { generateTableFact, TABLE_OPERATION_SYMBOLS, type TableOperation } from "@/lib/math-tables-data"
 
 interface TablePickerProps {
-  operation: "add" | "subtract" | "multiply"
+  operation: TableOperation
   gradientClass: string
   onBack: () => void
   onPick: (tableNumber: number) => void
+  title?: string
+  subtitle?: string
 }
 
 const TABLE_LABEL: Record<TablePickerProps["operation"], (n: number) => string> = {
   add: (n) => `Add ${n}`,
   subtract: (n) => `Subtract ${n}`,
   multiply: (n) => `${n} Table`,
+  divide: (n) => `Divide by ${n}`,
 }
 
 const BADGE_COLORS = [
@@ -31,8 +34,15 @@ const BADGE_COLORS = [
   "from-red-400 to-orange-500",
 ]
 
-export function TablePicker({ operation, gradientClass, onBack, onPick }: TablePickerProps) {
-  const symbol = TABLE_OPERATION_SYMBOLS[operation as TableOperation]
+export function TablePicker({
+  operation,
+  gradientClass,
+  onBack,
+  onPick,
+  title = "Choose a Table to Practice",
+  subtitle = "Pick a number, then practice its facts",
+}: TablePickerProps) {
+  const symbol = TABLE_OPERATION_SYMBOLS[operation]
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${gradientClass} p-4 relative overflow-hidden`}>
@@ -49,8 +59,8 @@ export function TablePicker({ operation, gradientClass, onBack, onPick }: TableP
         </div>
 
         <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-bold text-white drop-shadow-lg tracking-tight">Choose a Table to Practice</h1>
-          <p className="text-xl text-white/90 font-medium mt-2">Pick a number, then practice its facts</p>
+          <h1 className="text-4xl md:text-5xl font-bold text-white drop-shadow-lg tracking-tight">{title}</h1>
+          <p className="text-xl text-white/90 font-medium mt-2">{subtitle}</p>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">

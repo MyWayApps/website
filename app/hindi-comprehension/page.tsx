@@ -8,7 +8,7 @@ import { comprehensionLessons } from "@/lib/hindi-comprehension-data"
 
 export default function HindiComprehensionMain() {
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#hindi"
   }
 
   return (

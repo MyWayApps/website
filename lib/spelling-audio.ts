@@ -14,5 +14,5 @@
 import { playStaticTTS } from "./static-tts"
 
 export function speakSpellingWord(word: string): Promise<void> {
-  return playStaticTTS(word, "spelling", "en", "en-US")
+  return playStaticTTS(word, "spelling", "en", "en-US", { silent: true })
 }

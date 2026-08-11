@@ -8,7 +8,7 @@ import { comprehensionLessons } from "@/lib/tamil-comprehension-data"
 
 export default function TamilComprehensionMain() {
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#tamil"
   }
 
   return (

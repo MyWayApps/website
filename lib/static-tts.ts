@@ -97,9 +97,12 @@ async function fetchAudioBlob(url: string): Promise<Blob> {
 
 /**
  * Play audio from blob URL with proper cleanup. Handles autoplay
- * restrictions by showing a one-tap "Play audio" button if needed.
+ * restrictions by showing a one-tap "Play audio" button if needed, unless
+ * `silent` is set — callers that already offer their own replay control
+ * (e.g. the Spelling Game Suite's speaker icon) can opt out of the floating
+ * button and just let playback fail quietly.
  */
-async function playAudioFromBlobUrl(url: string): Promise<void> {
+async function playAudioFromBlobUrl(url: string, silent = false): Promise<void> {
   const blob = await fetchAudioBlob(url)
   const objectUrl = URL.createObjectURL(blob)
 
@@ -159,6 +162,12 @@ async function playAudioFromBlobUrl(url: string): Promise<void> {
     try {
       await audio.play()
     } catch (err) {
+      if (silent) {
+        cleanup()
+        reject(err instanceof Error ? err : new Error(String(err)))
+        return
+      }
+
       const btn = document.createElement('button')
       btn.textContent = '🔊 Play audio'
       btn.style.position = 'fixed'
@@ -227,15 +236,19 @@ async function playAudioFromBlobUrl(url: string): Promise<void> {
  * @param staticFolder - full language name matching the public/audio/<name>/ folder on disk (e.g. "hindi", "telugu", "sanskrit")
  * @param apiLangCode - short lang code for the /api/tts?lang= fallback and browser-voice scoring (e.g. "hi", "te", "kn")
  * @param browserLocalePrefix - BCP-47 prefix to match against browser voices (e.g. "te", "hi-IN")
+ * @param options.silent - skip the floating "Play audio" fallback button if autoplay is blocked; use when the caller already has its own replay control
  */
 export async function playStaticTTS(
   text: string,
   staticFolder: string,
   apiLangCode: string,
-  browserLocalePrefix: string
+  browserLocalePrefix: string,
+  options?: { silent?: boolean }
 ): Promise<void> {
   if (typeof window === 'undefined') return
   if (!text || text.trim().length === 0) return
+
+  const silent = options?.silent ?? false
 
   try {
     const hash = await hashText(text)
@@ -243,7 +256,7 @@ export async function playStaticTTS(
 
     const checkResponse = await fetch(staticUrl, { method: 'HEAD' })
     if (checkResponse.ok) {
-      await playAudioFromBlobUrl(staticUrl)
+      await playAudioFromBlobUrl(staticUrl, silent)
       return
     }
 
@@ -251,7 +264,7 @@ export async function playStaticTTS(
     // (app/api/tts/route.ts itself falls back to eSpeak only if Azure is
     // unconfigured or fails, so this is still "Azure by default").
     const serverUrl = `/api/tts?lang=${apiLangCode}&text=${encodeURIComponent(text)}`
-    await playAudioFromBlobUrl(serverUrl)
+    await playAudioFromBlobUrl(serverUrl, silent)
     return
   } catch (err) {
     console.warn(`[TTS] Azure cache/live call failed for lang="${apiLangCode}", falling back to browser voice:`, err)

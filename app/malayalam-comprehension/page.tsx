@@ -8,7 +8,7 @@ import { comprehensionLessons } from "@/lib/malayalam-comprehension-data"
 
 export default function MalayalamComprehensionMain() {
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#malayalam"
   }
 
   return (

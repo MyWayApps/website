@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star, Volume2, CheckCircle, XCircle } from "lucide-react"
-import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 import { speakSpellingWord } from "@/lib/spelling-audio"
 
 interface BalloonPopGameProps {
   wordList: string[]
   onGameComplete: (score: number) => void
   onBackToGames: () => void
+  onWordComplete?: (word: string) => void
 }
 
 interface Balloon {
@@ -38,7 +38,7 @@ const BALLOON_COLORS = [
 const popSoundFreqs = [440, 554.37, 659.25, 783.99] // A4, C#5, E5, G5
 const successSoundFreqs = [523.25, 659.25, 783.99, 1046.5] // Success melody
 
-export default function BalloonPopGame({ wordList, onGameComplete, onBackToGames }: BalloonPopGameProps) {
+export default function BalloonPopGame({ wordList, onGameComplete, onBackToGames, onWordComplete }: BalloonPopGameProps) {
   const [currentWordIndex, setCurrentWordIndex] = useState(0)
   const [balloons, setBalloons] = useState<Balloon[]>([])
   const [score, setScore] = useState(0)
@@ -237,13 +237,13 @@ export default function BalloonPopGame({ wordList, onGameComplete, onBackToGames
       
       setPoppedLetters([...poppedLetters, balloon.letter])
       setCurrentLetterIndex(currentLetterIndex + 1)
-      playCorrectSound()
-      
+
       // Check if word is complete
       if (currentLetterIndex + 1 >= currentWord.length) {
         setScore(score + 1)
         setShowConfetti(true)
         playSound(popSoundFreqs, true)
+        onWordComplete?.(currentWord)
         
         setTimeout(() => {
           setShowFeedback(false)
@@ -272,7 +272,7 @@ export default function BalloonPopGame({ wordList, onGameComplete, onBackToGames
         }, 1000)
       }
     } else {
-      playWrongSound()
+      // No failure tone here — just show the wrong-letter feedback below.
 
       // Make balloons shake
       setBalloons(prevBalloons => 
@@ -313,9 +313,6 @@ export default function BalloonPopGame({ wordList, onGameComplete, onBackToGames
           </Button>
 
           <div className="flex items-center gap-3 bg-white/20 px-5 py-3 rounded-full backdrop-blur-sm flex-wrap">
-            <span className="text-lg font-bold text-purple-800 mr-1">
-              Word {currentWordIndex + 1}/{wordList.length}
-            </span>
             {Array.from({ length: wordList.length }, (_, i) => (
               <Star
                 key={i}
@@ -331,13 +328,19 @@ export default function BalloonPopGame({ wordList, onGameComplete, onBackToGames
               <h2 className="text-4xl font-bold text-purple-800 mb-4 font-sans">
                 🎈 Balloon Pop Game
               </h2>
-              <p className="text-lg text-purple-700 font-medium">
-                Listen to the word and click balloons in the correct order to spell it!
-              </p>
-              <div className="text-lg text-purple-600 mt-2">
-                Word {currentWordIndex + 1} of {wordList.length}
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-lg text-purple-700 font-medium">
+                  Listen to the word and click balloons in the correct order to spell it!
+                </p>
+                <button
+                  onClick={() => speakWord(currentWord)}
+                  aria-label="Listen to the word"
+                  className="text-purple-700 hover:text-purple-900 hover:scale-110 transition-transform"
+                >
+                  <Volume2 className="h-6 w-6" />
+                </button>
               </div>
-              
+
               {/* Word Progress Indicator */}
               <div className="mt-4 flex justify-center gap-2">
                 {wordList.map((word, index) => (
@@ -416,16 +419,6 @@ export default function BalloonPopGame({ wordList, onGameComplete, onBackToGames
 
             {/* Word Display */}
             <div className="text-center mb-6">
-              <div className="mb-4">
-                <Button
-                  onClick={() => speakWord(currentWord)}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold text-lg px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                >
-                  <Volume2 className="mr-2 h-6 w-6" />
-                  Listen to Word
-                </Button>
-              </div>
-              
               <div className="text-2xl font-bold text-gray-700 mb-4">
                 Click balloons in the correct order to spell: <span className="text-purple-600">{currentWord.toUpperCase()}</span>
               </div>

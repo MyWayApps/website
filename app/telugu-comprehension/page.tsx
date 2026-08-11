@@ -8,7 +8,7 @@ import { comprehensionLessons } from "@/lib/telugu-comprehension-data"
 
 export default function TeluguComprehensionMain() {
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#telugu"
   }
 
   return (

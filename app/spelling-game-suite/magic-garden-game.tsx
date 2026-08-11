@@ -7,11 +7,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star, Volume2, CheckCircle, XCircle } from "lucide-react"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 import { speakSpellingWord } from "@/lib/spelling-audio"
+import { ALL_SPELLING_WORDS } from "@/lib/spelling-words"
 
 interface MagicGardenGameProps {
   wordList: string[]
   onGameComplete: (score: number) => void
   onBackToGames: () => void
+  onWordComplete?: (word: string) => void
 }
 
 interface Flower {
@@ -37,7 +39,7 @@ const FLOWER_COLORS = [
 const bloomSoundFreqs = [440, 554.37, 659.25, 783.99] // A4, C#5, E5, G5
 const successSoundFreqs = [523.25, 659.25, 783.99, 1046.5] // Success melody
 
-export default function MagicGardenGame({ wordList, onGameComplete, onBackToGames }: MagicGardenGameProps) {
+export default function MagicGardenGame({ wordList, onGameComplete, onBackToGames, onWordComplete }: MagicGardenGameProps) {
   const [currentWordIndex, setCurrentWordIndex] = useState(0)
   const [flowers, setFlowers] = useState<Flower[]>([])
   const [userInput, setUserInput] = useState("")
@@ -110,67 +112,41 @@ export default function MagicGardenGame({ wordList, onGameComplete, onBackToGame
     if (wordList.length > 0) {
       setCurrentWord(wordList[0])
       setGameStartTime(Date.now())
-      createFlowers()
+      createFlowers(wordList[0])
       // Auto-play audio when game starts
       setTimeout(() => {
         speakWord(wordList[0])
       }, 500)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wordList])
 
-  // Create flowers for current word
-  const createFlowers = () => {
+  // Create flowers for the given target word. Takes the word explicitly
+  // (rather than reading currentWordIndex from the closure) because callers
+  // that advance to the next word update state and call this in the same
+  // tick — reading state here would still see the previous word and show
+  // flower choices for the word just finished instead of the new target.
+  const createFlowers = (correctWord: string) => {
     const newFlowers: Flower[] = []
-    const correctWord = wordList[currentWordIndex]
-    
-    console.log('Creating flowers for word:', correctWord, 'at index:', currentWordIndex)
-    console.log('Full word list:', wordList)
-    console.log('Word length:', correctWord.length)
-    
-    // Create extra words for distraction - use words from the actual word list
-    const allAvailableWords = [
-      "cat", "dog", "sun", "hat", "car", "cup", "pen", "box", "key", "toy",
-      "run", "fun", "big", "red", "hot", "book", "tree", "bird", "fish", "hand",
-      "moon", "star", "blue", "pink", "play", "jump", "walk", "talk", "sing",
-      "house", "water", "happy", "green", "black", "white", "small", "large", "light", "heavy"
-    ]
-    
-    // Create a pool of all available words of the same length
-    const sameLengthWords = allAvailableWords.filter(word => word.length === correctWord.length)
-    
-    // Remove the correct word from the pool
+
+    // Pool of distractor words drawn from the full spelling word bank so
+    // every supported word length (2-10 letters) has enough same-length
+    // words to fill 5 flowers, not just the 3-5 letter words that used to
+    // be hardcoded here.
+    const sameLengthWords = ALL_SPELLING_WORDS.filter(word => word.length === correctWord.length)
     const availableExtras = sameLengthWords.filter(word => word !== correctWord)
-    
-    console.log('Available extra words:', availableExtras)
-    
+
     // Select 4 random extra words
     const selectedExtras = availableExtras
       .sort(() => Math.random() - 0.5)
       .slice(0, 4)
-    
-    console.log('Selected extras:', selectedExtras)
-    
-    // Create the final word list: correct word + 4 extras = 5 total
+
+    // Create the final word list: correct word + up to 4 extras
     const allWords = [correctWord, ...selectedExtras]
-    
+
     // Shuffle the words so correct word is not always first
     const shuffledWords = allWords.sort(() => Math.random() - 0.5)
-    
-    console.log('All words before shuffle:', allWords)
-    console.log('Final word selection:', shuffledWords)
-    
-    // Ensure we have exactly 5 words
-    if (shuffledWords.length !== 5) {
-      console.error('ERROR: Expected 5 words but got', shuffledWords.length, ':', shuffledWords)
-    }
-    
-    // Verify the correct word is in the final selection
-    if (!shuffledWords.includes(correctWord)) {
-      console.error('ERROR: Correct word', correctWord, 'not found in final selection:', shuffledWords)
-    } else {
-      console.log('✓ Correct word', correctWord, 'found in final selection')
-    }
-    
+
     for (let i = 0; i < allWords.length; i++) {
       newFlowers.push({
         id: i,
@@ -208,9 +184,11 @@ export default function MagicGardenGame({ wordList, onGameComplete, onBackToGame
     }
   }, [])
 
-  // Handle word submission
-  const handleSubmit = () => {
-    const correct = userInput.toLowerCase().trim() === currentWord.toLowerCase()
+  // Handle word submission — accepts an explicit word so clicking a flower
+  // can submit immediately without waiting on the userInput state update.
+  const handleSubmit = (wordToCheck?: string) => {
+    const attempt = wordToCheck ?? userInput
+    const correct = attempt.toLowerCase().trim() === currentWord.toLowerCase()
     
     setIsCorrect(correct)
     setShowFeedback(true)
@@ -218,6 +196,7 @@ export default function MagicGardenGame({ wordList, onGameComplete, onBackToGame
     if (correct) {
       setScore(score + 1)
       playCorrectSound()
+      onWordComplete?.(currentWord)
       setShowSparkles(true)
       
       // Rotate colors for next word
@@ -242,7 +221,7 @@ export default function MagicGardenGame({ wordList, onGameComplete, onBackToGame
           const nextWord = wordList[nextWordIndex]
           setCurrentWordIndex(nextWordIndex)
           setCurrentWord(nextWord)
-          createFlowers()
+          createFlowers(nextWord)
           // Auto-play audio for next word
           setTimeout(() => {
             speakWord(nextWord)
@@ -300,9 +279,6 @@ export default function MagicGardenGame({ wordList, onGameComplete, onBackToGame
           </Button>
 
           <div className="flex items-center gap-3 bg-white/20 px-5 py-3 rounded-full backdrop-blur-sm flex-wrap">
-            <span className="text-lg font-bold text-green-800 mr-1">
-              Word {currentWordIndex + 1}/{wordList.length}
-            </span>
             {Array.from({ length: wordList.length }, (_, i) => (
               <Star
                 key={i}
@@ -318,11 +294,17 @@ export default function MagicGardenGame({ wordList, onGameComplete, onBackToGame
               <h2 className="text-4xl font-bold text-green-800 mb-4 font-sans">
                 🌸 Magic Garden Game
               </h2>
-              <p className="text-lg text-green-700 font-medium">
-                Listen to the word and type it correctly to make flowers bloom!
-              </p>
-              <div className="text-lg text-green-600 mt-2">
-                Word {currentWordIndex + 1} of {wordList.length}
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-lg text-green-700 font-medium">
+                  Select the right word to make flowers bloom!
+                </p>
+                <button
+                  onClick={() => speakWord(currentWord)}
+                  aria-label="Listen to the word"
+                  className="text-green-700 hover:text-green-900 hover:scale-110 transition-transform"
+                >
+                  <Volume2 className="h-6 w-6" />
+                </button>
               </div>
             </div>
 
@@ -343,9 +325,9 @@ export default function MagicGardenGame({ wordList, onGameComplete, onBackToGame
                       top: flower.y,
                     }}
                     onClick={() => {
-                      if (flower.word === currentWord) {
-                        setUserInput(flower.word)
-                      }
+                      if (showFeedback) return
+                      setUserInput(flower.word)
+                      handleSubmit(flower.word)
                     }}
                   >
                     <div className="relative">
@@ -414,20 +396,6 @@ export default function MagicGardenGame({ wordList, onGameComplete, onBackToGame
 
             {/* Word Display and Input */}
             <div className="text-center mb-6">
-              <div className="mb-4">
-                <Button
-                  onClick={() => speakWord(currentWord)}
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-lg px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                >
-                  <Volume2 className="mr-2 h-6 w-6" />
-                  Listen to Word
-                </Button>
-              </div>
-              
-              <div className="text-2xl font-bold text-gray-700 mb-4">
-                Type the word you heard (5 flowers, only one has the correct word):
-              </div>
-              
               <div className="flex justify-center gap-4">
                 <Input
                   value={userInput}
@@ -438,7 +406,7 @@ export default function MagicGardenGame({ wordList, onGameComplete, onBackToGame
                   disabled={showFeedback}
                 />
                 <Button
-                  onClick={handleSubmit}
+                  onClick={() => handleSubmit()}
                   disabled={!userInput.trim() || showFeedback}
                   className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-xl px-8 py-3 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                 >

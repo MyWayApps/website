@@ -8,7 +8,7 @@ import { comprehensionLessons } from "@/lib/kannada-comprehension-data"
 
 export default function KannadaComprehensionMain() {
   const handleBackToHome = () => {
-    window.location.href = "/"
+    window.location.href = "/#kannada"
   }
 
   return (

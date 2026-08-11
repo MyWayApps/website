@@ -101,6 +101,12 @@ const fallbackApplications: Application[] = [
     route: "/math-division", created_at: new Date().toISOString(),
   },
   {
+    id: "math-11", name: "Memorize Tables", category: "Education", subcategory: "Math",
+    description: "Addition, subtraction & multiplication facts 1-10, animated and in order",
+    icon_emoji: "🔢", color_scheme: "from-indigo-300 to-cyan-500",
+    route: "/math-tables", created_at: new Date().toISOString(),
+  },
+  {
     id: "math-7", name: "Shapes", category: "Education", subcategory: "Math",
     description: "Identify flat & solid shapes, sort them, and match to real life",
     icon_emoji: "🔺", color_scheme: "from-green-300 to-teal-500",
@@ -123,12 +129,6 @@ const fallbackApplications: Application[] = [
     description: "Compare length, weight, capacity, and measure with everyday units",
     icon_emoji: "📏", color_scheme: "from-orange-300 to-amber-400",
     route: "/math-measurement", created_at: new Date().toISOString(),
-  },
-  {
-    id: "math-11", name: "Memorize Tables", category: "Education", subcategory: "Math",
-    description: "Addition, subtraction & multiplication facts 1-10, animated and in order",
-    icon_emoji: "🔢", color_scheme: "from-indigo-300 to-cyan-500",
-    route: "/math-tables", created_at: new Date().toISOString(),
   },
   {
     id: "math-12", name: "Patterns", category: "Education", subcategory: "Math",
@@ -417,6 +417,12 @@ const fallbackApplications: Application[] = [
     description: "4x4 and 6x6 puzzles with numbers or pictures",
     icon_emoji: "🧩", color_scheme: "from-cyan-200 to-blue-500",
     route: "/sudoku", created_at: new Date().toISOString(),
+  },
+  {
+    id: "10k", name: "Kolam", category: "Games", subcategory: "",
+    description: "Draw traditional Indian kolam designs around the dots",
+    icon_emoji: "🌸", color_scheme: "from-rose-200 to-fuchsia-500",
+    route: "/kolam", created_at: new Date().toISOString(),
   },
 ]
 

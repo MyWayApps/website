@@ -94,7 +94,7 @@ export default function EvenOddPage() {
         </div>
       </div>
 
-      <EvenOddGame user={user} onGameComplete={handleGameComplete} onBackToHome={() => router.push("/")} />
+      <EvenOddGame user={user} onGameComplete={handleGameComplete} onBackToHome={() => router.push("/#math")} />
     </div>
   )
 }
