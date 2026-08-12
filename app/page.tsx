@@ -186,6 +186,12 @@ const fallbackApplications: Application[] = [
     route: "/poems/telugu", created_at: new Date().toISOString(),
   },
   {
+    id: "te-sent", name: "Telugu Sentences", category: "Education", subcategory: "Telugu",
+    description: "Build, type, and listen to sentences!",
+    icon_emoji: "📝", color_scheme: "from-cyan-200 to-blue-500",
+    route: "/sentences/telugu", created_at: new Date().toISOString(),
+  },
+  {
     id: "15", name: "Telugu Satakamalu", category: "Education", subcategory: "Telugu",
     description: "Read classic Telugu Satakamalu with meanings",
     icon_emoji: "📜", color_scheme: "from-amber-200 to-orange-400",
@@ -228,6 +234,12 @@ const fallbackApplications: Application[] = [
     icon_emoji: "📜", color_scheme: "from-rose-300 to-fuchsia-500",
     route: "/poems/hindi", created_at: new Date().toISOString(),
   },
+  {
+    id: "hi-sent", name: "Hindi Sentences", category: "Education", subcategory: "Hindi",
+    description: "Build, type, and listen to sentences!",
+    icon_emoji: "📝", color_scheme: "from-cyan-200 to-blue-500",
+    route: "/sentences/hindi", created_at: new Date().toISOString(),
+  },
   // ── NEW: Kannada ──────────────────────────────────────────────────────────
   {
     id: "kn-1", name: "Kannada Letters", category: "Education", subcategory: "Kannada",
@@ -258,6 +270,12 @@ const fallbackApplications: Application[] = [
     description: "Simple traditional rhymes — script and audio",
     icon_emoji: "📜", color_scheme: "from-rose-300 to-fuchsia-500",
     route: "/poems/kannada", created_at: new Date().toISOString(),
+  },
+  {
+    id: "kn-sent", name: "Kannada Sentences", category: "Education", subcategory: "Kannada",
+    description: "Build, type, and listen to sentences!",
+    icon_emoji: "📝", color_scheme: "from-cyan-200 to-blue-500",
+    route: "/sentences/kannada", created_at: new Date().toISOString(),
   },
   // ── NEW: Tamil ────────────────────────────────────────────────────────────
   {
@@ -290,6 +308,12 @@ const fallbackApplications: Application[] = [
     icon_emoji: "📜", color_scheme: "from-rose-300 to-fuchsia-500",
     route: "/poems/tamil", created_at: new Date().toISOString(),
   },
+  {
+    id: "ta-sent", name: "Tamil Sentences", category: "Education", subcategory: "Tamil",
+    description: "Build, type, and listen to sentences!",
+    icon_emoji: "📝", color_scheme: "from-cyan-200 to-blue-500",
+    route: "/sentences/tamil", created_at: new Date().toISOString(),
+  },
   // ── NEW: Malayalam ────────────────────────────────────────────────────────
   {
     id: "ml-1", name: "Malayalam Letters", category: "Education", subcategory: "Malayalam",
@@ -320,6 +344,12 @@ const fallbackApplications: Application[] = [
     description: "Simple traditional rhymes — script and audio",
     icon_emoji: "📜", color_scheme: "from-rose-300 to-fuchsia-500",
     route: "/poems/malayalam", created_at: new Date().toISOString(),
+  },
+  {
+    id: "ml-sent", name: "Malayalam Sentences", category: "Education", subcategory: "Malayalam",
+    description: "Build, type, and listen to sentences!",
+    icon_emoji: "📝", color_scheme: "from-cyan-200 to-blue-500",
+    route: "/sentences/malayalam", created_at: new Date().toISOString(),
   },
   // ── NEW: Sanskrit (same Devanagari script as Hindi; audio routes through a
   // Kannada-transliteration TTS pipeline since no native Sanskrit voice exists) ──
@@ -353,6 +383,12 @@ const fallbackApplications: Application[] = [
     icon_emoji: "📜", color_scheme: "from-rose-300 to-fuchsia-500",
     route: "/poems/sanskrit", created_at: new Date().toISOString(),
   },
+  {
+    id: "sa-sent", name: "Sanskrit Sentences", category: "Education", subcategory: "Sanskrit",
+    description: "Build, type, and listen to sentences!",
+    icon_emoji: "📝", color_scheme: "from-cyan-200 to-blue-500",
+    route: "/sentences/sanskrit", created_at: new Date().toISOString(),
+  },
   // ── English ───────────────────────────────────────────────────────────────
   {
     id: "12", name: "English Spelling Game Suite", category: "Education", subcategory: "English",
@@ -373,7 +409,7 @@ const fallbackApplications: Application[] = [
     route: "/english-grammar", created_at: new Date().toISOString(),
   },
   {
-    id: "en-3", name: "Reading Coach", category: "Education", subcategory: "English",
+    id: "en-3", name: "English Reading Coach", category: "Education", subcategory: "English",
     description: "Read a story out loud and get instant feedback",
     icon_emoji: "🎤", color_scheme: "from-amber-200 to-orange-500",
     route: "/english-reading", created_at: new Date().toISOString(),
@@ -423,6 +459,18 @@ const fallbackApplications: Application[] = [
     description: "Draw traditional Indian kolam designs around the dots",
     icon_emoji: "🌸", color_scheme: "from-rose-200 to-fuchsia-500",
     route: "/kolam", created_at: new Date().toISOString(),
+  },
+  {
+    id: "10d", name: "Spot the Difference", category: "Games", subcategory: "",
+    description: "Find what's different between two pictures!",
+    icon_emoji: "🔍", color_scheme: "from-orange-200 to-red-500",
+    route: "/spot-the-difference", created_at: new Date().toISOString(),
+  },
+  {
+    id: "10i", name: "Indian Board Games", category: "Games", subcategory: "",
+    description: "Play Chowka Bara and Puli Meka!",
+    icon_emoji: "🎲", color_scheme: "from-amber-200 to-orange-500",
+    route: "/indian-board-games", created_at: new Date().toISOString(),
   },
 ]
 
@@ -565,6 +613,20 @@ export default function HomePage() {
 
   const topicSlug = (topic: string) =>
     topic === "Games" || topic === "Puzzles" ? `${topic.toLowerCase()}-section` : topic.toLowerCase().replace(/\s+/g, "-")
+
+  // "Back to Home" links across the site land on "/#telugu", "/#math", etc.
+  // On a fresh full-page load, the browser tries to scroll to that anchor
+  // before this data-driven content (and its matching id={topicSlug(...)}
+  // element) has mounted — the topic sections don't exist yet while the
+  // loading spinner is showing, so the native fragment scroll silently
+  // fails and never retries. Once loading finishes and the real sections
+  // are in the DOM, re-attempt the scroll ourselves.
+  useEffect(() => {
+    if (loading) return
+    if (typeof window === "undefined" || !window.location.hash) return
+    const id = window.location.hash.slice(1)
+    document.getElementById(id)?.scrollIntoView()
+  }, [loading])
 
   // ── Loading screen ────────────────────────────────────────────────────────
   if (loading) {
