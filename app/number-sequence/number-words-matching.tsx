@@ -18,10 +18,11 @@ interface MatchCard {
   type: "digit" | "word"
 }
 
-function generateCards(): MatchCard[] {
+function generateCards(maxNumber: number): MatchCard[] {
+  const pairCount = Math.min(PAIR_COUNT, maxNumber)
   const numbers = new Set<number>()
-  while (numbers.size < PAIR_COUNT) {
-    numbers.add(randInt(1, 1000))
+  while (numbers.size < pairCount) {
+    numbers.add(randInt(1, maxNumber))
   }
   const cards: MatchCard[] = []
   let id = 0
@@ -33,11 +34,12 @@ function generateCards(): MatchCard[] {
 }
 
 interface NumberWordsMatchingProps {
+  maxNumber: number
   onRoundComplete: (result: RoundResult) => void
   onBackToModes: () => void
 }
 
-export default function NumberWordsMatching({ onRoundComplete, onBackToModes }: NumberWordsMatchingProps) {
+export default function NumberWordsMatching({ maxNumber, onRoundComplete, onBackToModes }: NumberWordsMatchingProps) {
   const [cards, setCards] = useState<MatchCard[]>([])
   const [flipped, setFlipped] = useState<number[]>([])
   const [matchedIds, setMatchedIds] = useState<Set<number>>(new Set())
@@ -49,7 +51,8 @@ export default function NumberWordsMatching({ onRoundComplete, onBackToModes }: 
 
   useEffect(() => {
     setRoundStartTime(Date.now())
-    setCards(generateCards())
+    setCards(generateCards(maxNumber))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleCardClick = (card: MatchCard) => {
@@ -84,7 +87,7 @@ export default function NumberWordsMatching({ onRoundComplete, onBackToModes }: 
               score: newFirstTryScore,
               maxScore: PAIR_COUNT,
               completionTimeMs: Date.now() - roundStartTime,
-              difficultyLabel: "up-to-1000-matching",
+              difficultyLabel: `up-to-${maxNumber}-matching`,
             })
             setPhase("results")
           }
@@ -99,7 +102,7 @@ export default function NumberWordsMatching({ onRoundComplete, onBackToModes }: 
   }
 
   const handleRestart = () => {
-    setCards(generateCards())
+    setCards(generateCards(maxNumber))
     setFlipped([])
     setMatchedIds(new Set())
     setTouchedIds(new Set())

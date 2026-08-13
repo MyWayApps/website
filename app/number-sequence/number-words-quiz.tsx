@@ -10,11 +10,12 @@ import { generateNumberWordsQuestion, normalizeNumberWords, type NumberWordsQues
 import { playCorrectSound, playWrongSound } from "./audio"
 
 interface NumberWordsQuizProps {
+  maxNumber: number
   onRoundComplete: (result: RoundResult) => void
   onBackToModes: () => void
 }
 
-export default function NumberWordsQuiz({ onRoundComplete, onBackToModes }: NumberWordsQuizProps) {
+export default function NumberWordsQuiz({ maxNumber, onRoundComplete, onBackToModes }: NumberWordsQuizProps) {
   const [questionIndex, setQuestionIndex] = useState(0)
   const [score, setScore] = useState(0)
   const [question, setQuestion] = useState<NumberWordsQuestion | null>(null)
@@ -27,7 +28,8 @@ export default function NumberWordsQuiz({ onRoundComplete, onBackToModes }: Numb
 
   useEffect(() => {
     setRoundStartTime(Date.now())
-    setQuestion(generateNumberWordsQuestion(0))
+    setQuestion(generateNumberWordsQuestion(0, maxNumber))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -52,7 +54,7 @@ export default function NumberWordsQuiz({ onRoundComplete, onBackToModes }: Numb
 
       if (questionIndex < 4) {
         setQuestionIndex(questionIndex + 1)
-        setQuestion(generateNumberWordsQuestion(questionIndex + 1))
+        setQuestion(generateNumberWordsQuestion(questionIndex + 1, maxNumber))
         setTypedValue("")
         setIsAnswered(false)
       } else {
@@ -61,7 +63,7 @@ export default function NumberWordsQuiz({ onRoundComplete, onBackToModes }: Numb
           score: newScore,
           maxScore: 5,
           completionTimeMs: Date.now() - roundStartTime,
-          difficultyLabel: "up-to-1000",
+          difficultyLabel: `up-to-${maxNumber}`,
         })
         setPhase("results")
       }
@@ -74,7 +76,7 @@ export default function NumberWordsQuiz({ onRoundComplete, onBackToModes }: Numb
     setTypedValue("")
     setIsAnswered(false)
     setRoundStartTime(Date.now())
-    setQuestion(generateNumberWordsQuestion(0))
+    setQuestion(generateNumberWordsQuestion(0, maxNumber))
     setPhase("playing")
   }
 

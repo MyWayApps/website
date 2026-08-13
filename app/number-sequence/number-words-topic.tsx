@@ -60,24 +60,78 @@ const MODES: ModeMeta[] = [
 ]
 
 export default function NumberWordsTopic({ onRoundComplete, onBackToTopics }: TopicProps) {
+  const [maxNumber, setMaxNumber] = useState<number | null>(null)
   const [activeMode, setActiveMode] = useState<Mode | null>(null)
 
   const handleBackToModes = () => setActiveMode(null)
 
-  if (activeMode === "quiz") {
-    return <NumberWordsQuiz onRoundComplete={onRoundComplete} onBackToModes={handleBackToModes} />
+  if (maxNumber !== null) {
+    if (activeMode === "quiz") {
+      return <NumberWordsQuiz maxNumber={maxNumber} onRoundComplete={onRoundComplete} onBackToModes={handleBackToModes} />
+    }
+    if (activeMode === "mcq") {
+      return (
+        <NumberWordsMultipleChoice maxNumber={maxNumber} onRoundComplete={onRoundComplete} onBackToModes={handleBackToModes} />
+      )
+    }
+    if (activeMode === "flashcards") {
+      return <NumberWordsFlashcards maxNumber={maxNumber} onBackToModes={handleBackToModes} />
+    }
+    if (activeMode === "matching") {
+      return <NumberWordsMatching maxNumber={maxNumber} onRoundComplete={onRoundComplete} onBackToModes={handleBackToModes} />
+    }
+    if (activeMode === "spelling") {
+      return <NumberWordsSpelling maxNumber={maxNumber} onRoundComplete={onRoundComplete} onBackToModes={handleBackToModes} />
+    }
   }
-  if (activeMode === "mcq") {
-    return <NumberWordsMultipleChoice onRoundComplete={onRoundComplete} onBackToModes={handleBackToModes} />
-  }
-  if (activeMode === "flashcards") {
-    return <NumberWordsFlashcards onBackToModes={handleBackToModes} />
-  }
-  if (activeMode === "matching") {
-    return <NumberWordsMatching onRoundComplete={onRoundComplete} onBackToModes={handleBackToModes} />
-  }
-  if (activeMode === "spelling") {
-    return <NumberWordsSpelling onRoundComplete={onRoundComplete} onBackToModes={handleBackToModes} />
+
+  if (maxNumber === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-lime-300 via-green-400 to-emerald-500 p-4 relative overflow-hidden">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <Button
+              onClick={onBackToTopics}
+              className="bg-white/20 hover:bg-white/30 text-green-900 border-2 border-white font-bold text-lg px-6 py-3"
+              variant="outline"
+            >
+              <ArrowLeft className="mr-2 h-5 w-5" />
+              Back to Topics
+            </Button>
+          </div>
+
+          <Card className="bg-white/90 backdrop-blur-sm shadow-2xl border-0">
+            <CardContent className="p-8">
+              <div className="text-center mb-8">
+                <h2 className="text-4xl font-bold text-green-900 mb-4 font-sans">🔤 Number ↔ Words</h2>
+                <p className="text-lg text-green-700 font-medium">Choose your challenge settings</p>
+              </div>
+
+              <div className="space-y-8">
+                <div className="text-center">
+                  <h3 className="text-2xl font-bold text-gray-700 mb-6">Choose Number Range</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[10, 50, 100, 1000].map((maxNum) => (
+                      <Button
+                        key={maxNum}
+                        onClick={() => setMaxNumber(maxNum)}
+                        className="h-20 text-xl font-bold border-4 transition-all duration-300 bg-white/20 text-gray-700 border-gray-300 hover:bg-white/30"
+                        variant="outline"
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-2xl">🔢</span>
+                          <span>Up to {maxNum}</span>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -85,12 +139,12 @@ export default function NumberWordsTopic({ onRoundComplete, onBackToTopics }: To
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Button
-            onClick={onBackToTopics}
+            onClick={() => setMaxNumber(null)}
             className="bg-white/20 hover:bg-white/30 text-green-900 border-2 border-white font-bold text-lg px-6 py-3"
             variant="outline"
           >
             <ArrowLeft className="mr-2 h-5 w-5" />
-            Back to Topics
+            Back to Setup
           </Button>
         </div>
 

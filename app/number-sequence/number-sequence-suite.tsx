@@ -34,7 +34,7 @@ const TOPICS: TopicMeta[] = [
     id: "counting-shapes",
     label: "Counting Shapes",
     emoji: "🔺",
-    description: "Count circles, squares & triangles — easy to hard",
+    description: "Count circles, squares & triangles (Upto 10) — easy to hard",
     gradient: "from-teal-400 to-emerald-600",
   },
   {

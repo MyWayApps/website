@@ -10,6 +10,7 @@ import { generateNumberWordsChoices, numberToWords, randInt, type NumberWordsDir
 import { playCorrectSound, playWrongSound } from "./audio"
 
 interface NumberWordsMultipleChoiceProps {
+  maxNumber: number
   onRoundComplete: (result: RoundResult) => void
   onBackToModes: () => void
 }
@@ -20,13 +21,17 @@ interface McqRound {
   choices: number[]
 }
 
-function generateRound(index: number): McqRound {
+function generateRound(index: number, maxNumber: number): McqRound {
   const direction: NumberWordsDirection = index % 2 === 0 ? "numberToWord" : "wordToNumber"
-  const correctNumber = randInt(1, 1000)
-  return { direction, correctNumber, choices: generateNumberWordsChoices(correctNumber) }
+  const correctNumber = randInt(1, maxNumber)
+  return { direction, correctNumber, choices: generateNumberWordsChoices(correctNumber, maxNumber) }
 }
 
-export default function NumberWordsMultipleChoice({ onRoundComplete, onBackToModes }: NumberWordsMultipleChoiceProps) {
+export default function NumberWordsMultipleChoice({
+  maxNumber,
+  onRoundComplete,
+  onBackToModes,
+}: NumberWordsMultipleChoiceProps) {
   const [questionIndex, setQuestionIndex] = useState(0)
   const [score, setScore] = useState(0)
   const [round, setRound] = useState<McqRound | null>(null)
@@ -38,7 +43,8 @@ export default function NumberWordsMultipleChoice({ onRoundComplete, onBackToMod
 
   useEffect(() => {
     setRoundStartTime(Date.now())
-    setRound(generateRound(0))
+    setRound(generateRound(0, maxNumber))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const submitAnswer = (choice: number) => {
@@ -55,7 +61,7 @@ export default function NumberWordsMultipleChoice({ onRoundComplete, onBackToMod
 
       if (questionIndex < 4) {
         setQuestionIndex(questionIndex + 1)
-        setRound(generateRound(questionIndex + 1))
+        setRound(generateRound(questionIndex + 1, maxNumber))
         setSelected(null)
         setIsAnswered(false)
       } else {
@@ -64,7 +70,7 @@ export default function NumberWordsMultipleChoice({ onRoundComplete, onBackToMod
           score: newScore,
           maxScore: 5,
           completionTimeMs: Date.now() - roundStartTime,
-          difficultyLabel: "up-to-1000-mcq",
+          difficultyLabel: `up-to-${maxNumber}-mcq`,
         })
         setPhase("results")
       }
@@ -77,7 +83,7 @@ export default function NumberWordsMultipleChoice({ onRoundComplete, onBackToMod
     setSelected(null)
     setIsAnswered(false)
     setRoundStartTime(Date.now())
-    setRound(generateRound(0))
+    setRound(generateRound(0, maxNumber))
     setPhase("playing")
   }
 

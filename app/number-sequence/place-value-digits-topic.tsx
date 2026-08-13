@@ -1,40 +1,49 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star } from "lucide-react"
 import { QuizResults } from "@/components/quiz-results"
-import type { TopicProps } from "./types"
-import { generateWhoHasMoreQuestion, type WhoHasMoreQuestion } from "./question-generators"
+import type { RoundResult } from "./types"
+import { generatePlaceValueQuestion, type PlaceValueQuestion } from "./question-generators"
 import { playCorrectSound, playWrongSound } from "./audio"
 
-export default function WhoHasMoreTopic({ onRoundComplete, onBackToTopics }: TopicProps) {
+interface PlaceValueDigitsTopicProps {
+  onRoundComplete: (result: RoundResult) => void
+  onBackToModes: () => void
+}
+
+export default function PlaceValueDigitsTopic({ onRoundComplete, onBackToModes }: PlaceValueDigitsTopicProps) {
   const [phase, setPhase] = useState<"setup" | "playing" | "results">("setup")
-  const [maxNumber, setMaxNumber] = useState(10)
+  const [maxNumber, setMaxNumber] = useState(100)
 
   const [questionIndex, setQuestionIndex] = useState(0)
   const [score, setScore] = useState(0)
-  const [question, setQuestion] = useState<WhoHasMoreQuestion | null>(null)
-  const [selected, setSelected] = useState<string | null>(null)
+  const [question, setQuestion] = useState<PlaceValueQuestion | null>(null)
+  const [typedValue, setTypedValue] = useState("")
   const [isAnswered, setIsAnswered] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
   const [roundStartTime, setRoundStartTime] = useState(0)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (phase === "playing") inputRef.current?.focus()
+  }, [question, phase])
 
   const handleStartRound = () => {
     setQuestionIndex(0)
     setScore(0)
-    setSelected(null)
+    setTypedValue("")
     setIsAnswered(false)
     setRoundStartTime(Date.now())
-    setQuestion(generateWhoHasMoreQuestion(maxNumber))
+    setQuestion(generatePlaceValueQuestion(maxNumber))
     setPhase("playing")
   }
 
-  const submitAnswer = (choice: string) => {
-    if (isAnswered || !question) return
-    const correct = choice === question.correctName
-    setSelected(choice)
+  const submitAnswer = () => {
+    if (isAnswered || !question || typedValue === "") return
+    const correct = Number(typedValue) === question.answer
     setIsAnswered(true)
     setIsCorrect(correct)
     correct ? playCorrectSound() : playWrongSound()
@@ -45,16 +54,16 @@ export default function WhoHasMoreTopic({ onRoundComplete, onBackToTopics }: Top
 
       if (questionIndex < 4) {
         setQuestionIndex(questionIndex + 1)
-        setQuestion(generateWhoHasMoreQuestion(maxNumber))
-        setSelected(null)
+        setQuestion(generatePlaceValueQuestion(maxNumber))
+        setTypedValue("")
         setIsAnswered(false)
       } else {
         onRoundComplete({
-          topicId: "who-has-more",
+          topicId: "place-value",
           score: newScore,
           maxScore: 5,
           completionTimeMs: Date.now() - roundStartTime,
-          difficultyLabel: `up-to-${maxNumber}`,
+          difficultyLabel: `digits-up-to-${maxNumber}`,
         })
         setPhase("results")
       }
@@ -67,33 +76,33 @@ export default function WhoHasMoreTopic({ onRoundComplete, onBackToTopics }: Top
         score={score}
         maxScore={5}
         onPlayAgain={handleStartRound}
-        onBackToTopics={onBackToTopics}
-        title="Comparison Champion!"
-        gradientClass="from-cyan-300 via-sky-400 to-blue-500"
+        onBackToTopics={onBackToModes}
+        title="Place Value Pro!"
+        gradientClass="from-sky-300 via-blue-400 to-indigo-500"
       />
     )
   }
 
   if (phase === "setup") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 p-4 relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-sky-300 via-blue-400 to-indigo-500 p-4 relative overflow-hidden">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <Button
-              onClick={onBackToTopics}
-              className="bg-white/20 hover:bg-white/30 text-sky-900 border-2 border-white font-bold text-lg px-6 py-3"
+              onClick={onBackToModes}
+              className="bg-white/20 hover:bg-white/30 text-blue-900 border-2 border-white font-bold text-lg px-6 py-3"
               variant="outline"
             >
               <ArrowLeft className="mr-2 h-5 w-5" />
-              Back to Topics
+              Back to Modes
             </Button>
           </div>
 
           <Card className="bg-white/90 backdrop-blur-sm shadow-2xl border-0">
             <CardContent className="p-8">
               <div className="text-center mb-8">
-                <h2 className="text-4xl font-bold text-sky-900 mb-4 font-sans">Who Has More?</h2>
-                <p className="text-lg text-sky-700 font-medium">Choose your challenge settings</p>
+                <h2 className="text-4xl font-bold text-blue-900 mb-4 font-sans">Place Value Digits</h2>
+                <p className="text-lg text-blue-700 font-medium">Choose your challenge settings</p>
               </div>
 
               <div className="space-y-8">
@@ -141,15 +150,13 @@ export default function WhoHasMoreTopic({ onRoundComplete, onBackToTopics }: Top
 
   if (!question) return null
 
-  const options = [question.name1, question.name2]
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-sky-300 via-blue-400 to-indigo-500 p-4 relative overflow-hidden">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Button
             onClick={() => setPhase("setup")}
-            className="bg-white/20 hover:bg-white/30 text-sky-900 border-2 border-white font-bold text-lg px-6 py-3"
+            className="bg-white/20 hover:bg-white/30 text-blue-900 border-2 border-white font-bold text-lg px-6 py-3"
             variant="outline"
           >
             <ArrowLeft className="mr-2 h-5 w-5" />
@@ -157,7 +164,7 @@ export default function WhoHasMoreTopic({ onRoundComplete, onBackToTopics }: Top
           </Button>
 
           <div className="flex items-center gap-3 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm flex-wrap">
-            <span className="text-xl font-bold text-sky-900 mr-1">
+            <span className="text-xl font-bold text-blue-900 mr-1">
               Question {questionIndex + 1}/5
             </span>
             {Array.from({ length: 5 }, (_, i) => (
@@ -171,41 +178,31 @@ export default function WhoHasMoreTopic({ onRoundComplete, onBackToTopics }: Top
 
         <Card className="bg-white/90 backdrop-blur-sm shadow-2xl border-0">
           <CardContent className="p-8 text-center">
-            <h2 className="text-2xl font-bold text-sky-900 mb-8">
-              Who Has {question.comparison === "more" ? "More" : "Fewer"}?
-            </h2>
+            <h2 className="text-2xl font-bold text-blue-900 mb-8">Place Value</h2>
 
-            <div className="text-2xl text-gray-800 leading-relaxed mb-8 space-y-2">
-              <p>
-                {question.name1} has {question.count1} {question.objectEmoji} {question.objectLabel}.
-              </p>
-              <p>
-                {question.name2} has {question.count2} {question.objectEmoji} {question.objectLabel}.
-              </p>
-              <p className="font-bold mt-4">
-                Who has {question.comparison} {question.objectLabel}?
-              </p>
-            </div>
+            <div className="text-7xl font-black text-gray-800 mb-6 tracking-wider">{question.number}</div>
+            <p className="text-3xl font-bold text-gray-800 mb-8">
+              How many <span className="capitalize text-blue-700">{question.place}</span>?
+            </p>
 
-            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-6">
-              {options.map((name) => {
-                let cardClass = "bg-white hover:bg-gray-50"
-                if (isAnswered) {
-                  if (name === question.correctName) cardClass = "bg-green-100 border-green-500 border-4"
-                  else if (name === selected) cardClass = "bg-red-100 border-red-500 border-4"
-                }
-                return (
-                  <Card
-                    key={name}
-                    onClick={() => submitAnswer(name)}
-                    className={`${cardClass} cursor-pointer transition-all shadow-lg ${isAnswered ? "cursor-not-allowed" : "hover:scale-105"}`}
-                  >
-                    <CardContent className="p-6">
-                      <span className="text-2xl font-bold text-gray-800">{name}</span>
-                    </CardContent>
-                  </Card>
-                )
-              })}
+            <div className="flex flex-col items-center gap-4 mb-6">
+              <input
+                ref={inputRef}
+                type="number"
+                value={typedValue}
+                onChange={(e) => setTypedValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submitAnswer()}
+                disabled={isAnswered}
+                autoFocus
+                className="no-spinner w-32 h-20 rounded-2xl border-4 border-blue-300 text-4xl text-center font-bold text-blue-900 focus:outline-none focus:border-blue-500"
+              />
+              <Button
+                onClick={submitAnswer}
+                disabled={typedValue === "" || isAnswered}
+                className="h-12 text-lg font-bold bg-gradient-to-r from-green-500 to-blue-600 text-white px-8 rounded-2xl shadow-lg disabled:opacity-50"
+              >
+                Check My Answer
+              </Button>
             </div>
 
             {isAnswered && (
@@ -216,8 +213,7 @@ export default function WhoHasMoreTopic({ onRoundComplete, onBackToTopics }: Top
                   {isCorrect ? "🎉 Correct!" : "🤔 Not quite!"}
                 </div>
                 <div className="text-xl font-medium text-gray-700">
-                  {question.correctName} has {question.comparison} {question.objectLabel} ({question.count1} vs{" "}
-                  {question.count2}).
+                  {question.number} has {question.answer} {question.place}
                 </div>
               </div>
             )}

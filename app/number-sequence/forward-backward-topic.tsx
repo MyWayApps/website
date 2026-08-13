@@ -168,7 +168,7 @@ export default function ForwardBackwardTopic({ onRoundComplete, onBackToTopics }
                 <div className="text-center">
                   <h3 className="text-2xl font-bold text-gray-700 mb-6">Choose Number Range</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[10, 20, 50, 100].map((maxNum) => (
+                    {[10, 50, 100, 1000].map((maxNum) => (
                       <Button
                         key={maxNum}
                         onClick={() => setMaxNumber(maxNum)}

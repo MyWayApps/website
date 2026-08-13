@@ -117,16 +117,13 @@ export interface BeforeAfterQuestion {
   afterAnswer?: number
 }
 
-const BEFORE_AFTER_RANGES = [20, 20, 50, 50, 100]
-
-export function generateBeforeAfterQuestion(index: number): BeforeAfterQuestion {
-  const maxNumber = BEFORE_AFTER_RANGES[index] ?? 100
+export function generateBeforeAfterQuestion(maxNumber: number): BeforeAfterQuestion {
   const roll = Math.random()
   // Mostly single before/after questions, with some "both blanks" ones mixed in.
   const direction: BeforeAfterDirection = roll < 0.25 ? "both" : roll < 0.625 ? "before" : "after"
 
   if (direction === "both") {
-    const base = pickUnseenRandom(`number-sequence:before-after:${index}:both`, 2, maxNumber - 1)
+    const base = pickUnseenRandom(`number-sequence:before-after:${maxNumber}:both`, 2, maxNumber - 1)
     return {
       prompt: `Fill in the numbers on both sides of ${base}`,
       base,
@@ -138,8 +135,8 @@ export function generateBeforeAfterQuestion(index: number): BeforeAfterQuestion 
 
   const base =
     direction === "before"
-      ? pickUnseenRandom(`number-sequence:before-after:${index}:before`, 2, maxNumber)
-      : pickUnseenRandom(`number-sequence:before-after:${index}:after`, 1, maxNumber - 1)
+      ? pickUnseenRandom(`number-sequence:before-after:${maxNumber}:before`, 2, maxNumber)
+      : pickUnseenRandom(`number-sequence:before-after:${maxNumber}:after`, 1, maxNumber - 1)
   const answer = direction === "before" ? base - 1 : base + 1
   return { prompt: `What number comes right ${direction} ${base}?`, base, direction, answer }
 }
@@ -195,9 +192,7 @@ export interface WhoHasMoreQuestion {
   correctName: string
 }
 
-export function generateWhoHasMoreQuestion(index: number): WhoHasMoreQuestion {
-  const maxNumber = index < 2 ? 10 : index < 4 ? 20 : 50
-
+export function generateWhoHasMoreQuestion(maxNumber: number): WhoHasMoreQuestion {
   const name1 = COMPARE_NAMES[randInt(0, COMPARE_NAMES.length - 1)]
   let name2 = name1
   while (name2 === name1) {
@@ -229,7 +224,7 @@ export function generateWhoHasMoreQuestion(index: number): WhoHasMoreQuestion {
 
 // ─── Place value ─────────────────────────────────────────────────────────────
 
-export type Place = "hundreds" | "tens" | "ones"
+export type Place = "thousands" | "hundreds" | "tens" | "ones"
 
 export interface PlaceValueQuestion {
   number: number
@@ -238,22 +233,46 @@ export interface PlaceValueQuestion {
   prompt: string
 }
 
-export function generatePlaceValueQuestion(index: number): PlaceValueQuestion {
-  const useThreeDigit = index >= 2
-  const number = useThreeDigit
-    ? pickUnseenRandom("number-sequence:place-value:three-digit", 100, 999)
-    : pickUnseenRandom("number-sequence:place-value:two-digit", 10, 99)
+export function generatePlaceValueQuestion(maxNumber: number): PlaceValueQuestion {
+  const minNumber = Math.max(2, Math.floor(maxNumber / 10))
+  const number = pickUnseenRandom(`number-sequence:place-value:${maxNumber}`, minNumber, maxNumber)
 
   const digits: Record<Place, number> = {
-    hundreds: Math.floor(number / 100),
+    thousands: Math.floor(number / 1000),
+    hundreds: Math.floor((number % 1000) / 100),
     tens: Math.floor((number % 100) / 10),
     ones: number % 10,
   }
 
-  const availablePlaces: Place[] = number >= 100 ? ["hundreds", "tens", "ones"] : ["tens", "ones"]
+  const availablePlaces: Place[] = ["ones"]
+  if (number >= 10) availablePlaces.push("tens")
+  if (number >= 100) availablePlaces.push("hundreds")
+  if (number >= 1000) availablePlaces.push("thousands")
+
   const place = availablePlaces[randInt(0, availablePlaces.length - 1)]
 
   return { number, place, answer: digits[place], prompt: `In the number ${number}, how many ${place}?` }
+}
+
+export interface BlockPlaceValueQuestion {
+  number: number
+  thousands: number
+  hundreds: number
+  tens: number
+  ones: number
+}
+
+export function generateBlockPlaceValueQuestion(maxNumber: number): BlockPlaceValueQuestion {
+  const minNumber = Math.max(1, Math.floor(maxNumber / 10))
+  const number = pickUnseenRandom(`number-sequence:place-value-blocks:${maxNumber}`, minNumber, maxNumber)
+
+  return {
+    number,
+    thousands: Math.floor(number / 1000),
+    hundreds: Math.floor((number % 1000) / 100),
+    tens: Math.floor((number % 100) / 10),
+    ones: number % 10,
+  }
 }
 
 // ─── Neighbor-number grid puzzle ────────────────────────────────────────────
@@ -316,9 +335,9 @@ export interface NumberWordsQuestion {
   word: string
 }
 
-export function generateNumberWordsQuestion(index: number): NumberWordsQuestion {
+export function generateNumberWordsQuestion(index: number, maxNumber = 1000): NumberWordsQuestion {
   const direction: NumberWordsDirection = index % 2 === 0 ? "numberToWord" : "wordToNumber"
-  const number = pickUnseenRandom(`number-sequence:number-words:${direction}`, 1, 1000)
+  const number = pickUnseenRandom(`number-sequence:number-words:${direction}:${maxNumber}`, 1, maxNumber)
   return { direction, number, word: numberToWords(number) }
 }
 

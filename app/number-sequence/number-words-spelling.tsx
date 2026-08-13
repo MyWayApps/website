@@ -10,6 +10,7 @@ import { numberToWords, randInt } from "./question-generators"
 import { playCorrectSound, playWrongSound } from "./audio"
 
 interface NumberWordsSpellingProps {
+  maxNumber: number
   onRoundComplete: (result: RoundResult) => void
   onBackToModes: () => void
 }
@@ -50,7 +51,7 @@ function generateLetters(letters: string[]) {
     .map((letter, idx) => ({ letter, used: false, id: idx }))
 }
 
-export default function NumberWordsSpelling({ onRoundComplete, onBackToModes }: NumberWordsSpellingProps) {
+export default function NumberWordsSpelling({ maxNumber, onRoundComplete, onBackToModes }: NumberWordsSpellingProps) {
   const [questionIndex, setQuestionIndex] = useState(0)
   const [score, setScore] = useState(0)
   const [number, setNumber] = useState(0)
@@ -63,7 +64,7 @@ export default function NumberWordsSpelling({ onRoundComplete, onBackToModes }: 
   const [roundStartTime, setRoundStartTime] = useState(0)
 
   const setupRound = () => {
-    const n = randInt(1, 1000)
+    const n = randInt(1, maxNumber)
     const word = numberToWords(n)
     const wordSlots = buildSlots(word)
     const wordLetters = word.toUpperCase().split("").filter((c) => c !== " " && c !== "-")
@@ -108,7 +109,7 @@ export default function NumberWordsSpelling({ onRoundComplete, onBackToModes }: 
               score: newScore,
               maxScore: 5,
               completionTimeMs: Date.now() - roundStartTime,
-              difficultyLabel: "up-to-1000-spelling",
+              difficultyLabel: `up-to-${maxNumber}-spelling`,
             })
             setPhase("results")
           }

@@ -8,25 +8,28 @@ import { numberToWords, randInt } from "./question-generators"
 
 const CARD_COUNT = 12
 
-function generateDeck(): number[] {
+function generateDeck(maxNumber: number): number[] {
+  const cardCount = Math.min(CARD_COUNT, maxNumber)
   const numbers = new Set<number>()
-  while (numbers.size < CARD_COUNT) {
-    numbers.add(randInt(1, 1000))
+  while (numbers.size < cardCount) {
+    numbers.add(randInt(1, maxNumber))
   }
   return [...numbers]
 }
 
 interface NumberWordsFlashcardsProps {
+  maxNumber: number
   onBackToModes: () => void
 }
 
-export default function NumberWordsFlashcards({ onBackToModes }: NumberWordsFlashcardsProps) {
+export default function NumberWordsFlashcards({ maxNumber, onBackToModes }: NumberWordsFlashcardsProps) {
   const [deck, setDeck] = useState<number[]>([])
   const [index, setIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
 
   useEffect(() => {
-    setDeck(generateDeck())
+    setDeck(generateDeck(maxNumber))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Keyboard navigation
