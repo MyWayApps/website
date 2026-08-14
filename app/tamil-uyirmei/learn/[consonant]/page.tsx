@@ -5,29 +5,10 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ArrowRight, RotateCcw, Volume2 } from "lucide-react"
 import { useParams } from "next/navigation"
-import { playTeluguTTS } from "@/lib/telugu-tts"
+import { playTamilTTS } from "@/lib/tamil-tts"
+import { uyirmeiMatraData, uyirmeiFormula } from "@/lib/tamil-uyirmei-data"
 
-// Matra mapping data - works for all consonants
-const matraData = [
-  { matra: "", name: "అ కారము", audio: "tbd.mp3" },
-  { matra: "ా", name: "ఆ కారము", audio: "tbd.mp3" },
-  { matra: "ి", name: "ఇ కారము", audio: "tbd.mp3" },
-  { matra: "ీ", name: "ఈ కారము", audio: "tbd.mp3" },
-  { matra: "ు", name: "ఉ కారము", audio: "tbd.mp3" },
-  { matra: "ూ", name: "ఊ కారము", audio: "tbd.mp3" },
-  { matra: "ృ", name: "ఋ కారము", audio: "tbd.mp3" },
-  { matra: "ౄ", name: "ౠ కారము", audio: "tbd.mp3" },
-  { matra: "ె", name: "ఎ కారము", audio: "tbd.mp3" },
-  { matra: "ే", name: "ఏ కారము", audio: "tbd.mp3" },
-  { matra: "ై", name: "ఐ కారము", audio: "tbd.mp3" },
-  { matra: "ొ", name: "ఒ కారము", audio: "tbd.mp3" },
-  { matra: "ో", name: "ఓ కారము", audio: "tbd.mp3" },
-  { matra: "ౌ", name: "ఔ కారము", audio: "tbd.mp3" },
-  { matra: "ం", name: "పూర్ణాను స్వారము", audio: "tbd.mp3" },
-  { matra: "ః", name: "విసర్గం", audio: "tbd.mp3" }
-]
-
-export default function GunintaaluDetail() {
+export default function UyirmeiDetail() {
   const params = useParams()
   const consonant = decodeURIComponent(params.consonant as string)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -35,16 +16,14 @@ export default function GunintaaluDetail() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // Update matra data with the selected consonant
-  const updatedMatraData = matraData.map(item => ({
+  const updatedMatraData = uyirmeiMatraData.map(item => ({
     ...item,
     result: consonant + item.matra
   }))
 
   const currentMatra = updatedMatraData[currentIndex]
 
-  const formulaText = currentMatra.matra === ""
-    ? `${consonant}్ + (${currentMatra.name}) = ${currentMatra.result}`
-    : `${consonant}్ + ${currentMatra.matra} (${currentMatra.name}) = ${currentMatra.result}`
+  const formulaText = uyirmeiFormula(consonant, currentMatra.matra, currentMatra.name, currentMatra.result)
 
   // Play audio for current matra using TTS
   const playAudio = async () => {
@@ -52,7 +31,7 @@ export default function GunintaaluDetail() {
 
     try {
       setIsPlayingTTS(true)
-      await playTeluguTTS(formulaText)
+      await playTamilTTS(formulaText)
     } catch (error) {
       console.error("TTS play failed:", error)
       // Fallback to audio file if TTS fails
@@ -77,28 +56,20 @@ export default function GunintaaluDetail() {
 
   // Add keyboard event listeners for arrow keys
   useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowLeft') {
-        handlePrevious()
-      } else if (event.key === 'ArrowRight') {
-        handleNext()
-      }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") handlePrevious()
+      if (e.key === "ArrowRight") handleNext()
     }
-
-    window.addEventListener('keydown', handleKeyPress)
-    return () => window.removeEventListener('keydown', handleKeyPress)
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
   }, [currentIndex])
 
-  const handleNext = () => {
-    if (currentIndex < updatedMatraData.length - 1) {
-      setCurrentIndex(currentIndex + 1)
-    }
+  const handlePrevious = () => {
+    if (currentIndex > 0) setCurrentIndex(currentIndex - 1)
   }
 
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
-    }
+  const handleNext = () => {
+    if (currentIndex < updatedMatraData.length - 1) setCurrentIndex(currentIndex + 1)
   }
 
   const handleReset = () => {
@@ -106,7 +77,7 @@ export default function GunintaaluDetail() {
   }
 
   const handleBackToLearn = () => {
-    window.location.href = "/telugu-gunintaalu/learn"
+    window.location.href = "/tamil-uyirmei/learn"
   }
 
   return (
@@ -123,13 +94,12 @@ export default function GunintaaluDetail() {
         </Button>
       </div>
 
-
       {/* Progress Indicator */}
-      <div className="mb-8">
-        <div className="text-lg text-indigo-700 font-semibold">
+      <div className="w-1/2 min-w-[600px] max-w-[800px] mb-4">
+        <p className="text-indigo-800 font-bold text-lg mb-2">
           {currentIndex + 1} of {updatedMatraData.length}
-        </div>
-        <div className="w-80 bg-indigo-200 rounded-full h-3 mt-2">
+        </p>
+        <div className="w-full bg-indigo-200 rounded-full h-3">
           <div
             className="bg-indigo-600 h-3 rounded-full transition-all duration-300"
             style={{ width: `${((currentIndex + 1) / updatedMatraData.length) * 100}%` }}
@@ -193,13 +163,8 @@ export default function GunintaaluDetail() {
         </CardContent>
       </Card>
 
-      {/* Hidden audio element */}
-      <audio
-        ref={audioRef}
-        src={`/audio/${currentMatra.audio}`}
-        preload="auto"
-        onError={(e) => console.error("Audio error:", e)}
-      />
+      {/* Audio Elements */}
+      <audio ref={audioRef} preload="auto" />
     </div>
   )
 }

@@ -6,34 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react"
 import { useParams } from "next/navigation"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
-
-// Matra data with names — kept in sync with learn/[consonant]/page.tsx's naming
-// convention ("... కారము") so the formula shown here matches the rest of the
-// gunintaalu feature.
-const matraData = [
-  { matra: "", name: "అ కారము" },
-  { matra: "ా", name: "ఆ కారము" },
-  { matra: "ి", name: "ఇ కారము" },
-  { matra: "ీ", name: "ఈ కారము" },
-  { matra: "ు", name: "ఉ కారము" },
-  { matra: "ూ", name: "ఊ కారము" },
-  { matra: "ృ", name: "ఋ కారము" },
-  { matra: "ౄ", name: "ౠ కారము" },
-  { matra: "ె", name: "ఎ కారము" },
-  { matra: "ే", name: "ఏ కారము" },
-  { matra: "ై", name: "ఐ కారము" },
-  { matra: "ొ", name: "ఒ కారము" },
-  { matra: "ో", name: "ఓ కారము" },
-  { matra: "ౌ", name: "ఔ కారము" },
-  { matra: "ం", name: "పూర్ణాను స్వారము" },
-  { matra: "ః", name: "విసర్గం" }
-]
-
-function leftOptionText(consonant: string, matra: string, name: string) {
-  return matra === ""
-    ? `${consonant}్ + (${name})`
-    : `${consonant}్ + ${matra} (${name})`
-}
+import { uyirmeiMatraData, uyirmeiOptionText } from "@/lib/tamil-uyirmei-data"
 
 export default function MatchPairGame() {
   const params = useParams()
@@ -51,21 +24,21 @@ export default function MatchPairGame() {
   // Generate 5 questions with matching pairs
   const generateQuestions = () => {
     const questions = []
-    
+
     for (let i = 0; i < 5; i++) {
       // Select 3 random matras for questions 1-3, 5 for questions 4-5
       const numPairs = i < 3 ? 3 : 5
-      const shuffledMatras = [...matraData].sort(() => Math.random() - 0.5).slice(0, numPairs)
-      
+      const shuffledMatras = [...uyirmeiMatraData].sort(() => Math.random() - 0.5).slice(0, numPairs)
+
       // Create left side options (half-letter consonant + vowel formula)
       const leftOptions = shuffledMatras.map(mat => ({
         id: `left-${mat.matra}`,
-        text: leftOptionText(consonant, mat.matra, mat.name),
+        text: uyirmeiOptionText(consonant, mat.matra, mat.name),
         matra: mat.matra,
         matraName: mat.name,
         result: consonant + mat.matra
       }))
-      
+
       // Create right side answers (correct + wrong options, jumbled)
       const correctAnswers = shuffledMatras.map(mat => ({
         id: `right-${mat.matra}`,
@@ -74,9 +47,9 @@ export default function MatchPairGame() {
         matraName: mat.name,
         result: consonant + mat.matra
       }))
-      
+
       // Add wrong options (2-3 extra wrong answers)
-      const remainingMatras = matraData.filter(mat => 
+      const remainingMatras = uyirmeiMatraData.filter(mat =>
         !shuffledMatras.some(selected => selected.matra === mat.matra)
       )
       const numWrongOptions = numPairs === 3 ? 2 : 3
@@ -90,18 +63,18 @@ export default function MatchPairGame() {
           matraName: mat.name,
           result: consonant + mat.matra
         }))
-      
+
       // Combine and shuffle all answers
       const allAnswers = [...correctAnswers, ...wrongAnswers].sort(() => Math.random() - 0.5)
       const rightAnswers = allAnswers
-      
+
       questions.push({
         leftOptions,
         rightAnswers,
         consonant
       })
     }
-    
+
     return questions
   }
 
@@ -139,12 +112,12 @@ export default function MatchPairGame() {
   // Handle drop on left option
   const handleDropOnLeft = (e: React.DragEvent, leftOption: any) => {
     e.preventDefault()
-    
+
     if (draggedItem && !matchedPairs[leftOption.id]) {
       // Always allow the drop, don't check correctness yet
       const newMatchedPairs: Record<string, any> = { ...matchedPairs, [leftOption.id]: draggedItem }
       setMatchedPairs(newMatchedPairs)
-      
+
       // Check if all pairs are matched, then validate
       if (Object.keys(newMatchedPairs).length === currentQ.leftOptions.length) {
         // All pairs are matched, now check if all are correct
@@ -152,7 +125,7 @@ export default function MatchPairGame() {
           const matchedAnswer = newMatchedPairs[option.id as string]
           return matchedAnswer && option.matra === matchedAnswer.matra
         })
-        
+
         if (allCorrect) {
           // All matches are correct
           setScore(score + 1)
@@ -184,13 +157,13 @@ export default function MatchPairGame() {
         // Just allow the user to continue matching
       }
     }
-    
+
     setDraggedItem(null)
   }
 
   // Handle back to match main
   const handleBackToMatch = () => {
-    window.location.href = "/telugu-gunintaalu/match"
+    window.location.href = "/tamil-uyirmei/match"
   }
 
   // Handle restart
@@ -262,7 +235,7 @@ export default function MatchPairGame() {
       {/* Game Title */}
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-indigo-900 mb-2">
-          {consonant} గుణింతము
+          {consonant} உயிர்மெய்
         </h1>
         <p className="text-xl text-indigo-700">
           Question {currentQuestion + 1} of 5 | Score: {score}
@@ -295,7 +268,7 @@ export default function MatchPairGame() {
                     onDrop={(e) => handleDropOnLeft(e, option)}
                   >
                     <div className="text-2xl font-bold">
-                      {matchedPairs[option.id] 
+                      {matchedPairs[option.id]
                         ? `${option.text}=${matchedPairs[option.id].text}`
                         : option.text
                       }

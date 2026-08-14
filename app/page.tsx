@@ -285,6 +285,12 @@ const fallbackApplications: Application[] = [
     route: "/tamil-letters", created_at: new Date().toISOString(),
   },
   {
+    id: "ta-4", name: "Tamil Uyirmei", category: "Education", subcategory: "Tamil",
+    description: "Learn Tamil consonant-vowel combinations (உயிர்மெய் எழுத்துக்கள்)",
+    icon_emoji: "க", color_scheme: "from-blue-200 to-indigo-400",
+    route: "/tamil-uyirmei", created_at: new Date().toISOString(),
+  },
+  {
     id: "ta-2", name: "Tamil Vocabulary", category: "Education", subcategory: "Tamil",
     description: "Learn Tamil vocabulary - Days, Colours, Animals & more!",
     icon_emoji: "📚", color_scheme: "from-sky-300 to-cyan-500",
