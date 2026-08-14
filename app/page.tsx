@@ -427,6 +427,12 @@ const fallbackApplications: Application[] = [
     icon_emoji: "🔬", color_scheme: "from-emerald-300 to-green-600",
     route: "/science", created_at: new Date().toISOString(),
   },
+  {
+    id: "sci-2", name: "Food & Nutrients", category: "Education", subcategory: "Science",
+    description: "Learn about food, nutrition and the nutrients that keep us healthy",
+    icon_emoji: "🍎", color_scheme: "from-orange-300 to-red-500",
+    route: "/food-and-nutrients", created_at: new Date().toISOString(),
+  },
   // ── Social Studies ────────────────────────────────────────────────────────
   {
     id: "ss-1", name: "Social Studies", category: "Education", subcategory: "Social Studies",
