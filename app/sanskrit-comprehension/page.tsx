@@ -1,12 +1,51 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { comprehensionLessons } from "@/lib/sanskrit-comprehension-data"
+import { useCurrentUser } from "@/hooks/use-current-user"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import { minTier, type MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 export default function SanskritComprehensionMain() {
+  const { user } = useCurrentUser()
+  const [lessonTiers, setLessonTiers] = useState<Partial<Record<number, MasteryTier>>>({})
+
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+
+    const loadTiers = async () => {
+      const entries = await Promise.all(
+        comprehensionLessons.map(async (lesson) => {
+          const [game1Tier, game2Tier] = await Promise.all([
+            getActivityMasteryTier(
+              user.id,
+              `sanskrit-comprehension-lesson-${lesson.id}-game1`,
+              `sanskrit-comprehension:${lesson.id}:game1`,
+            ),
+            getActivityMasteryTier(
+              user.id,
+              `sanskrit-comprehension-lesson-${lesson.id}-game2`,
+              `sanskrit-comprehension:${lesson.id}:game2`,
+            ),
+          ])
+          return [lesson.id, minTier(game1Tier, game2Tier)] as const
+        }),
+      )
+      if (!cancelled) setLessonTiers(Object.fromEntries(entries))
+    }
+
+    loadTiers()
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
   const handleBackToHome = () => {
     window.location.href = "/#sanskrit"
   }
@@ -91,6 +130,11 @@ export default function SanskritComprehensionMain() {
                       <div>Games</div>
                     </div>
                   </div>
+                  {lessonTiers[lesson.id] && (
+                    <div className="flex justify-center mt-3">
+                      <MasteryBadge tier={lessonTiers[lesson.id]!} size="sm" />
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

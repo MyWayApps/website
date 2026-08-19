@@ -7,6 +7,12 @@ import { ArrowLeft, RotateCcw, Volume2, Star, Frown } from "lucide-react"
 import { teluguRiddles, TeluguRiddle, getWrongAnswers } from "@/lib/telugu-riddles-data"
 import { playTeluguTTS } from "@/lib/telugu-tts"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
+import type { User, Application } from "@/lib/database-supabase"
+import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 interface QuestionData {
   riddle: TeluguRiddle
@@ -22,10 +28,58 @@ export default function MultipleChoiceGame() {
   const [score, setScore] = useState(0)
   const [showCelebration, setShowCelebration] = useState(false)
   const [showSadFace, setShowSadFace] = useState(false)
+  const [isComplete, setIsComplete] = useState(false)
+
+  // Scoring/persistence
+  const [user, setUser] = useState<User | null>(null)
+  const [app, setApp] = useState<Application | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
 
   useEffect(() => {
     generateQuestions()
+    initializeScoringData()
   }, [])
+
+  const initializeScoringData = async () => {
+    try {
+      const connected = await testConnection()
+      setIsConnected(connected)
+
+      if (connected) {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        let currentUser: User | null = null
+
+        if (userData) {
+          const parsedUser = JSON.parse(userData)
+          currentUser = await findOrCreateUser({
+            name: parsedUser.name,
+            email: parsedUser.email,
+            age: parsedUser.age,
+            grade: parsedUser.grade,
+          })
+        } else {
+          currentUser = await findOrCreateUser({
+            name: "Demo User",
+            email: "demo@mywayapps.com",
+            age: 8,
+            grade: "3rd Grade",
+          })
+        }
+
+        const application = await getApplicationByName("Telugu Podupu Kathalu")
+        setUser(currentUser)
+        setApp(application)
+      } else {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        const appData = localStorage.getItem("mywayapps_current_app")
+        if (userData) setUser(JSON.parse(userData))
+        if (appData) setApp(JSON.parse(appData))
+      }
+    } catch (error) {
+      console.error("Error initializing scoring data:", error)
+    }
+  }
 
   const generateQuestions = () => {
     // Shuffle riddles
@@ -58,6 +112,8 @@ export default function MultipleChoiceGame() {
     setSelectedAnswer(null)
     setIsAnswered(false)
     setScore(0)
+    setIsComplete(false)
+    setMasteryTier(null)
   }
 
   const handleAnswerSelect = (answer: string) => {
@@ -85,9 +141,24 @@ export default function MultipleChoiceGame() {
       setIsAnswered(false)
     } else {
       // Game complete
-      const percentage = Math.round((score / questions.length) * 100)
-      alert(`🎉 Game Complete!\n\nYou got ${score} out of ${questions.length} riddles correct!\nScore: ${percentage}%`)
-      handleRestart()
+      setIsComplete(true)
+      if (user && app) {
+        saveGameScore({
+          userId: user.id,
+          applicationId: app.id,
+          score,
+          maxScore: questions.length,
+          subject: "Telugu",
+          gameData: { mode: "multiple-choice" },
+          isConnected,
+        })
+          .then(() =>
+            getActivityMasteryTier(user.id, app.id, "telugu-riddles:multiple-choice")
+              .then(setMasteryTier)
+              .catch((error) => console.error("Error fetching Telugu Riddles mastery tier:", error)),
+          )
+          .catch((error) => console.error("Error saving Telugu Riddles score:", error))
+      }
     }
   }
 
@@ -97,6 +168,45 @@ export default function MultipleChoiceGame() {
     } catch (error) {
       console.log("TTS error:", error)
     }
+  }
+
+  if (isComplete) {
+    const percentage = Math.round((score / questions.length) * 100)
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-200 to-pink-400 flex items-center justify-center p-4">
+        <Card className="bg-white/95 shadow-2xl border-4 border-white max-w-md w-full">
+          <CardContent className="p-8 text-center space-y-4">
+            <div className="text-6xl">🎉</div>
+            <h2 className="text-3xl font-bold text-red-900">Game Complete!</h2>
+            <p className="text-xl text-red-800">
+              You got {score} out of {questions.length} riddles correct! ({percentage}%)
+            </p>
+            {masteryTier && (
+              <div className="flex justify-center py-2">
+                <MasteryBadge tier={masteryTier} />
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
+              <Button
+                onClick={handleRestart}
+                className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold text-xl px-8 py-4 rounded-full shadow-lg"
+                size="lg"
+              >
+                Play Again
+              </Button>
+              <Button
+                onClick={handleBackToMenu}
+                variant="outline"
+                className="border-2 border-red-300 text-red-800 font-bold text-xl px-8 py-4 rounded-full"
+                size="lg"
+              >
+                Back to Menu
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   if (!currentQuestion) {

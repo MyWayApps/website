@@ -7,8 +7,14 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star, Volume2 } from "lucide-react"
 import { getCategoryById, vocabularyCategories, VocabularyItem } from "@/lib/telugu-vocabulary-data"
 import { romanize } from "@/lib/transliteration"
+import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
+import type { User, Application } from "@/lib/database-supabase"
+import { saveGameScore } from "@/lib/scoring"
 import { pickUnseenRandom } from "@/lib/question-history"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 // Function to play English TTS
 const playEnglishTTS = (text: string): Promise<void> => {
@@ -85,6 +91,58 @@ export default function TeluguVocabularyGame() {
   const [isPlayingTTS, setIsPlayingTTS] = useState(false)
   const [isReady, setIsReady] = useState(false)
 
+  // Scoring/persistence
+  const [user, setUser] = useState<User | null>(null)
+  const [app, setApp] = useState<Application | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const [roundStartTime, setRoundStartTime] = useState(0)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
+
+  useEffect(() => {
+    setRoundStartTime(Date.now())
+    initializeScoringData()
+  }, [])
+
+  const initializeScoringData = async () => {
+    try {
+      const connected = await testConnection()
+      setIsConnected(connected)
+
+      if (connected) {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        let currentUser: User | null = null
+
+        if (userData) {
+          const parsedUser = JSON.parse(userData)
+          currentUser = await findOrCreateUser({
+            name: parsedUser.name,
+            email: parsedUser.email,
+            age: parsedUser.age,
+            grade: parsedUser.grade,
+          })
+        } else {
+          currentUser = await findOrCreateUser({
+            name: "Demo User",
+            email: "demo@mywayapps.com",
+            age: 8,
+            grade: "3rd Grade",
+          })
+        }
+
+        const application = await getApplicationByName("Telugu Vocabulary")
+        setUser(currentUser)
+        setApp(application)
+      } else {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        const appData = localStorage.getItem("mywayapps_current_app")
+        if (userData) setUser(JSON.parse(userData))
+        if (appData) setApp(JSON.parse(appData))
+      }
+    } catch (error) {
+      console.error("Error initializing Telugu Vocabulary scoring data:", error)
+    }
+  }
+
   // Initialize items based on category
   useEffect(() => {
     const category = getCategoryById(categoryId)
@@ -116,18 +174,37 @@ export default function TeluguVocabularyGame() {
     
     if (round > totalRounds) {
       setGameOver(true)
+      if (user && app) {
+        saveGameScore({
+          userId: user.id,
+          applicationId: app.id,
+          score,
+          maxScore: totalRounds,
+          completionTimeSec: Math.floor((Date.now() - roundStartTime) / 1000),
+          difficultyLevel: categoryId,
+          gameData: { category: categoryId },
+          isConnected,
+        })
+          .then(() =>
+            getActivityMasteryTier(user.id, app.id, `vocabulary-game:telugu`)
+              .then(setMasteryTier)
+              .catch((error) => console.error("Error fetching Telugu Vocabulary mastery tier:", error)),
+          )
+          .catch((error) => console.error("Error saving Telugu Vocabulary score:", error))
+      }
       return
     }
-    
+
     const correct = pickUnseenRandom(`telugu-vocabulary-game:${categoryId}`, 0, items.length - 1)
     setCorrectIdx(correct)
     setChoices(getRandomChoices(correct, items.length, 4))
     setShowResult(null)
-    
+
     // Play the English word audio after a short delay
     setTimeout(() => {
       playWordAudio(correct)
     }, 500)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round, isReady, items])
 
   const handleCardClick = (idx: number) => {
@@ -151,7 +228,7 @@ export default function TeluguVocabularyGame() {
     } else {
       setShowResult("wrong")
       playWrongSound()
-      setTimeout(() => setShowResult(null), 1500)
+      setTimeout(() => setRound((r) => r + 1), 1500)
     }
   }
 
@@ -167,6 +244,7 @@ export default function TeluguVocabularyGame() {
     setScore(0)
     setRound(1)
     setGameOver(false)
+    setRoundStartTime(Date.now())
   }
 
   if (!isReady || items.length === 0) {
@@ -220,9 +298,14 @@ export default function TeluguVocabularyGame() {
             <div className="flex flex-col items-center justify-center w-full py-8">
               <div className="text-4xl font-bold text-green-800 mb-4">🎉 Game Over!</div>
               <div className="text-2xl text-teal-900 mb-2">Your Score: {score} / {totalRounds}</div>
+              {masteryTier && (
+                <div className="mb-4">
+                  <MasteryBadge tier={masteryTier} showLabel />
+                </div>
+              )}
               <div className="text-lg text-teal-600 mb-6">
-                {score === totalRounds ? "Perfect! Amazing work!" : 
-                 score >= totalRounds * 0.8 ? "Great job!" : 
+                {score === totalRounds ? "Perfect! Amazing work!" :
+                 score >= totalRounds * 0.8 ? "Great job!" :
                  score >= totalRounds * 0.6 ? "Good effort!" : "Keep practicing!"}
               </div>
               <Button 

@@ -12,6 +12,9 @@ import type { User, Application } from "@/lib/database-supabase"
 import { saveGameScore } from "@/lib/scoring"
 import { pickUnseenRandom } from "@/lib/question-history"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 // Function to play English TTS
 const playEnglishTTS = (text: string): Promise<void> => {
@@ -93,6 +96,7 @@ export default function MalayalamVocabularyGame() {
   const [app, setApp] = useState<Application | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [roundStartTime, setRoundStartTime] = useState(0)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
 
   useEffect(() => {
     setRoundStartTime(Date.now())
@@ -180,7 +184,13 @@ export default function MalayalamVocabularyGame() {
           difficultyLevel: categoryId,
           gameData: { category: categoryId },
           isConnected,
-        }).catch((error) => console.error("Error saving Malayalam Vocabulary score:", error))
+        })
+          .then(() =>
+            getActivityMasteryTier(user.id, app.id, `vocabulary-game:malayalam`)
+              .then(setMasteryTier)
+              .catch((error) => console.error("Error fetching Malayalam Vocabulary mastery tier:", error)),
+          )
+          .catch((error) => console.error("Error saving Malayalam Vocabulary score:", error))
       }
       return
     }
@@ -218,7 +228,7 @@ export default function MalayalamVocabularyGame() {
     } else {
       setShowResult("wrong")
       playWrongSound()
-      setTimeout(() => setShowResult(null), 1500)
+      setTimeout(() => setRound((r) => r + 1), 1500)
     }
   }
 
@@ -288,6 +298,11 @@ export default function MalayalamVocabularyGame() {
             <div className="flex flex-col items-center justify-center w-full py-8">
               <div className="text-4xl font-bold text-sky-800 mb-4">🎉 Game Over!</div>
               <div className="text-2xl text-cyan-900 mb-2">Your Score: {score} / {totalRounds}</div>
+              {masteryTier && (
+                <div className="mb-4">
+                  <MasteryBadge tier={masteryTier} showLabel />
+                </div>
+              )}
               <div className="text-lg text-cyan-600 mb-6">
                 {score === totalRounds ? "Perfect! Amazing work!" :
                  score >= totalRounds * 0.8 ? "Great job!" :

@@ -448,6 +448,27 @@ export async function getUserProgress(userId: string) {
   }, {})
 }
 
+// Attempt-level history for a user+app, newest first — the raw evidence
+// mastery tiers are computed from (lib/mastery-evidence.ts), since the
+// aggregate mywayapps_user_progress row can't distinguish sub-modes/ranges
+// played under the same application_id (e.g. Clock Reading's Hours vs All
+// Times share one app id today).
+export async function getUserScoreHistory(userId: string, applicationId: string) {
+  return safeDbOperation(async () => {
+    if (!supabase) return []
+
+    const { data, error } = await supabase
+      .from("mywayapps_user_scores")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("application_id", applicationId)
+      .order("created_at", { ascending: false })
+
+    if (error) throw error
+    return data ?? []
+  }, [])
+}
+
 export async function saveUserScore(scoreData: {
   user_id: string
   application_id: string

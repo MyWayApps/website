@@ -54,7 +54,6 @@ export function recordSeen(gameKey: string, signature: string): void {
   } catch {
     // ignore quota errors — tracking is best-effort, never blocks gameplay
   }
-  void mirrorToSupabase(gameKey, userId, signature)
 }
 
 /** Pick a random item from `pool` that this user hasn't seen for `gameKey` yet. */
@@ -88,14 +87,107 @@ export function pickUnseenRandom(gameKey: string, min: number, max: number, maxA
   return candidate
 }
 
-async function mirrorToSupabase(gameKey: string, userId: string, signature: string): Promise<void> {
+// ─── Coverage tracking (which questions has this user ever answered right?) ──
+//
+// Separate from the seen/no-repeat tracking above: recordSeen() fires when a
+// question is *picked*, this fires when the game knows whether the answer was
+// *correct*. Used by fixed-pool activities (e.g. Clock Reading) whose mastery
+// requires broad coverage of the pool, not just a high score on one sample.
+
+function correctStorageKey(gameKey: string, userId: string): string {
+  return `mywayapps_correct_${userId}_${gameKey}`
+}
+
+function getCorrectKeys(gameKey: string): Set<string> {
+  const userId = getCurrentUserId()
+  if (!userId) return new Set()
   try {
-    const { supabase } = await import("./supabase-client")
-    if (!supabase) return
-    await supabase
-      .from("mywayapps_user_question_history")
-      .insert([{ user_id: userId, game_key: gameKey, question_signature: signature }])
+    const raw = localStorage.getItem(correctStorageKey(gameKey, userId))
+    return raw ? new Set(JSON.parse(raw)) : new Set()
   } catch {
-    // best-effort — localStorage above is the source of truth for gameplay
+    return new Set()
   }
+}
+
+/** Call once an answer is known to be right or wrong — ratchets: a question that's ever been answered correctly stays covered. */
+export function recordAnswer(gameKey: string, signature: string, isCorrect: boolean): void {
+  const userId = getCurrentUserId()
+  if (!userId) return
+
+  if (isCorrect) {
+    try {
+      const correct = getCorrectKeys(gameKey)
+      correct.add(signature)
+      localStorage.setItem(correctStorageKey(gameKey, userId), JSON.stringify([...correct]))
+    } catch {
+      // ignore quota errors — best-effort
+    }
+  }
+}
+
+/** Coverage = share of a fixed-size pool ever answered correctly. */
+export function getCoverageStats(gameKey: string, poolSize: number): { coverage: number; correctCount: number } {
+  const correctCount = getCorrectKeys(gameKey).size
+  return { coverage: poolSize > 0 ? correctCount / poolSize : 0, correctCount }
+}
+
+// ─── Local export ────────────────────────────────────────────────────────
+//
+// Per-question detail (seen questions + correct answers, keyed by game) lives
+// only in this browser's localStorage — it's never sent to Supabase. This
+// lets a user save a copy of that detail to their own device instead.
+
+function listGameKeysForPrefix(userId: string, prefix: string): { gameKey: string; storageKey: string }[] {
+  const keyPrefix = `${prefix}_${userId}_`
+  const results: { gameKey: string; storageKey: string }[] = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key && key.startsWith(keyPrefix)) {
+      results.push({ gameKey: key.slice(keyPrefix.length), storageKey: key })
+    }
+  }
+  return results
+}
+
+/** Builds a JSON-serializable snapshot of this user's per-question history for export. */
+export function buildQuestionHistoryExport(userId: string): Record<string, unknown> {
+  const seenByGame: Record<string, string[]> = {}
+  for (const { gameKey, storageKey } of listGameKeysForPrefix(userId, "mywayapps_seen")) {
+    try {
+      seenByGame[gameKey] = JSON.parse(localStorage.getItem(storageKey) || "[]")
+    } catch {
+      seenByGame[gameKey] = []
+    }
+  }
+
+  const correctByGame: Record<string, string[]> = {}
+  for (const { gameKey, storageKey } of listGameKeysForPrefix(userId, "mywayapps_correct")) {
+    try {
+      correctByGame[gameKey] = JSON.parse(localStorage.getItem(storageKey) || "[]")
+    } catch {
+      correctByGame[gameKey] = []
+    }
+  }
+
+  return {
+    exportedAt: new Date().toISOString(),
+    userId,
+    seenQuestionsByGame: seenByGame,
+    correctAnswersByGame: correctByGame,
+  }
+}
+
+/** Downloads this user's per-question history as a JSON file onto their device. */
+export function downloadQuestionHistory(userId: string): void {
+  if (typeof window === "undefined") return
+  const data = buildQuestionHistoryExport(userId)
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = `mywayapps-question-history-${new Date().toISOString().slice(0, 10)}.json`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }

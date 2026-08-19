@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { User, Settings, Trophy, Clock } from "lucide-react"
+import { User, Settings, Trophy, Clock, Download } from "lucide-react"
 import { createUserInSupabase, updateUser } from "@/lib/database-supabase"
+import { downloadQuestionHistory } from "@/lib/question-history"
 
 interface UserType {
   id: string
@@ -266,6 +267,15 @@ export function UserProfile({ user, onUpdateUser, userStats }: UserProfileProps)
             >
               <Settings className="mr-2 h-4 w-4" />
               Edit Profile
+            </Button>
+
+            <Button
+              onClick={() => downloadQuestionHistory(user.id)}
+              className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30"
+              variant="outline"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download My Data
             </Button>
           </>
         )}

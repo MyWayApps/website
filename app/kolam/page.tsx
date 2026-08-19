@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Lock, RotateCcw, Undo2, Sparkles } from "lucide-react"
 import { KolamCanvas } from "@/components/kolam/kolam-canvas"
-import { KOLAM_LEVELS, getKolamLevel, getGhostLoops, evaluateKolam, type Stroke, type KolamEvalResult } from "@/lib/kolam"
+import { KOLAM_LEVELS, getKolamLevel, getDotPositions, getGhostLoops, evaluateKolam, type Stroke, type KolamEvalResult } from "@/lib/kolam"
 
 type Mode = "levels" | "playing" | "freedraw"
 
@@ -107,9 +107,7 @@ export default function KolamPage() {
                       <span className="text-3xl">{["🌀", "🌊", "🌼", "✨", "🪷"][l.id - 1]}</span>
                     )}
                     <span className="font-bold text-rose-900 text-center">{l.title}</span>
-                    <span className="text-xs text-rose-700/70">
-                      {l.gridSize}x{l.gridSize} dots
-                    </span>
+                    <span className="text-xs text-rose-700/70">{getDotPositions(l.gridSize, l.dotPattern).length} dots</span>
                   </CardContent>
                 </Card>
               )
@@ -201,7 +199,7 @@ export default function KolamPage() {
 
   // ── Playing a level ────────────────────────────────────────────────────
   if (!level) return null
-  const ghostLoops = getGhostLoops(level.gridSize, level.style)
+  const ghostLoops = getGhostLoops(level.gridSize, level.style, level.dotPattern)
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${GRADIENT} p-4`}>
@@ -227,12 +225,25 @@ export default function KolamPage() {
         <div className="mb-4">
           <p className="text-center text-sm font-bold text-rose-700 mb-1">Target</p>
           <div className="max-w-[160px] mx-auto">
-            <KolamCanvas gridSize={level.gridSize} ghostLoops={ghostLoops} strokes={[]} onStrokesChange={() => {}} interactive={false} />
+            <KolamCanvas
+              gridSize={level.gridSize}
+              dotPattern={level.dotPattern}
+              ghostLoops={ghostLoops}
+              strokes={[]}
+              onStrokesChange={() => {}}
+              interactive={false}
+            />
           </div>
         </div>
 
         <p className="text-center text-sm font-bold text-rose-700 mb-1">Your Kolam</p>
-        <KolamCanvas gridSize={level.gridSize} ghostLoops={ghostLoops} strokes={strokes} onStrokesChange={setStrokes} />
+        <KolamCanvas
+          gridSize={level.gridSize}
+          dotPattern={level.dotPattern}
+          ghostLoops={ghostLoops}
+          strokes={strokes}
+          onStrokesChange={setStrokes}
+        />
 
         <div className="flex justify-center gap-3 mt-6">
           <Button

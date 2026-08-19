@@ -73,7 +73,7 @@ export default function NumberSequencePage() {
       maxScore: result.maxScore,
       completionTimeSec: Math.floor(result.completionTimeMs / 1000),
       difficultyLevel: result.difficultyLabel,
-      gameData: { topicId: result.topicId },
+      gameData: { topicId: result.topicId, difficultyLabel: result.difficultyLabel, ...result.meta },
       isConnected,
     })
   }
@@ -93,7 +93,12 @@ export default function NumberSequencePage() {
         </div>
       </div>
 
-      <NumberSequenceSuite onGameComplete={handleGameComplete} onBackToHome={() => router.push("/#math")} />
+      <NumberSequenceSuite
+        onGameComplete={handleGameComplete}
+        onBackToHome={() => router.push("/#math")}
+        userId={user?.id}
+        applicationId={app?.id}
+      />
     </div>
   )
 }

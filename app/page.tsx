@@ -211,6 +211,12 @@ const fallbackApplications: Application[] = [
     route: "/hindi-letters", created_at: new Date().toISOString(),
   },
   {
+    id: "hi-4", name: "Hindi Barakhadi", category: "Education", subcategory: "Hindi",
+    description: "Learn Hindi consonant-vowel combinations (बारहखड़ी)",
+    icon_emoji: "क", color_scheme: "from-blue-200 to-indigo-400",
+    route: "/hindi-barakhadi", created_at: new Date().toISOString(),
+  },
+  {
     id: "hi-2", name: "Hindi Vocabulary", category: "Education", subcategory: "Hindi",
     description: "Learn Hindi vocabulary - Days, Colours, Animals & more!",
     icon_emoji: "📚", color_scheme: "from-purple-200 to-pink-500",
@@ -246,6 +252,12 @@ const fallbackApplications: Application[] = [
     description: "Learn Kannada alphabet (ವರ್ಣಮಾಲೆ) with flashcards and games",
     icon_emoji: "ಅ", color_scheme: "from-yellow-200 to-amber-400",
     route: "/kannada-letters", created_at: new Date().toISOString(),
+  },
+  {
+    id: "kn-4", name: "Kannada Gunitakshara", category: "Education", subcategory: "Kannada",
+    description: "Learn Kannada consonant-vowel combinations (ಗುಣಿತಾಕ್ಷರಗಳು)",
+    icon_emoji: "ಕ", color_scheme: "from-blue-200 to-indigo-400",
+    route: "/kannada-gunitakshara", created_at: new Date().toISOString(),
   },
   {
     id: "kn-2", name: "Kannada Vocabulary", category: "Education", subcategory: "Kannada",
@@ -328,6 +340,12 @@ const fallbackApplications: Application[] = [
     route: "/malayalam-letters", created_at: new Date().toISOString(),
   },
   {
+    id: "ml-4", name: "Malayalam Chertthezhuthu", category: "Education", subcategory: "Malayalam",
+    description: "Learn Malayalam consonant-vowel combinations (ചേർത്തെഴുത്ത്)",
+    icon_emoji: "ക", color_scheme: "from-blue-200 to-indigo-400",
+    route: "/malayalam-chertthezhuthu", created_at: new Date().toISOString(),
+  },
+  {
     id: "ml-2", name: "Malayalam Vocabulary", category: "Education", subcategory: "Malayalam",
     description: "Learn Malayalam vocabulary - Days, Colours, Animals & more!",
     icon_emoji: "📚", color_scheme: "from-green-200 to-teal-500",
@@ -364,6 +382,12 @@ const fallbackApplications: Application[] = [
     description: "Learn the Sanskrit alphabet with flashcards and games",
     icon_emoji: "ॐ", color_scheme: "from-yellow-200 to-amber-400",
     route: "/sanskrit-letters", created_at: new Date().toISOString(),
+  },
+  {
+    id: "sa-3", name: "Sanskrit Barakhadi", category: "Education", subcategory: "Sanskrit",
+    description: "Learn Sanskrit consonant-vowel combinations (बारहखड़ी)",
+    icon_emoji: "क", color_scheme: "from-blue-200 to-indigo-400",
+    route: "/sanskrit-barakhadi", created_at: new Date().toISOString(),
   },
   {
     id: "sa-1", name: "Sanskrit Vocabulary", category: "Education", subcategory: "Sanskrit",
@@ -466,12 +490,12 @@ const fallbackApplications: Application[] = [
     icon_emoji: "🧩", color_scheme: "from-cyan-200 to-blue-500",
     route: "/sudoku", created_at: new Date().toISOString(),
   },
-  {
-    id: "10k", name: "Kolam", category: "Games", subcategory: "",
-    description: "Draw traditional Indian kolam designs around the dots",
-    icon_emoji: "🌸", color_scheme: "from-rose-200 to-fuchsia-500",
-    route: "/kolam", created_at: new Date().toISOString(),
-  },
+  // {
+  //   id: "10k", name: "Kolam", category: "Games", subcategory: "",
+  //   description: "Draw traditional Indian kolam designs around the dots",
+  //   icon_emoji: "🌸", color_scheme: "from-rose-200 to-fuchsia-500",
+  //   route: "/kolam", created_at: new Date().toISOString(),
+  // },
   {
     id: "10d", name: "Spot the Difference", category: "Games", subcategory: "",
     description: "Find what's different between two pictures!",
@@ -608,7 +632,7 @@ export default function HomePage() {
   }
 
   // Flatten "Education" into its subcategories (Math, Telugu, Hindi, ...) so every
-  // subject is its own top-level section — same treatment Games/Puzzles already got.
+  // subject is its own top-level section — same treatment Games already got.
   const topicGroups = (() => {
     const order: string[] = []
     const groups: Record<string, Application[]> = {}
@@ -624,7 +648,7 @@ export default function HomePage() {
   })()
 
   const topicSlug = (topic: string) =>
-    topic === "Games" || topic === "Puzzles" ? `${topic.toLowerCase()}-section` : topic.toLowerCase().replace(/\s+/g, "-")
+    topic === "Games" ? `${topic.toLowerCase()}-section` : topic.toLowerCase().replace(/\s+/g, "-")
 
   // "Back to Home" links across the site land on "/#telugu", "/#math", etc.
   // On a fresh full-page load, the browser tries to scroll to that anchor
@@ -753,6 +777,7 @@ export default function HomePage() {
                 apps={apps}
                 userProgress={userProgress}
                 onPlayApp={handlePlayApp}
+                userId={user?.id}
               />
             </div>
           ))}

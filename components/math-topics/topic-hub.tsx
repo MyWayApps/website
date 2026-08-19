@@ -7,6 +7,9 @@ import { ArrowLeft } from "lucide-react"
 import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
 import type { User, Application } from "@/lib/database-supabase"
 import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 import { YouTubeEmbed } from "@/components/youtube-embed"
 import type { VideoLesson } from "@/lib/math-videos-data"
 
@@ -45,10 +48,37 @@ export default function TopicHub({ title, emoji, gradient, applicationName, mode
   const [app, setApp] = useState<Application | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [roundStartTime, setRoundStartTime] = useState(0)
+  const [modeTiers, setModeTiers] = useState<Partial<Record<string, MasteryTier>>>({})
 
   useEffect(() => {
     initializeScoringData()
   }, [])
+
+  // Every TopicHub consumer (Money, Measurement, Patterns, Shapes, Fractions,
+  // Memorize Tables' 4 operations, ...) gets per-mode badges for free — the
+  // configKey is derived from applicationName, no per-app config needed.
+  useEffect(() => {
+    if (activeModeId !== null || !user || !app) return
+    let cancelled = false
+    const appSlug = applicationName.toLowerCase().replace(/\s+/g, "-")
+
+    const loadTiers = async () => {
+      const entries = await Promise.all(
+        modes.map(async (mode) => {
+          const tier = await getActivityMasteryTier(user.id, app.id, `topic-hub:${appSlug}:${mode.id}`, {
+            modeFilter: (g) => g?.mode === mode.id,
+          })
+          return [mode.id, tier] as const
+        }),
+      )
+      if (!cancelled) setModeTiers(Object.fromEntries(entries))
+    }
+
+    loadTiers()
+    return () => {
+      cancelled = true
+    }
+  }, [activeModeId, user, app, modes, applicationName])
 
   const initializeScoringData = async () => {
     try {
@@ -148,6 +178,11 @@ export default function TopicHub({ title, emoji, gradient, applicationName, mode
                 <div className="text-5xl mb-4">{mode.emoji}</div>
                 <h3 className="text-2xl font-bold text-gray-800 mb-2">{mode.label}</h3>
                 <p className="text-base text-gray-600">{mode.description}</p>
+                {modeTiers[mode.id] && (
+                  <div className="flex justify-center mt-3">
+                    <MasteryBadge tier={modeTiers[mode.id]!} showLabel />
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

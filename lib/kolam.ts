@@ -10,10 +10,27 @@ export interface KolamLevel {
   title: string
   gridSize: number
   style: KolamStyle
+  /**
+   * Sparse dot layout as [col, row] indices into the gridSize x gridSize
+   * conceptual grid. Omit to use every cell (a full grid). Lets a level use
+   * a shape like a 5-dot plus/diamond instead of a dense NxN grid.
+   */
+  dotPattern?: [number, number][]
 }
 
+// Plus/diamond arrangement (top, left, center, right, bottom) within a 3x3
+// grid — the classic 5-dot sikku kolam motif: one interlocking loop through
+// the four outer dots and the center.
+const PLUS_PATTERN: [number, number][] = [
+  [1, 0],
+  [0, 1],
+  [1, 1],
+  [2, 1],
+  [1, 2],
+]
+
 export const KOLAM_LEVELS: KolamLevel[] = [
-  { id: 1, title: "Simple Loop", gridSize: 3, style: "square" },
+  { id: 1, title: "Simple Loop", gridSize: 3, style: "flower", dotPattern: PLUS_PATTERN },
   { id: 2, title: "Wavy Loop", gridSize: 3, style: "scalloped" },
   { id: 3, title: "Flower Kolam", gridSize: 4, style: "flower" },
   { id: 4, title: "Star Kolam", gridSize: 5, style: "star" },
@@ -31,15 +48,21 @@ export interface Point {
 
 export type Stroke = Point[]
 
-/** Dot positions in normalized grid space (0..1 across both axes). */
-export function getDotPositions(gridSize: number): Point[] {
+/**
+ * Dot positions in normalized grid space (0..1 across both axes). Pass a
+ * `dotPattern` (see KolamLevel) to get a sparse layout instead of every
+ * cell in the gridSize x gridSize grid.
+ */
+export function getDotPositions(gridSize: number, dotPattern?: [number, number][]): Point[] {
+  const toPoint = (col: number, row: number): Point => ({
+    x: gridSize === 1 ? 0.5 : col / (gridSize - 1),
+    y: gridSize === 1 ? 0.5 : row / (gridSize - 1),
+  })
+  if (dotPattern) return dotPattern.map(([col, row]) => toPoint(col, row))
   const dots: Point[] = []
   for (let row = 0; row < gridSize; row++) {
     for (let col = 0; col < gridSize; col++) {
-      dots.push({
-        x: gridSize === 1 ? 0.5 : col / (gridSize - 1),
-        y: gridSize === 1 ? 0.5 : row / (gridSize - 1),
-      })
+      dots.push(toPoint(col, row))
     }
   }
   return dots
@@ -70,10 +93,10 @@ const OVERLAP_FACTOR: Record<KolamStyle, number> = {
  * target preview and the faint guide on the drawing canvas; purely
  * cosmetic, evaluateKolam() never compares against it.
  */
-export function getGhostLoops(gridSize: number, style: KolamStyle): DotLoop[] {
+export function getGhostLoops(gridSize: number, style: KolamStyle, dotPattern?: [number, number][]): DotLoop[] {
   const spacing = gridSize > 1 ? 1 / (gridSize - 1) : 0.5
   const radius = spacing * OVERLAP_FACTOR[style]
-  return getDotPositions(gridSize).map((center) => ({ center, radius }))
+  return getDotPositions(gridSize, dotPattern).map((center) => ({ center, radius }))
 }
 
 // ─── Evaluation ─────────────────────────────────────────────────────────
@@ -118,7 +141,8 @@ export interface KolamEvalResult {
  */
 export function evaluateKolam(strokes: Stroke[], level: KolamLevel): KolamEvalResult {
   const points = strokes.flat()
-  const totalDots = level.gridSize * level.gridSize
+  const dots = getDotPositions(level.gridSize, level.dotPattern)
+  const totalDots = dots.length
 
   if (points.length < 4) {
     return {
@@ -131,7 +155,6 @@ export function evaluateKolam(strokes: Stroke[], level: KolamLevel): KolamEvalRe
     }
   }
 
-  const dots = getDotPositions(level.gridSize)
   const enclosedCount = dots.filter((d) => pointInPolygon(d, points)).length
   const enclosedRatio = enclosedCount / totalDots
 

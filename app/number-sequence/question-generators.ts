@@ -349,3 +349,58 @@ export function generateNumberWordsChoices(correctNumber: number, maxNumber = 10
   }
   return shuffle([...choices])
 }
+
+// ─── Arrange numbers in order ───────────────────────────────────────────────
+
+export type SortDirection = "ascending" | "descending"
+
+export interface ArrangeOrderQuestion {
+  /** The numbers as presented to the student (shuffled, not in answer order). */
+  numbers: number[]
+  /** The correct order for `direction`. */
+  sorted: number[]
+  direction: SortDirection
+}
+
+export function generateArrangeOrderQuestion(maxNumber: number): ArrangeOrderQuestion {
+  const nums = new Set<number>()
+  while (nums.size < 4) {
+    nums.add(randInt(1, maxNumber))
+  }
+  const direction: SortDirection = Math.random() < 0.5 ? "ascending" : "descending"
+  const sorted = [...nums].sort((a, b) => (direction === "ascending" ? a - b : b - a))
+  return { numbers: shuffle([...nums]), sorted, direction }
+}
+
+// ─── Greatest / smallest among a set ────────────────────────────────────────
+
+export interface GreatestSmallestQuestion {
+  numbers: number[]
+  greatest: number
+  smallest: number
+}
+
+export function generateGreatestSmallestQuestion(maxNumber: number): GreatestSmallestQuestion {
+  const nums = new Set<number>()
+  while (nums.size < 4) {
+    nums.add(randInt(1, maxNumber))
+  }
+  const numbers = shuffle([...nums])
+  return { numbers, greatest: Math.max(...numbers), smallest: Math.min(...numbers) }
+}
+
+// ─── Counting in groups of ten + loose ones ─────────────────────────────────
+
+export interface TensOnesCountQuestion {
+  /** How many groups-of-ten are shown. */
+  groups: number
+  /** Loose ones shown alongside the groups (kept non-zero — always a real "tens + ones" sum). */
+  ones: number
+  total: number
+}
+
+export function generateTensOnesCountQuestion(maxGroups: number): TensOnesCountQuestion {
+  const groups = pickUnseenRandom(`number-sequence:tens-ones-count:groups:${maxGroups}`, 2, maxGroups)
+  const ones = randInt(1, 9)
+  return { groups, ones, total: groups * 10 + ones }
+}

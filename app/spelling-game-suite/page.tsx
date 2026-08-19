@@ -54,7 +54,7 @@ export default function SpellingGameSuitePage() {
         }
 
         // Get application data
-        const application = await getApplicationByName("Spelling Game Suite")
+        const application = await getApplicationByName("English Spelling Game Suite")
 
         setUser(currentUser)
         setApp(application)
@@ -108,7 +108,12 @@ export default function SpellingGameSuitePage() {
         </div>
       </div>
 
-      <SpellingGameSuite user={user} onGameComplete={handleGameComplete} onBackToHome={() => router.push("/#english")} />
+      <SpellingGameSuite
+        user={user}
+        applicationId={app?.id}
+        onGameComplete={handleGameComplete}
+        onBackToHome={() => router.push("/#english")}
+      />
     </div>
   )
 }

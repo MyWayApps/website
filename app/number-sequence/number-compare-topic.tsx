@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star } from "lucide-react"
@@ -8,12 +8,32 @@ import { QuizResults } from "@/components/quiz-results"
 import type { TopicProps } from "./types"
 import { generateCompareQuestion, type CompareQuestion, type CompareSymbol } from "./question-generators"
 import { playCorrectSound, playWrongSound } from "./audio"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 const OPTIONS: CompareSymbol[] = [">", "<", "="]
 
-export default function NumberCompareTopic({ onRoundComplete, onBackToTopics }: TopicProps) {
+// The value pair a question must include (and answer correctly) to count as
+// breadth evidence for that range tier — crossing these trips kids up more
+// than mid-range values. "Up to 10" has none: the range is small enough that
+// 2 clean qualifying sessions already implies broad exposure.
+const BOUNDARY_VALUES: Record<number, number[]> = {
+  50: [49, 50],
+  100: [99, 100],
+  1000: [999, 1000],
+}
+
+function isBoundaryQuestion(question: CompareQuestion, maxNumber: number): boolean {
+  const boundaries = BOUNDARY_VALUES[maxNumber]
+  if (!boundaries) return false
+  return boundaries.includes(question.a) || boundaries.includes(question.b)
+}
+
+export default function NumberCompareTopic({ onRoundComplete, onBackToTopics, userId, applicationId }: TopicProps) {
   const [phase, setPhase] = useState<"setup" | "playing" | "results">("setup")
   const [maxNumber, setMaxNumber] = useState(10)
+  const [rangeTiers, setRangeTiers] = useState<Partial<Record<number, MasteryTier>>>({})
 
   const [questionIndex, setQuestionIndex] = useState(0)
   const [score, setScore] = useState(0)
@@ -22,12 +42,38 @@ export default function NumberCompareTopic({ onRoundComplete, onBackToTopics }: 
   const [isAnswered, setIsAnswered] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
   const [roundStartTime, setRoundStartTime] = useState(0)
+  const [boundaryHit, setBoundaryHit] = useState(false)
+
+  useEffect(() => {
+    if (phase !== "setup" || !userId || !applicationId) return
+    let cancelled = false
+
+    const loadTiers = async () => {
+      const ranges = [10, 50, 100, 1000]
+      const entries = await Promise.all(
+        ranges.map(async (range) => {
+          const tier = await getActivityMasteryTier(userId, applicationId, `number-sequence:number-compare:${range}`, {
+            modeFilter: (gameData) => gameData?.topicId === "number-compare" && gameData?.difficultyLabel === `up-to-${range}`,
+            breadthCheck: (gameData) => gameData?.boundaryHit === true,
+          })
+          return [range, tier] as const
+        }),
+      )
+      if (!cancelled) setRangeTiers(Object.fromEntries(entries))
+    }
+
+    loadTiers()
+    return () => {
+      cancelled = true
+    }
+  }, [phase, userId, applicationId])
 
   const handleStartRound = () => {
     setQuestionIndex(0)
     setScore(0)
     setSelected(null)
     setIsAnswered(false)
+    setBoundaryHit(false)
     setRoundStartTime(Date.now())
     setQuestion(generateCompareQuestion(maxNumber))
     setPhase("playing")
@@ -36,9 +82,11 @@ export default function NumberCompareTopic({ onRoundComplete, onBackToTopics }: 
   const submitAnswer = (choice: CompareSymbol) => {
     if (isAnswered || !question) return
     const correct = choice === question.correct
+    const newBoundaryHit = boundaryHit || (correct && isBoundaryQuestion(question, maxNumber))
     setSelected(choice)
     setIsAnswered(true)
     setIsCorrect(correct)
+    setBoundaryHit(newBoundaryHit)
     correct ? playCorrectSound() : playWrongSound()
     const newScore = correct ? score + 1 : score
 
@@ -57,6 +105,7 @@ export default function NumberCompareTopic({ onRoundComplete, onBackToTopics }: 
           maxScore: 5,
           completionTimeMs: Date.now() - roundStartTime,
           difficultyLabel: `up-to-${maxNumber}`,
+          meta: { boundaryHit: newBoundaryHit },
         })
         setPhase("results")
       }
@@ -116,6 +165,7 @@ export default function NumberCompareTopic({ onRoundComplete, onBackToTopics }: 
                         <div className="flex flex-col items-center gap-1">
                           <span className="text-2xl">🔢</span>
                           <span>Up to {maxNum}</span>
+                          {rangeTiers[maxNum] && <MasteryBadge tier={rangeTiers[maxNum]!} size="sm" />}
                         </div>
                       </Button>
                     ))}

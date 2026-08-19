@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# private practice tools (not part of the public site)
+/app/aravind/
+/app/ananya/
+/components/aravind-lessons/

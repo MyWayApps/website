@@ -8,6 +8,12 @@ import { useParams } from "next/navigation"
 import { getWordsByCategory, getWordCategoryLabel, WordCategory } from "@/lib/telugu-vottulu-data"
 import { playTeluguTTS } from "@/lib/telugu-tts"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
+import type { User, Application } from "@/lib/database-supabase"
+import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 export default function FindWordGame() {
   const params = useParams()
@@ -21,7 +27,54 @@ export default function FindWordGame() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [isPlayingTTS, setIsPlayingTTS] = useState(false)
 
+  // Scoring/persistence
+  const [user, setUser] = useState<User | null>(null)
+  const [app, setApp] = useState<Application | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
+
   const categoryLabel = getWordCategoryLabel(category)
+
+  useEffect(() => {
+    initializeScoringData()
+  }, [])
+
+  const initializeScoringData = async () => {
+    try {
+      const connected = await testConnection()
+      setIsConnected(connected)
+      if (connected) {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        let currentUser: User | null = null
+        if (userData) {
+          const parsedUser = JSON.parse(userData)
+          currentUser = await findOrCreateUser({
+            name: parsedUser.name,
+            email: parsedUser.email,
+            age: parsedUser.age,
+            grade: parsedUser.grade,
+          })
+        } else {
+          currentUser = await findOrCreateUser({
+            name: "Demo User",
+            email: "demo@mywayapps.com",
+            age: 8,
+            grade: "3rd Grade",
+          })
+        }
+        const application = await getApplicationByName("Telugu Vottulu")
+        setUser(currentUser)
+        setApp(application)
+      } else {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        const appData = localStorage.getItem("mywayapps_current_app")
+        if (userData) setUser(JSON.parse(userData))
+        if (appData) setApp(JSON.parse(appData))
+      }
+    } catch (error) {
+      console.error("Error initializing scoring data:", error)
+    }
+  }
 
   // Generate 5 questions with random words
   const generateQuestions = () => {
@@ -91,7 +144,8 @@ export default function FindWordGame() {
     
     if (selectedWord.word === currentQ.correctWord) {
       setShowResult("correct")
-      setScore(score + 1)
+      const newScore = score + 1
+      setScore(newScore)
       setShowConfetti(true)
       playCorrectSound()
 
@@ -101,6 +155,23 @@ export default function FindWordGame() {
           setCurrentQuestion(currentQuestion + 1)
         } else {
           setGameOver(true)
+          if (user && app) {
+            saveGameScore({
+              userId: user.id,
+              applicationId: app.id,
+              score: newScore,
+              maxScore: 5,
+              subject: "Telugu",
+              isConnected,
+              gameData: { mode: "find", category },
+            })
+              .then(() =>
+                getActivityMasteryTier(user.id, app.id, `telugu-vottulu:find:${category}`)
+                  .then(setMasteryTier)
+                  .catch((error) => console.error("Error fetching Telugu Vottulu mastery tier:", error)),
+              )
+              .catch((error) => console.error("Error saving Telugu Vottulu score:", error))
+          }
         }
       }, 3000)
     } else {
@@ -141,6 +212,11 @@ export default function FindWordGame() {
           <CardContent className="p-8 text-center">
             <h1 className="text-4xl font-bold text-pink-800 mb-4">Game Over!</h1>
             <p className="text-2xl text-pink-600 mb-6">Your Score: {score} / 5</p>
+            {masteryTier && (
+              <div className="mb-6 flex justify-center">
+                <MasteryBadge tier={masteryTier} showLabel />
+              </div>
+            )}
             <div className="flex gap-4 justify-center">
               <Button
                 onClick={handleRestart}

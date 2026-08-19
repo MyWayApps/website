@@ -15,6 +15,9 @@ import {
   type SudokuDifficulty,
   type SudokuPuzzle,
 } from "@/lib/sudoku"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 type Mode = "menu" | "setup" | "playing" | "results"
 type Variant = "numbers" | "pictures"
@@ -36,13 +39,14 @@ interface GameData {
 
 interface SudokuGameProps {
   user?: User | null
+  applicationId?: string
   onGameComplete?: (score: number, maxScore: number, gameData: GameData) => void
   onBackToHome?: () => void
 }
 
 const GRADIENT = "from-cyan-300 via-sky-400 to-blue-600"
 
-export default function SudokuGame({ onGameComplete, onBackToHome }: SudokuGameProps = {}) {
+export default function SudokuGame({ user, applicationId, onGameComplete, onBackToHome }: SudokuGameProps = {}) {
   const [mode, setMode] = useState<Mode>("menu")
   const [size, setSize] = useState<SudokuSize>(4)
   const [variant, setVariant] = useState<Variant>("numbers")
@@ -54,6 +58,32 @@ export default function SudokuGame({ onGameComplete, onBackToHome }: SudokuGameP
   const [wrongCell, setWrongCell] = useState<{ row: number; col: number } | null>(null)
   const [mistakes, setMistakes] = useState(0)
   const [gameStartTime, setGameStartTime] = useState(0)
+  const [sizeTiers, setSizeTiers] = useState<Partial<Record<SudokuSize, MasteryTier>>>({})
+
+  // Per-grid-size mastery badges on the setup screen — game_data already
+  // records `size`, so 4x4 and 6x6 track independently instead of pooling.
+  useEffect(() => {
+    if (mode !== "setup" || !user || !applicationId) return
+    let cancelled = false
+
+    const loadTiers = async () => {
+      const sizes: SudokuSize[] = [4, 6]
+      const entries = await Promise.all(
+        sizes.map(async (s) => {
+          const tier = await getActivityMasteryTier(user.id, applicationId, `sudoku:${s}x${s}`, {
+            modeFilter: (gameData) => gameData?.size === s,
+          })
+          return [s, tier] as const
+        }),
+      )
+      if (!cancelled) setSizeTiers(Object.fromEntries(entries))
+    }
+
+    loadTiers()
+    return () => {
+      cancelled = true
+    }
+  }, [mode, user, applicationId])
 
   const startGame = () => {
     const p = generateSudokuPuzzle(size, difficulty)
@@ -206,6 +236,7 @@ export default function SudokuGame({ onGameComplete, onBackToHome }: SudokuGameP
                         <CardContent className="p-3 flex flex-col items-center gap-1">
                           <span className="text-2xl">{s === 4 ? "🔳" : "🔲"}</span>
                           <span className="text-base font-bold">{s} x {s}</span>
+                          {sizeTiers[s] && <MasteryBadge tier={sizeTiers[s]!} size="sm" />}
                         </CardContent>
                       </Card>
                     ))}

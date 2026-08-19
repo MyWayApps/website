@@ -27,8 +27,14 @@ import {
   addCustomWordList,
   deleteCustomWordList,
   parseWordsInput,
+  getDraftWords,
+  saveDraftWords,
+  clearDraftWords,
   type CustomWordList,
 } from "@/lib/spelling-custom-lists"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 type GameMode = "menu" | "word-selection" | "game-selection" | "playing"
 type WordSource = "custom" | "letter-count" | "ai-generated"
@@ -48,6 +54,7 @@ interface GameData {
 
 interface SpellingGameSuiteProps {
   user?: User | null
+  applicationId?: string
   onGameComplete?: (score: number, maxScore: number, gameData: GameData) => void
   onBackToHome?: () => void
 }
@@ -165,7 +172,7 @@ const correctSoundFreqs = [523.25, 659.25, 783.99, 1046.5, 1318.51] // C5, E5, G
 const wrongSoundFreqs = [220, 196, 174.61] // A3, G3, F3
 const successSoundFreqs = [523.25, 659.25, 783.99, 1046.5] // Success melody
 
-export default function SpellingGameSuite({ onGameComplete, onBackToHome }: SpellingGameSuiteProps = {}) {
+export default function SpellingGameSuite({ user, applicationId, onGameComplete, onBackToHome }: SpellingGameSuiteProps = {}) {
   const [currentMode, setCurrentMode] = useState<GameMode>("menu")
   const [wordSource, setWordSource] = useState<WordSource>("letter-count")
   const [selectedLetterCount, setSelectedLetterCount] = useState<LetterCount>(3)
@@ -175,18 +182,56 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
   const [draftWords, setDraftWords] = useState<string[]>([])
   const [customWordInput, setCustomWordInput] = useState("")
   const [savedWordLists, setSavedWordLists] = useState<CustomWordList[]>([])
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false)
 
-  // Saved lists live in localStorage, so load them after mount (SSR has no
-  // window/localStorage to read from).
+  // Saved lists and the in-progress draft both live in localStorage, so load
+  // them after mount (SSR has no window/localStorage to read from). The
+  // loaded flag guards the autosave effect below from firing with an empty
+  // draftWords before the real draft has been read back in.
   useEffect(() => {
     setSavedWordLists(getCustomWordLists())
+    setDraftWords(getDraftWords())
+    setIsDraftLoaded(true)
   }, [])
+
+  // Autosave the draft as it's built, so words survive a refresh or a later
+  // visit even if "Confirm Words" is never clicked.
+  useEffect(() => {
+    if (!isDraftLoaded) return
+    saveDraftWords(draftWords)
+  }, [draftWords, isDraftLoaded])
   const [selectedGame, setSelectedGame] = useState<string>("")
   const [currentWordList, setCurrentWordList] = useState<string[]>([])
   const [score, setScore] = useState(0)
   const [gameStartTime, setGameStartTime] = useState(0)
   const [isGeneratingWords, setIsGeneratingWords] = useState(false)
   const [aiWords, setAiWords] = useState<string[]>([])
+  const [gameTiers, setGameTiers] = useState<Partial<Record<string, MasteryTier>>>({})
+
+  // Per-game-type mastery badges on the game-selection screen — game_data
+  // already records which sub-game was played via `gameType`, so each card
+  // is scoped to just its own attempts rather than pooling across all 6 games.
+  useEffect(() => {
+    if (currentMode !== "game-selection" || !user || !applicationId) return
+    let cancelled = false
+
+    const loadTiers = async () => {
+      const entries = await Promise.all(
+        GAME_TYPES.filter((g) => g.implemented).map(async (game) => {
+          const tier = await getActivityMasteryTier(user.id, applicationId, `spelling-suite:${game.id}`, {
+            modeFilter: (gameData) => gameData?.gameType === game.id,
+          })
+          return [game.id, tier] as const
+        }),
+      )
+      if (!cancelled) setGameTiers(Object.fromEntries(entries))
+    }
+
+    loadTiers()
+    return () => {
+      cancelled = true
+    }
+  }, [currentMode, user, applicationId])
 
   // Initialize words when component loads
   useEffect(() => {
@@ -366,6 +411,7 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
       // Use up to 5 words, but allow fewer if that's all the user provided
       setCurrentWordList(savedList.words.slice(0, Math.min(5, savedList.words.length)))
       setDraftWords([])
+      clearDraftWords()
       setCurrentMode("game-selection")
     }
   }
@@ -873,6 +919,9 @@ export default function SpellingGameSuite({ onGameComplete, onBackToHome }: Spel
                             {game.implemented ? game.description : "Coming Soon!"}
                           </p>
                         </div>
+                        {game.implemented && gameTiers[game.id] && (
+                          <MasteryBadge tier={gameTiers[game.id]!} showLabel />
+                        )}
                         <Button
                           disabled={!game.implemented}
                           className="w-full bg-white/30 hover:bg-white/40 text-gray-800 font-bold border-2 border-white/60 hover:border-white transition-all duration-300 disabled:opacity-60"

@@ -7,6 +7,9 @@ import { ArrowLeft } from "lucide-react"
 import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
 import type { User, Application } from "@/lib/database-supabase"
 import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 import { mathVideoLessons, type VideoLesson } from "@/lib/math-videos-data"
 import { YouTubeEmbed } from "@/components/youtube-embed"
 import MathQuizEngine from "./math-quiz-engine"
@@ -50,10 +53,34 @@ export default function MathOperationHub({ operation, title, emoji, gradient, ap
   const [app, setApp] = useState<Application | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [roundStartTime, setRoundStartTime] = useState(0)
+  const [digitLevelTiers, setDigitLevelTiers] = useState<Partial<Record<DigitLevel, MasteryTier>>>({})
 
   useEffect(() => {
     initializeScoringData()
   }, [])
+
+  useEffect(() => {
+    if (step !== "digit-level" || !user || !app) return
+    let cancelled = false
+
+    const loadTiers = async () => {
+      const levels: DigitLevel[] = ["1", "2", "3"]
+      const entries = await Promise.all(
+        levels.map(async (level) => {
+          const tier = await getActivityMasteryTier(user.id, app.id, `math-operations:${operation}:${level}`, {
+            modeFilter: (gameData) => gameData?.digitLevel === level,
+          })
+          return [level, tier] as const
+        }),
+      )
+      if (!cancelled) setDigitLevelTiers(Object.fromEntries(entries))
+    }
+
+    loadTiers()
+    return () => {
+      cancelled = true
+    }
+  }, [step, user, app, operation])
 
   const initializeScoringData = async () => {
     try {
@@ -197,6 +224,11 @@ export default function MathOperationHub({ operation, title, emoji, gradient, ap
                     {level === "3" ? "3+" : level}
                   </div>
                   <h3 className="text-3xl font-bold text-gray-800">{DIGIT_LEVEL_LABELS[level]}</h3>
+                  {digitLevelTiers[level] && (
+                    <div className="flex justify-center mt-3">
+                      <MasteryBadge tier={digitLevelTiers[level]!} showLabel />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

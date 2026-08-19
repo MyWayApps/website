@@ -10,6 +10,12 @@ import { getLettersByType, getLetterTypeLabel, LetterType, KannadaLetter } from 
 import { romanize } from "@/lib/transliteration"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 import { pickUnseenRandom } from "@/lib/question-history"
+import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
+import type { User, Application } from "@/lib/database-supabase"
+import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 const ROUND_LENGTH = 10
 
@@ -47,12 +53,64 @@ export default function KannadaLettersGame() {
   const [currentMessage, setCurrentMessage] = useState("Good job!")
   const [isReady, setIsReady] = useState(false)
 
+  // Scoring/persistence
+  const [user, setUser] = useState<User | null>(null)
+  const [app, setApp] = useState<Application | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const [roundStartTime, setRoundStartTime] = useState(0)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
+
   const typeLabel = getLetterTypeLabel(letterType)
 
   useEffect(() => {
     setLetters(getLettersByType(letterType))
     setIsReady(true)
   }, [letterType])
+
+  useEffect(() => {
+    setRoundStartTime(Date.now())
+    initializeScoringData()
+  }, [])
+
+  const initializeScoringData = async () => {
+    try {
+      const connected = await testConnection()
+      setIsConnected(connected)
+
+      if (connected) {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        let currentUser: User | null = null
+
+        if (userData) {
+          const parsedUser = JSON.parse(userData)
+          currentUser = await findOrCreateUser({
+            name: parsedUser.name,
+            email: parsedUser.email,
+            age: parsedUser.age,
+            grade: parsedUser.grade,
+          })
+        } else {
+          currentUser = await findOrCreateUser({
+            name: "Demo User",
+            email: "demo@mywayapps.com",
+            age: 8,
+            grade: "3rd Grade",
+          })
+        }
+
+        const application = await getApplicationByName("Kannada Letters")
+        setUser(currentUser)
+        setApp(application)
+      } else {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        const appData = localStorage.getItem("mywayapps_current_app")
+        if (userData) setUser(JSON.parse(userData))
+        if (appData) setApp(JSON.parse(appData))
+      }
+    } catch (error) {
+      console.error("Error initializing Kannada Letters scoring data:", error)
+    }
+  }
 
   const playLetterAudio = (letterIdx: number) => {
     if (letters.length === 0) return
@@ -63,6 +121,24 @@ export default function KannadaLettersGame() {
     if (!isReady || letters.length === 0) return
     if (round > ROUND_LENGTH) {
       setGameOver(true)
+      if (user && app) {
+        saveGameScore({
+          userId: user.id,
+          applicationId: app.id,
+          score,
+          maxScore: ROUND_LENGTH,
+          completionTimeSec: Math.floor((Date.now() - roundStartTime) / 1000),
+          difficultyLevel: letterType,
+          gameData: { letterType },
+          isConnected,
+        })
+          .then(() =>
+            getActivityMasteryTier(user.id, app.id, `letters-game:kannada`)
+              .then(setMasteryTier)
+              .catch((error) => console.error("Error fetching Kannada Letters mastery tier:", error)),
+          )
+          .catch((error) => console.error("Error saving Kannada Letters score:", error))
+      }
       return
     }
     const correct = pickUnseenRandom(`kannada-letters-game:${letterType}`, 0, letters.length - 1)
@@ -87,7 +163,7 @@ export default function KannadaLettersGame() {
     } else {
       setShowResult("wrong")
       playWrongSound()
-      setTimeout(() => setShowResult(null), 1400)
+      setTimeout(() => setRound((r) => r + 1), 1400)
     }
   }
 
@@ -99,6 +175,7 @@ export default function KannadaLettersGame() {
     setScore(0)
     setRound(1)
     setGameOver(false)
+    setRoundStartTime(Date.now())
   }
 
   if (!isReady || letters.length === 0) {
@@ -138,6 +215,11 @@ export default function KannadaLettersGame() {
             <div className="flex flex-col items-center justify-center w-full">
               <div className="text-3xl font-bold text-green-800 mb-4">Game Over!</div>
               <div className="text-2xl text-amber-900 mb-2">Your Score: {score} / {ROUND_LENGTH}</div>
+              {masteryTier && (
+                <div className="mb-4">
+                  <MasteryBadge tier={masteryTier} showLabel />
+                </div>
+              )}
               <Button onClick={handleRestart} className="mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3" variant="outline">
                 Play Again
               </Button>

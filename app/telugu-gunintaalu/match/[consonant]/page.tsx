@@ -6,6 +6,12 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react"
 import { useParams } from "next/navigation"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { useCurrentUser } from "@/hooks/use-current-user"
+import { getApplicationByName } from "@/lib/database-supabase"
+import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 // Matra data with names — kept in sync with learn/[consonant]/page.tsx's naming
 // convention ("... కారము") so the formula shown here matches the rest of the
@@ -38,6 +44,9 @@ function leftOptionText(consonant: string, matra: string, name: string) {
 export default function MatchPairGame() {
   const params = useParams()
   const consonant = decodeURIComponent(params.consonant as string)
+  const { user, isConnected } = useCurrentUser()
+  const [applicationId, setApplicationId] = useState<string | null>(null)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [score, setScore] = useState(0)
   const [gameOver, setGameOver] = useState(false)
@@ -47,6 +56,29 @@ export default function MatchPairGame() {
   const [draggedItem, setDraggedItem] = useState<any>(null)
   const [matchedPairs, setMatchedPairs] = useState<Record<string, any>>({})
   const [showConfetti, setShowConfetti] = useState(false)
+
+  useEffect(() => {
+    getApplicationByName("Telugu Gunintaalu").then((application) => setApplicationId(application?.id ?? null))
+  }, [])
+
+  const finishGame = async (finalScore: number) => {
+    setGameOver(true)
+    if (!user || !applicationId) return
+    await saveGameScore({
+      userId: user.id,
+      applicationId,
+      score: finalScore,
+      maxScore: 5,
+      subject: "Telugu",
+      isConnected,
+    })
+    const tier = await getActivityMasteryTier(
+      user.id,
+      applicationId,
+      `barakhadi:telugu-gunintaalu:match:${consonant}`,
+    )
+    setMasteryTier(tier)
+  }
 
   // Generate 5 questions with matching pairs
   const generateQuestions = () => {
@@ -139,12 +171,13 @@ export default function MatchPairGame() {
   // Handle drop on left option
   const handleDropOnLeft = (e: React.DragEvent, leftOption: any) => {
     e.preventDefault()
-    
+
     if (draggedItem && !matchedPairs[leftOption.id]) {
-      // Always allow the drop, don't check correctness yet
+      // Lock this pair immediately, right or wrong — no more deleting a
+      // wrong match to let the child retry it.
       const newMatchedPairs: Record<string, any> = { ...matchedPairs, [leftOption.id]: draggedItem }
       setMatchedPairs(newMatchedPairs)
-      
+
       // Check if all pairs are matched, then validate
       if (Object.keys(newMatchedPairs).length === currentQ.leftOptions.length) {
         // All pairs are matched, now check if all are correct
@@ -152,10 +185,11 @@ export default function MatchPairGame() {
           const matchedAnswer = newMatchedPairs[option.id as string]
           return matchedAnswer && option.matra === matchedAnswer.matra
         })
-        
+
         if (allCorrect) {
           // All matches are correct
-          setScore(score + 1)
+          const newScore = score + 1
+          setScore(newScore)
           setShowResult("question-complete")
           setShowConfetti(true)
           playCorrectSound()
@@ -164,19 +198,21 @@ export default function MatchPairGame() {
             if (currentQuestion < 4) {
               setCurrentQuestion(currentQuestion + 1)
             } else {
-              setGameOver(true)
+              finishGame(newScore)
             }
           }, 3000)
         } else {
-          // Some matches are wrong, show wrong message and reset only the last match
+          // Some matches are wrong — show it, lock it, and move on
+          // (no retry) since a single-shot answer was already given.
           setShowResult("wrong")
           playWrongSound()
-          // Remove only the last matched pair (the one that was just dropped)
-          const updatedPairs = { ...matchedPairs }
-          delete updatedPairs[leftOption.id]
-          setMatchedPairs(updatedPairs)
           setTimeout(() => {
             setShowResult(null)
+            if (currentQuestion < 4) {
+              setCurrentQuestion(currentQuestion + 1)
+            } else {
+              finishGame(score)
+            }
           }, 1500)
         }
       } else {
@@ -184,7 +220,7 @@ export default function MatchPairGame() {
         // Just allow the user to continue matching
       }
     }
-    
+
     setDraggedItem(null)
   }
 
@@ -202,6 +238,7 @@ export default function MatchPairGame() {
     setMatchedPairs({})
     setShowConfetti(false)
     setDraggedItem(null)
+    setMasteryTier(null)
     const generatedQuestions = generateQuestions()
     setQuestions(generatedQuestions)
   }
@@ -221,6 +258,11 @@ export default function MatchPairGame() {
           <CardContent className="p-8 text-center">
             <h1 className="text-4xl font-bold text-indigo-800 mb-4">Game Over!</h1>
             <p className="text-2xl text-indigo-600 mb-6">Your Score: {score} / 5</p>
+            {masteryTier && (
+              <div className="flex justify-center mb-4">
+                <MasteryBadge tier={masteryTier} showLabel />
+              </div>
+            )}
             <div className="flex gap-4 justify-center">
               <Button
                 onClick={handleRestart}
@@ -288,7 +330,9 @@ export default function MatchPairGame() {
                     key={option.id}
                     className={`p-4 border-2 rounded-lg text-center transition-all duration-300 ${
                       matchedPairs[option.id]
-                        ? 'border-yellow-500 bg-yellow-100 text-yellow-800'
+                        ? option.matra === matchedPairs[option.id].matra
+                          ? 'border-green-500 bg-green-100 text-green-800'
+                          : 'border-red-500 bg-red-100 text-red-800'
                         : 'border-dashed border-indigo-300 bg-indigo-50 text-indigo-600'
                     }`}
                     onDragOver={handleDragOver}

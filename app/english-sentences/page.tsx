@@ -79,6 +79,11 @@ export default function EnglishSentencesPage() {
   }
 
   return (
-    <EnglishSentences onGameComplete={handleGameComplete} onBackToHome={() => router.push("/#english")} />
+    <EnglishSentences
+      userId={user?.id}
+      applicationId={app?.id}
+      onGameComplete={handleGameComplete}
+      onBackToHome={() => router.push("/#english")}
+    />
   )
 }

@@ -51,7 +51,7 @@ export default function EvenOddPage() {
           })
         }
 
-        const application = await getApplicationByName("Even and Odd")
+        const application = await getApplicationByName("Even & Odd Numbers")
         setUser(currentUser)
         setApp(application)
       } else {
@@ -94,7 +94,12 @@ export default function EvenOddPage() {
         </div>
       </div>
 
-      <EvenOddGame user={user} onGameComplete={handleGameComplete} onBackToHome={() => router.push("/#math")} />
+      <EvenOddGame
+        user={user}
+        applicationId={app?.id}
+        onGameComplete={handleGameComplete}
+        onBackToHome={() => router.push("/#math")}
+      />
     </div>
   )
 }

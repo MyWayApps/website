@@ -1,8 +1,12 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Play, Star, Clock } from "lucide-react"
+import { Play } from "lucide-react"
+import { MasteryBadge } from "@/components/mastery-badge"
+import { getAppMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
 
 interface Application {
   id: string
@@ -24,9 +28,25 @@ interface AppCardProps {
     last_played_at: string
   }
   onPlay: (app: Application) => void
+  userId?: string
 }
 
-export function AppCard({ app, userProgress, onPlay }: AppCardProps) {
+export function AppCard({ app, onPlay, userId }: AppCardProps) {
+  const [tier, setTier] = useState<MasteryTier | null>(null)
+
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+
+    getAppMasteryTier(userId, app.id).then((t) => {
+      if (!cancelled) setTier(t)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId, app.id])
+
   return (
     <Card
       className={`group hover:scale-105 transition-all duration-300 bg-gradient-to-br ${app.color_scheme} border-4 border-white shadow-lg hover:shadow-xl cursor-pointer`}
@@ -42,19 +62,8 @@ export function AppCard({ app, userProgress, onPlay }: AppCardProps) {
             <p className="text-sm text-gray-600 line-clamp-2">{app.description}</p>
           </div>
 
-          {/* Progress Info */}
-          {userProgress && (
-            <div className="flex items-center gap-4 text-sm text-gray-600">
-              <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 text-yellow-500" />
-                <span>{userProgress.best_score}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-4 w-4 text-blue-500" />
-                <span>{userProgress.total_attempts}</span>
-              </div>
-            </div>
-          )}
+          {/* Mastery badge */}
+          {tier && <MasteryBadge tier={tier} showLabel />}
 
           {/* Play Button */}
           <Button

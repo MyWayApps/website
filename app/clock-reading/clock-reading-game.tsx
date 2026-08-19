@@ -5,8 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star, Clock, CheckCircle, XCircle } from "lucide-react"
-import { pickUnseenRandom } from "@/lib/question-history"
+import { pickUnseenRandom, recordAnswer, getCoverageStats } from "@/lib/question-history"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 type GameMode = "menu" | "setup" | "playing"
 type GameType = "multiple-choice" | "text-input"
@@ -31,12 +34,15 @@ interface ClockTime {
 
 interface Question {
   time: ClockTime
+  /** The pickUnseenRandom-tracked code for this time — also this question's coverage signature. */
+  code: number
   choices?: string[]
   correctAnswer: string
 }
 
 interface ClockReadingGameProps {
   user?: User | null
+  applicationId?: string
   onGameComplete?: (score: number, maxScore: number, gameData: GameData) => void
   onBackToHome?: () => void
 }
@@ -44,7 +50,7 @@ interface ClockReadingGameProps {
 // Sound effect frequencies
 const successSoundFreqs = [523.25, 659.25, 783.99, 1046.5] // Success melody
 
-export default function ClockReadingGame({ onGameComplete, onBackToHome }: ClockReadingGameProps = {}) {
+export default function ClockReadingGame({ user, applicationId, onGameComplete, onBackToHome }: ClockReadingGameProps = {}) {
   const [currentMode, setCurrentMode] = useState<GameMode>("menu")
   const [gameType, setGameType] = useState<GameType>("multiple-choice")
   const [timeType, setTimeType] = useState<TimeType>("hours")
@@ -55,7 +61,34 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
   const [isCorrect, setIsCorrect] = useState(false)
   const [gameStartTime, setGameStartTime] = useState(0)
   const [userInput, setUserInput] = useState({ hours: "", minutes: "" })
+  const [modeTiers, setModeTiers] = useState<Partial<Record<TimeType, MasteryTier>>>({})
   const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    if (currentMode !== "menu" || !user?.id || !applicationId) return
+    let cancelled = false
+
+    const loadTiers = async () => {
+      const types: TimeType[] = ["hours", "half-hour", "quarter-hour", "all-times"]
+      const entries = await Promise.all(
+        types.map(async (type) => {
+          const poolSize = maxCodeForType[type] + 1
+          const { correctCount } = getCoverageStats(`clock-reading:${type}`, poolSize)
+          const tier = await getActivityMasteryTier(user.id, applicationId, `clock-reading:${type}`, {
+            modeFilter: (gameData) => gameData?.mode === type,
+            coverageNumerator: correctCount,
+          })
+          return [type, tier] as const
+        }),
+      )
+      if (!cancelled) setModeTiers(Object.fromEntries(entries) as Record<TimeType, MasteryTier>)
+    }
+
+    loadTiers()
+    return () => {
+      cancelled = true
+    }
+  }, [currentMode, user?.id, applicationId])
 
   // Audio context for sound effects
   const playSound = (frequencies: number[], isCorrect: boolean) => {
@@ -158,9 +191,9 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
   // Generate a random time for the *correct* answer, tracked so a user
   // doesn't see the same clock face again until every time in the range
   // for this timeType has been shown.
-  const generateUnseenTime = (type: TimeType): ClockTime => {
+  const generateUnseenTime = (type: TimeType): { time: ClockTime; code: number } => {
     const code = pickUnseenRandom(`clock-reading:${type}`, 0, maxCodeForType[type])
-    return codeToTime(code, type)
+    return { time: codeToTime(code, type), code }
   }
 
   // Format time to string
@@ -201,7 +234,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
     const newQuestions: Question[] = []
 
     for (let i = 0; i < 5; i++) {
-      const time = generateUnseenTime(timeType)
+      const { time, code } = generateUnseenTime(timeType)
       const correctAnswer = formatTime(time)
 
       if (gameType === "multiple-choice") {
@@ -210,12 +243,14 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
 
         newQuestions.push({
           time,
+          code,
           choices: allChoices,
           correctAnswer,
         })
       } else {
         newQuestions.push({
           time,
+          code,
           correctAnswer,
         })
       }
@@ -340,75 +375,61 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
   }
 
   const handleMultipleChoiceAnswer = (selectedAnswer: string) => {
+    if (showFeedback) return // lock during feedback — same single-shot pattern as every other topic
+
     const currentQuestion = questions[currentQuestionIndex]
     const correct = selectedAnswer === currentQuestion.correctAnswer
+    const newScore = correct ? score + 1 : score
 
     setIsCorrect(correct)
     setShowFeedback(true)
+    correct ? playCorrectSound() : playWrongSound()
+    recordAnswer(`clock-reading:${timeType}`, String(currentQuestion.code), correct)
 
-    if (correct) {
-      setScore(score + 1)
-      playCorrectSound()
+    setTimeout(() => {
+      setShowFeedback(false)
+      setScore(newScore)
 
-      setTimeout(() => {
-        setShowFeedback(false)
-        if (currentQuestionIndex < questions.length - 1) {
-          setCurrentQuestionIndex(currentQuestionIndex + 1)
-        } else {
-          // Game completed
-          handleGameComplete()
-        }
-      }, 2000)
-    } else {
-      playWrongSound()
-
-      setTimeout(() => {
-        setShowFeedback(false)
-        // Don't advance question - stay on same question
-      }, 1500)
-    }
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1)
+      } else {
+        handleGameComplete(newScore)
+      }
+    }, correct ? 2000 : 1500)
   }
 
   const handleTextInputSubmit = () => {
+    if (showFeedback) return
+
     const currentQuestion = questions[currentQuestionIndex]
     const userTime = `${userInput.hours}:${userInput.minutes.padStart(2, "0")}`
     const correct = userTime === currentQuestion.correctAnswer
+    const newScore = correct ? score + 1 : score
 
     setIsCorrect(correct)
     setShowFeedback(true)
+    correct ? playCorrectSound() : playWrongSound()
+    recordAnswer(`clock-reading:${timeType}`, String(currentQuestion.code), correct)
 
-    if (correct) {
-      setScore(score + 1)
-      playCorrectSound()
+    setTimeout(() => {
+      setShowFeedback(false)
+      setUserInput({ hours: "", minutes: "" })
+      setScore(newScore)
 
-      setTimeout(() => {
-        setShowFeedback(false)
-        setUserInput({ hours: "", minutes: "" })
-
-        if (currentQuestionIndex < questions.length - 1) {
-          setCurrentQuestionIndex(currentQuestionIndex + 1)
-        } else {
-          // Game completed
-          handleGameComplete()
-        }
-      }, 2000)
-    } else {
-      playWrongSound()
-
-      setTimeout(() => {
-        setShowFeedback(false)
-        setUserInput({ hours: "", minutes: "" })
-        // Don't advance question - stay on same question
-      }, 1500)
-    }
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1)
+      } else {
+        handleGameComplete(newScore)
+      }
+    }, correct ? 2000 : 1500)
   }
 
-  const handleGameComplete = () => {
+  const handleGameComplete = (finalScore: number) => {
     playSound(successSoundFreqs, true)
 
     if (onGameComplete) {
-      onGameComplete(score, 5, {
-        mode: "clock-reading",
+      onGameComplete(finalScore, 5, {
+        mode: timeType,
         gameType,
         completionTime: gameStartTime,
       })
@@ -528,6 +549,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
                         <span className="text-2xl">🕐</span>
                         <span>Hours Only</span>
                         <span className="text-xs">(1:00, 2:00...)</span>
+                        {modeTiers.hours && <MasteryBadge tier={modeTiers.hours} size="sm" />}
                       </div>
                     </Button>
 
@@ -544,6 +566,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
                         <span className="text-2xl">🕕</span>
                         <span>Half Hours</span>
                         <span className="text-xs">(:00, :30)</span>
+                        {modeTiers["half-hour"] && <MasteryBadge tier={modeTiers["half-hour"]} size="sm" />}
                       </div>
                     </Button>
 
@@ -560,6 +583,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
                         <span className="text-2xl">🕒</span>
                         <span>Quarter Hours</span>
                         <span className="text-xs">(:00, :15, :30, :45)</span>
+                        {modeTiers["quarter-hour"] && <MasteryBadge tier={modeTiers["quarter-hour"]} size="sm" />}
                       </div>
                     </Button>
 
@@ -576,6 +600,7 @@ export default function ClockReadingGame({ onGameComplete, onBackToHome }: Clock
                         <span className="text-2xl">🕐</span>
                         <span>All Times</span>
                         <span className="text-xs">(Every 5 min)</span>
+                        {modeTiers["all-times"] && <MasteryBadge tier={modeTiers["all-times"]} size="sm" />}
                       </div>
                     </Button>
                   </div>

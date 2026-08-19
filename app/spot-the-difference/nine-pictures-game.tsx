@@ -6,9 +6,17 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star, Timer } from "lucide-react"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 import { EMOJI_POOL } from "@/lib/spot-the-difference-data"
+import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
+import type { User } from "@/lib/database-supabase"
 
 interface NinePicturesGameProps {
   onBackToModes: () => void
+  user?: User | null
+  applicationId?: string
+  isConnected?: boolean
 }
 
 interface NineRound {
@@ -54,7 +62,7 @@ function generateRounds(): NineRound[] {
   return Array.from({ length: ROUND_COUNT }, () => generateRound())
 }
 
-export default function NinePicturesGame({ onBackToModes }: NinePicturesGameProps) {
+export default function NinePicturesGame({ onBackToModes, user, applicationId, isConnected = false }: NinePicturesGameProps) {
   const [rounds, setRounds] = useState<NineRound[]>(() => generateRounds())
   const [roundIndex, setRoundIndex] = useState(0)
   const [score, setScore] = useState(0)
@@ -64,8 +72,27 @@ export default function NinePicturesGame({ onBackToModes }: NinePicturesGameProp
   const [showConfetti, setShowConfetti] = useState(false)
   const [sessionComplete, setSessionComplete] = useState(false)
   const [timeLeft, setTimeLeft] = useState(ROUND_TIME_SECONDS)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
 
   const round = rounds[roundIndex]
+
+  // Persist the session score and refresh the mastery tier once the round set ends.
+  useEffect(() => {
+    if (!sessionComplete || !user || !applicationId) return
+    saveGameScore({
+      userId: user.id,
+      applicationId,
+      score,
+      maxScore: ROUND_COUNT,
+      gameData: { mode: "nine-pictures", roundCount: ROUND_COUNT },
+      isConnected,
+    })
+      .then(() =>
+        getActivityMasteryTier(user.id, applicationId, "spot-the-difference:nine-pictures").then(setMasteryTier),
+      )
+      .catch(console.error)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionComplete])
 
   // Reset the clock at the start of every round.
   useEffect(() => {
@@ -102,6 +129,7 @@ export default function NinePicturesGame({ onBackToModes }: NinePicturesGameProp
     setShowConfetti(false)
     setSessionComplete(false)
     setTimeLeft(ROUND_TIME_SECONDS)
+    setMasteryTier(null)
   }
 
   const handleClick = (grid: "A" | "B", index: number) => {
@@ -137,6 +165,11 @@ export default function NinePicturesGame({ onBackToModes }: NinePicturesGameProp
             <div className="text-6xl mb-4">🏆</div>
             <h2 className="text-4xl font-bold text-orange-600 mb-4">Great Job!</h2>
             <p className="text-2xl text-gray-700 mb-6">You found {score}/{ROUND_COUNT}!</p>
+            {masteryTier && (
+              <div className="flex justify-center mb-6">
+                <MasteryBadge tier={masteryTier} showLabel />
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button
                 onClick={handlePlayAgain}

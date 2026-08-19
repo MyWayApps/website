@@ -22,17 +22,23 @@ export default function ForwardBackwardTopic({ onRoundComplete, onBackToTopics }
   const [sequence, setSequence] = useState<number[]>([])
   const [availableNumbers, setAvailableNumbers] = useState<number[]>([])
   const [filledPositions, setFilledPositions] = useState<boolean[]>([true, false, false, false, false])
+  /** What the child actually clicked for each position — shown in the tile as-is, right or wrong, instead of silently substituting the correct answer. */
+  const [filledValues, setFilledValues] = useState<(number | null)[]>([null, null, null, null, null])
   const [currentPosition, setCurrentPosition] = useState(1)
   const [showFeedback, setShowFeedback] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
   const [roundStartTime, setRoundStartTime] = useState(0)
+  /** Any wrong pick anywhere in the current sequence forfeits that question's point — matches every other topic's single-shot-per-question scoring. */
+  const [hadMistake, setHadMistake] = useState(false)
 
   const startNewQuestion = () => {
     const q = generateSequenceQuestion(order, maxNumber)
     setSequence(q.sequence)
     setAvailableNumbers(q.availableNumbers)
     setFilledPositions([true, false, false, false, false])
+    setFilledValues([q.sequence[0], null, null, null, null])
     setCurrentPosition(1)
+    setHadMistake(false)
   }
 
   const handleStartRound = () => {
@@ -44,50 +50,56 @@ export default function ForwardBackwardTopic({ onRoundComplete, onBackToTopics }
   }
 
   const handleNumberClick = (number: number) => {
+    if (showFeedback) return // lock during feedback, same as every other topic's isAnswered guard
+
     const expectedNumber = sequence[currentPosition]
+    const correct = number === expectedNumber
+    const mistakeSoFar = hadMistake || !correct
 
-    if (number === expectedNumber) {
-      setIsCorrect(true)
-      setShowFeedback(true)
-      playCorrectSound()
+    setIsCorrect(correct)
+    setShowFeedback(true)
+    correct ? playCorrectSound() : playWrongSound()
+    if (!correct) setHadMistake(true)
 
-      const newFilledPositions = [...filledPositions]
-      newFilledPositions[currentPosition] = true
-      setFilledPositions(newFilledPositions)
+    // Fill this slot with whatever was clicked, right or wrong — a wrong
+    // pick no longer gets unlimited retries, it moves on immediately like
+    // every other topic's single-shot answer, but the tile shows the actual
+    // mistake instead of silently substituting the correct answer.
+    const newFilledPositions = [...filledPositions]
+    newFilledPositions[currentPosition] = true
+    setFilledPositions(newFilledPositions)
 
-      setTimeout(() => {
-        setShowFeedback(false)
+    const newFilledValues = [...filledValues]
+    newFilledValues[currentPosition] = number
+    setFilledValues(newFilledValues)
 
-        if (currentPosition < 4) {
-          setCurrentPosition(currentPosition + 1)
-        } else {
-          setTimeout(() => playSuccessMelody(), 300)
-          const newScore = score + 1
-          setScore(newScore)
+    setTimeout(() => {
+      setShowFeedback(false)
 
-          setTimeout(() => {
-            if (questionIndex < 4) {
-              setQuestionIndex(questionIndex + 1)
-              startNewQuestion()
-            } else {
-              onRoundComplete({
-                topicId: "forward-backward",
-                score: newScore,
-                maxScore: 5,
-                completionTimeMs: Date.now() - roundStartTime,
-                difficultyLabel: `${order}-${maxNumber}`,
-              })
-              setPhase("results")
-            }
-          }, 1200)
-        }
-      }, 1000)
-    } else {
-      setIsCorrect(false)
-      setShowFeedback(true)
-      playWrongSound()
-      setTimeout(() => setShowFeedback(false), 1200)
-    }
+      if (currentPosition < 4) {
+        setCurrentPosition(currentPosition + 1)
+      } else {
+        if (!mistakeSoFar) setTimeout(() => playSuccessMelody(), 300)
+        const newScore = mistakeSoFar ? score : score + 1
+        setScore(newScore)
+
+        setTimeout(() => {
+          if (questionIndex < 4) {
+            setQuestionIndex(questionIndex + 1)
+            startNewQuestion()
+          } else {
+            onRoundComplete({
+              topicId: "forward-backward",
+              score: newScore,
+              maxScore: 5,
+              completionTimeMs: Date.now() - roundStartTime,
+              difficultyLabel: `${order}-${maxNumber}`,
+            })
+            setPhase("results")
+          }
+        }, 1200)
+      }
+    }, 1000)
   }
 
   if (phase === "results") {
@@ -252,20 +264,25 @@ export default function ForwardBackwardTopic({ onRoundComplete, onBackToTopics }
             </div>
 
             <div className="flex justify-center gap-4 mb-8">
-              {sequence.map((number, index) => (
-                <div
-                  key={index}
-                  className={`w-20 h-20 rounded-2xl border-4 flex items-center justify-center text-2xl font-bold transition-all duration-300 ${
-                    filledPositions[index]
-                      ? "bg-gradient-to-r from-green-400 to-blue-500 text-white border-white shadow-lg"
-                      : index === currentPosition
-                        ? "bg-gradient-to-r from-yellow-300 to-orange-400 text-gray-800 border-yellow-500 shadow-lg animate-pulse"
-                        : "bg-white/20 text-gray-400 border-gray-300"
-                  }`}
-                >
-                  {filledPositions[index] ? number : "?"}
-                </div>
-              ))}
+              {sequence.map((number, index) => {
+                const isWrong = filledPositions[index] && filledValues[index] !== number
+                return (
+                  <div
+                    key={index}
+                    className={`w-20 h-20 rounded-2xl border-4 flex items-center justify-center text-2xl font-bold transition-all duration-300 ${
+                      filledPositions[index]
+                        ? isWrong
+                          ? "bg-gradient-to-r from-red-400 to-rose-500 text-white border-white shadow-lg"
+                          : "bg-gradient-to-r from-green-400 to-blue-500 text-white border-white shadow-lg"
+                        : index === currentPosition
+                          ? "bg-gradient-to-r from-yellow-300 to-orange-400 text-gray-800 border-yellow-500 shadow-lg animate-pulse"
+                          : "bg-white/20 text-gray-400 border-gray-300"
+                    }`}
+                  >
+                    {filledPositions[index] ? filledValues[index] : "?"}
+                  </div>
+                )
+              })}
             </div>
 
             {(() => {
@@ -307,7 +324,7 @@ export default function ForwardBackwardTopic({ onRoundComplete, onBackToTopics }
                 className={`text-center p-6 rounded-2xl ${isCorrect ? "bg-green-100" : "bg-red-100"} border-4 ${isCorrect ? "border-green-300" : "border-red-300"}`}
               >
                 <div className={`text-3xl font-bold ${isCorrect ? "text-green-600" : "text-red-600"} mb-2`}>
-                  {isCorrect ? "🎉 Correct!" : "🤔 Try Again!"}
+                  {isCorrect ? "🎉 Correct!" : "🤔 Not Quite!"}
                 </div>
                 <div className="text-xl font-medium text-gray-700">
                   {isCorrect

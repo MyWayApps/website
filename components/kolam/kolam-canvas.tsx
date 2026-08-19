@@ -5,6 +5,8 @@ import { getDotPositions, type DotLoop, type Point, type Stroke } from "@/lib/ko
 
 interface KolamCanvasProps {
   gridSize: number
+  /** Sparse dot layout — see KolamLevel.dotPattern. Omit for a full grid. */
+  dotPattern?: [number, number][]
   ghostLoops?: DotLoop[]
   strokes: Stroke[]
   onStrokesChange: (strokes: Stroke[]) => void
@@ -18,7 +20,7 @@ interface KolamCanvasProps {
 // go without hitting the canvas edge.
 const PADDING = 0.32
 
-export function KolamCanvas({ gridSize, ghostLoops, strokes, onStrokesChange, interactive = true }: KolamCanvasProps) {
+export function KolamCanvas({ gridSize, dotPattern, ghostLoops, strokes, onStrokesChange, interactive = true }: KolamCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawingRef = useRef<Stroke | null>(null)
@@ -76,7 +78,7 @@ export function KolamCanvas({ gridSize, ghostLoops, strokes, onStrokesChange, in
       ctx.setLineDash([])
     }
 
-    for (const dot of getDotPositions(gridSize)) {
+    for (const dot of getDotPositions(gridSize, dotPattern)) {
       const p = toPixels(dot, canvasSize)
       ctx.beginPath()
       ctx.arc(p.x, p.y, Math.max(3, canvasSize * 0.014), 0, Math.PI * 2)
@@ -107,7 +109,7 @@ export function KolamCanvas({ gridSize, ghostLoops, strokes, onStrokesChange, in
     }
 
     ctx.restore()
-  }, [strokes, ghostLoops, gridSize, canvasSize, dpr, toPixels])
+  }, [strokes, ghostLoops, gridSize, dotPattern, canvasSize, dpr, toPixels])
 
   useEffect(() => {
     draw()

@@ -46,13 +46,23 @@ export default function GunintaaluDetail() {
     ? `${consonant}్ + (${currentMatra.name}) = ${currentMatra.result}`
     : `${consonant}్ + ${currentMatra.matra} (${currentMatra.name}) = ${currentMatra.result}`
 
-  // Play audio for current matra using TTS
+  // Play audio for current matra using TTS. Spoken as three separate
+  // clips — the bare consonant, the matra's name, then the result — rather
+  // than one run-on sentence with "+"/"="/parentheses in it: the TTS
+  // engine was swallowing the leading consonant+virama segment (e.g. "క్")
+  // when it was embedded in that longer string, likely because an isolated
+  // consonant+virama isn't a normal spoken unit in continuous text. The raw
+  // matra symbol itself (e.g. bare "ా") is skipped here too since a
+  // combining vowel sign has no independent pronunciation on its own —
+  // only its name ("ఆ కారము") is a real speakable phrase.
   const playAudio = async () => {
     if (isPlayingTTS) return
 
     try {
       setIsPlayingTTS(true)
-      await playTeluguTTS(formulaText)
+      await playTeluguTTS(`${consonant}్`)
+      await playTeluguTTS(currentMatra.name)
+      await playTeluguTTS(currentMatra.result)
     } catch (error) {
       console.error("TTS play failed:", error)
       // Fallback to audio file if TTS fails

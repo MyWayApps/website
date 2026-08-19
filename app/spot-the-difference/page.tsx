@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import NinePicturesGame from "./nine-pictures-game"
 import BigPictureGame from "./big-picture-game"
+import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
+import type { User, Application } from "@/lib/database-supabase"
 
 type Mode = "menu" | "nine-pictures" | "big-picture"
 
@@ -14,13 +16,74 @@ const GRADIENT = "from-orange-200 via-red-300 to-pink-400"
 
 export default function SpotTheDifferencePage() {
   const [mode, setMode] = useState<Mode>("menu")
+  const [user, setUser] = useState<User | null>(null)
+  const [app, setApp] = useState<Application | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+
+  useEffect(() => {
+    initializeScoringData()
+  }, [])
+
+  const initializeScoringData = async () => {
+    try {
+      const connected = await testConnection()
+      setIsConnected(connected)
+
+      if (connected) {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        let currentUser: User | null = null
+
+        if (userData) {
+          const parsedUser = JSON.parse(userData)
+          currentUser = await findOrCreateUser({
+            name: parsedUser.name,
+            email: parsedUser.email,
+            age: parsedUser.age,
+            grade: parsedUser.grade,
+          })
+        } else {
+          currentUser = await findOrCreateUser({
+            name: "Demo User",
+            email: "demo@mywayapps.com",
+            age: 8,
+            grade: "3rd Grade",
+          })
+        }
+
+        const application = await getApplicationByName("Spot the Difference")
+        setUser(currentUser)
+        setApp(application)
+      } else {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        const appData = localStorage.getItem("mywayapps_current_app")
+        if (userData) setUser(JSON.parse(userData))
+        if (appData) setApp(JSON.parse(appData))
+      }
+    } catch (error) {
+      console.error("Error initializing scoring data:", error)
+    }
+  }
 
   if (mode === "nine-pictures") {
-    return <NinePicturesGame onBackToModes={() => setMode("menu")} />
+    return (
+      <NinePicturesGame
+        onBackToModes={() => setMode("menu")}
+        user={user}
+        applicationId={app?.id}
+        isConnected={isConnected}
+      />
+    )
   }
 
   if (mode === "big-picture") {
-    return <BigPictureGame onBackToModes={() => setMode("menu")} />
+    return (
+      <BigPictureGame
+        onBackToModes={() => setMode("menu")}
+        user={user}
+        applicationId={app?.id}
+        isConnected={isConnected}
+      />
+    )
   }
 
   return (

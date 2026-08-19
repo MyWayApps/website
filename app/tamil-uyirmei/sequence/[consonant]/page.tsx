@@ -7,11 +7,20 @@ import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react"
 import { useParams } from "next/navigation"
 import { playTamilTTS } from "@/lib/tamil-tts"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { useCurrentUser } from "@/hooks/use-current-user"
+import { getApplicationByName } from "@/lib/database-supabase"
+import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 import { uyirmeiMatraSequence } from "@/lib/tamil-uyirmei-data"
 
 export default function SequenceGame() {
   const params = useParams()
   const consonant = decodeURIComponent(params.consonant as string)
+  const { user, isConnected } = useCurrentUser()
+  const [applicationId, setApplicationId] = useState<string | null>(null)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [score, setScore] = useState(0)
   const [gameOver, setGameOver] = useState(false)
@@ -21,6 +30,31 @@ export default function SequenceGame() {
   const [options, setOptions] = useState<string[]>([])
   const [isCompleted, setIsCompleted] = useState(false)
   const [showBalloons, setShowBalloons] = useState(false)
+
+  const [hadMistake, setHadMistake] = useState(false)
+
+  useEffect(() => {
+    getApplicationByName("Tamil Uyirmei").then((application) => setApplicationId(application?.id ?? null))
+  }, [])
+
+  const finishGame = async (finalScore: number) => {
+    setGameOver(true)
+    if (!user || !applicationId) return
+    await saveGameScore({
+      userId: user.id,
+      applicationId,
+      score: finalScore,
+      maxScore: 5,
+      subject: "Tamil",
+      isConnected,
+    })
+    const tier = await getActivityMasteryTier(
+      user.id,
+      applicationId,
+      `barakhadi:tamil-uyirmei:sequence:${consonant}`,
+    )
+    setMasteryTier(tier)
+  }
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
@@ -76,6 +110,7 @@ export default function SequenceGame() {
 
       setIsCompleted(false)
       setShowResult(null)
+      setHadMistake(false)
 
       // Play TTS for the first letter when question loads
       setTimeout(() => {
@@ -118,41 +153,27 @@ export default function SequenceGame() {
       const newOptions = options.filter(opt => opt !== draggedItem)
       setOptions(newOptions)
 
+      // Lock this slot with whatever was dropped, right or wrong (styled
+      // accordingly below) — instead of resetting the whole question for
+      // an unlimited retry.
+      const correctLetter = currentQ.correctAnswers[slotIndex]
+      const mistakeSoFar = hadMistake || draggedItem !== correctLetter
+      setHadMistake(mistakeSoFar)
       setDraggedItem(null)
 
-      // Check if the placed letter is correct for this position
-      const correctLetter = currentQ.correctAnswers[slotIndex]
-      if (draggedItem === correctLetter) {
-        // Correct placement - continue
-        const filledSlots = newSlots.filter(slot => slot !== null).length
-        if (filledSlots === 6) {
-          // All slots filled - check complete answer
-          checkAnswer(newSlots)
-        }
-      } else {
-        // Wrong placement - immediate feedback
-        setShowResult("wrong")
-        playWrongSound()
-        setTimeout(() => {
-          setShowResult(null)
-          // Reset the question with first letter in place
-          const resetSlots = new Array(6).fill(null)
-          resetSlots[0] = currentQ.firstLetter
-          setSlots(resetSlots)
-          setOptions([...currentQ.options].filter(opt => opt !== currentQ.firstLetter))
-        }, 1500)
+      const filledSlots = newSlots.filter(slot => slot !== null).length
+      if (filledSlots === 6) {
+        checkAnswer(newSlots, mistakeSoFar)
       }
     }
   }
 
   // Check answer
-  const checkAnswer = (filledSlots: (string | null)[]) => {
-    const userAnswer = filledSlots.join("")
-    const correctAnswer = currentQ.correctAnswers.join("")
-
-    if (userAnswer === correctAnswer) {
+  const checkAnswer = (filledSlots: (string | null)[], mistakeSoFar: boolean) => {
+    if (!mistakeSoFar) {
       setShowResult("correct")
-      setScore(score + 1)
+      const newScore = score + 1
+      setScore(newScore)
       setShowBalloons(true)
       playCorrectSound()
       setTimeout(() => {
@@ -160,7 +181,7 @@ export default function SequenceGame() {
         if (currentQuestion < 4) {
           setCurrentQuestion(currentQuestion + 1)
         } else {
-          setGameOver(true)
+          finishGame(newScore)
         }
       }, 2000)
     } else {
@@ -168,9 +189,11 @@ export default function SequenceGame() {
       playWrongSound()
       setTimeout(() => {
         setShowResult(null)
-        // Reset the question
-        setSlots(new Array(6).fill(null))
-        setOptions([...currentQ.options])
+        if (currentQuestion < 4) {
+          setCurrentQuestion(currentQuestion + 1)
+        } else {
+          finishGame(score)
+        }
       }, 2000)
     }
   }
@@ -186,6 +209,8 @@ export default function SequenceGame() {
     setScore(0)
     setGameOver(false)
     setShowResult(null)
+    setHadMistake(false)
+    setMasteryTier(null)
   }
 
   if (gameOver) {
@@ -195,6 +220,11 @@ export default function SequenceGame() {
           <CardContent className="p-8 text-center">
             <h1 className="text-4xl font-bold text-indigo-800 mb-4">Game Over!</h1>
             <p className="text-2xl text-indigo-600 mb-6">Your Score: {score} / 5</p>
+            {masteryTier && (
+              <div className="flex justify-center mb-4">
+                <MasteryBadge tier={masteryTier} showLabel />
+              </div>
+            )}
             <div className="flex gap-4 justify-center">
               <Button
                 onClick={handleRestart}
@@ -254,18 +284,21 @@ export default function SequenceGame() {
 
             {/* Slots Row */}
             <div className="flex justify-center gap-4 mb-8">
-              {slots.map((slot, index) => (
-                <div
-                  key={index}
-                  className={`w-16 h-16 border-2 border-dashed border-indigo-300 rounded-lg flex items-center justify-center text-2xl font-bold ${
-                    slot ? 'bg-indigo-100 border-indigo-500' : 'bg-white'
-                  }`}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, index)}
-                >
-                  {slot}
-                </div>
-              ))}
+              {slots.map((slot, index) => {
+                const isWrong = slot !== null && slot !== currentQ.correctAnswers[index]
+                return (
+                  <div
+                    key={index}
+                    className={`w-16 h-16 border-2 border-dashed border-indigo-300 rounded-lg flex items-center justify-center text-2xl font-bold ${
+                      slot ? (isWrong ? 'bg-red-100 border-red-500' : 'bg-indigo-100 border-indigo-500') : 'bg-white'
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, index)}
+                  >
+                    {slot}
+                  </div>
+                )
+              })}
             </div>
 
             {/* Options Row */}

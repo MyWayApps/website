@@ -7,14 +7,20 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Volume2, Star, RotateCcw } from "lucide-react"
 import { getLessonById } from "@/lib/telugu-comprehension-data"
 import { playTeluguTTS } from "@/lib/telugu-tts"
+import { useCurrentUser } from "@/hooks/use-current-user"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 import { romanize } from "@/lib/transliteration"
+import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 export default function Game2Page() {
   const params = useParams()
   const lessonId = parseInt(params.id as string)
   const lesson = getLessonById(lessonId)
-  
+  const { user, isConnected } = useCurrentUser()
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [isAnswered, setIsAnswered] = useState(false)
@@ -22,6 +28,8 @@ export default function Game2Page() {
   const [showCelebration, setShowCelebration] = useState(false)
   const [showSadFace, setShowSadFace] = useState(false)
   const [isPlayingTTS, setIsPlayingTTS] = useState(false)
+  const [isComplete, setIsComplete] = useState(false)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
 
   const handleBackToLesson = () => {
     window.location.href = `/telugu-comprehension/lesson/${lessonId}`
@@ -59,17 +67,30 @@ export default function Game2Page() {
     }
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentQuestionIndex < lesson!.game2Questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1)
       setSelectedAnswer(null)
       setIsAnswered(false)
-    } else {
-      // Game complete
-      const percentage = Math.round((score / lesson!.game2Questions.length) * 100)
-      alert(`🎉 Game Complete!\n\nYou got ${score} out of ${lesson!.game2Questions.length} correct!\nScore: ${percentage}%`)
-      handleBackToLesson()
+      return
     }
+
+    // Game complete
+    setIsComplete(true)
+    if (!user) return
+
+    const applicationId = `telugu-comprehension-lesson-${lessonId}-game2`
+    await saveGameScore({
+      userId: user.id,
+      applicationId,
+      score,
+      maxScore: lesson!.game2Questions.length,
+      subject: "Telugu",
+      isConnected,
+    })
+
+    const tier = await getActivityMasteryTier(user.id, applicationId, `telugu-comprehension:${lessonId}:game2`)
+    setMasteryTier(tier)
   }
 
   const handleReset = () => {
@@ -81,6 +102,35 @@ export default function Game2Page() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-200 to-pink-400 flex items-center justify-center">
         <div className="text-4xl font-bold text-white">Lesson not found</div>
+      </div>
+    )
+  }
+
+  if (isComplete) {
+    const percentage = Math.round((score / lesson.game2Questions.length) * 100)
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-200 to-pink-400 flex items-center justify-center p-4">
+        <Card className="bg-white/95 shadow-2xl border-4 border-white max-w-md w-full">
+          <CardContent className="p-8 text-center space-y-4">
+            <div className="text-6xl">🎉</div>
+            <h2 className="text-3xl font-bold text-purple-900">Game Complete!</h2>
+            <p className="text-xl text-purple-800">
+              You got {score} out of {lesson.game2Questions.length} correct! ({percentage}%)
+            </p>
+            {masteryTier && (
+              <div className="flex justify-center py-2">
+                <MasteryBadge tier={masteryTier} />
+              </div>
+            )}
+            <Button
+              onClick={handleBackToLesson}
+              className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold text-xl px-8 py-4 rounded-full shadow-lg"
+              size="lg"
+            >
+              Back to Lesson
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }

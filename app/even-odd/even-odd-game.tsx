@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star } from "lucide-react"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 type GameMode = "menu" | "setup" | "playing"
-type GameType = "drag-baskets" | "select-even" | "select-odd"
+type GameType = "drag-baskets" | "select-even" | "select-odd" | "dot-grid"
 
 interface User {
   id: string
@@ -25,18 +28,55 @@ interface GameData {
 
 interface EvenOddGameProps {
   user?: User | null
+  applicationId?: string
   onGameComplete?: (score: number, maxScore: number, gameData: GameData) => void
   onBackToHome?: () => void
 }
 
 const successSoundFreqs = [523.25, 659.25, 783.99, 1046.5] // victory
 
-export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGameProps = {}) {
+// Renders `count` (1-20) as one or two 2x5 ten-frames of filled/empty cells —
+// lets a child visually check for a leftover "odd one out" by scanning pairs.
+function TenFrames({ count }: { count: number }) {
+  const frames = count <= 10 ? [count] : [10, count - 10]
+  return (
+    <div className="flex flex-wrap justify-center gap-6">
+      {frames.map((frameCount, frameIdx) => (
+        <div key={frameIdx} className="grid grid-cols-5 grid-rows-2 gap-2">
+          {Array.from({ length: 10 }, (_, i) => (
+            <div
+              key={i}
+              className={`w-10 h-10 rounded-xl border-4 flex items-center justify-center ${
+                i < frameCount ? "bg-indigo-500 border-indigo-700" : "bg-white border-indigo-200"
+              }`}
+            >
+              {i < frameCount && <div className="w-4 h-4 rounded-full bg-white/90" />}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export default function EvenOddGame({ user, applicationId, onGameComplete, onBackToHome }: EvenOddGameProps = {}) {
   const [currentMode, setCurrentMode] = useState<GameMode>("menu")
   const [gameType, setGameType] = useState<GameType>("drag-baskets")
   const [rangeMax, setRangeMax] = useState<number>(10)
   const [gameStartTime, setGameStartTime] = useState(0)
   const [score, setScore] = useState(0)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
+
+  useEffect(() => {
+    if (currentMode !== "setup" || !user || !applicationId) return
+    let cancelled = false
+    getActivityMasteryTier(user.id, applicationId, "even-odd:default").then((tier) => {
+      if (!cancelled) setMasteryTier(tier)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [currentMode, user, applicationId])
 
   // Shared numbers pool for the round
   const numbers = useMemo(() => {
@@ -54,6 +94,15 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
 
   // select modes state
   const [selected, setSelected] = useState<Set<number>>(new Set())
+
+  // dot-grid quiz state — a 5-question round, one number at a time,
+  // independent of the "sort the whole range" mechanic the other two modes use.
+  const [dotQuestionIndex, setDotQuestionIndex] = useState(0)
+  const [dotScore, setDotScore] = useState(0)
+  const [dotNumber, setDotNumber] = useState(1)
+  const [dotAnswered, setDotAnswered] = useState(false)
+  const [dotSelected, setDotSelected] = useState<"even" | "odd" | null>(null)
+  const [dotRoundDone, setDotRoundDone] = useState(false)
 
   // Audio
   const playSound = (frequencies: number[], isCorrect: boolean) => {
@@ -98,15 +147,50 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
     }
   }
 
+  const isEven = (n: number) => n % 2 === 0
+
+  // Ten-frame visuals only make sense up to 20 (two frames of ten) — clamp
+  // regardless of the shared range picker so the dot grid never overflows.
+  const dotGridMax = Math.min(rangeMax, 20)
+
   const startGame = () => {
     setScore(0)
     setSelected(new Set())
     setPlaced({ even: [], odd: [] })
     setGameStartTime(Date.now())
+    if (gameType === "dot-grid") {
+      setDotQuestionIndex(0)
+      setDotScore(0)
+      setDotNumber(randInt(1, dotGridMax))
+      setDotAnswered(false)
+      setDotSelected(null)
+      setDotRoundDone(false)
+    }
     setCurrentMode("playing")
   }
 
-  const isEven = (n: number) => n % 2 === 0
+  const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min
+
+  const handleDotAnswer = (choice: "even" | "odd") => {
+    if (dotAnswered) return
+    const correct = (choice === "even") === isEven(dotNumber)
+    setDotSelected(choice)
+    setDotAnswered(true)
+    correct ? playCorrectSound() : playWrongSound()
+    const newDotScore = correct ? dotScore + 1 : dotScore
+
+    setTimeout(() => {
+      if (correct) setDotScore(newDotScore)
+      if (dotQuestionIndex < 4) {
+        setDotQuestionIndex(dotQuestionIndex + 1)
+        setDotNumber(randInt(1, dotGridMax))
+        setDotAnswered(false)
+        setDotSelected(null)
+      } else {
+        setDotRoundDone(true)
+      }
+    }, 1500)
+  }
 
   // Completion checks
   const totalEvens = useMemo(() => numbers.filter((n) => isEven(n)).length, [numbers])
@@ -299,6 +383,11 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
               <div className="text-center mb-8">
                 <h2 className="text-4xl font-bold text-purple-800 mb-4 font-sans">Game Setup</h2>
                 <p className="text-lg text-purple-700 font-medium">Choose number range and game type</p>
+                {masteryTier && (
+                  <div className="flex justify-center mt-3">
+                    <MasteryBadge tier={masteryTier} showLabel />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-10">
@@ -326,7 +415,7 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
                 {/* Game type selection */}
                 <div className="text-center">
                   <h3 className="text-2xl font-bold text-gray-700 mb-6">Select Game</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <Button
                       onClick={() => setGameType("drag-baskets")}
                       className={`h-28 text-lg font-bold border-4 transition-all duration-300 ${
@@ -372,6 +461,22 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
                         <span className="text-3xl">🌸</span>
                         <span>Select All Odd</span>
                         <span className="text-xs">Flowers theme</span>
+                      </div>
+                    </Button>
+
+                    <Button
+                      onClick={() => setGameType("dot-grid")}
+                      className={`h-28 text-lg font-bold border-4 transition-all duration-300 ${
+                        gameType === "dot-grid"
+                          ? "bg-gradient-to-r from-indigo-400 to-purple-500 text-white border-white shadow-lg scale-105"
+                          : "bg-white/20 text-gray-700 border-gray-300 hover:bg-white/30"
+                      }`}
+                      variant="outline"
+                    >
+                      <div className="flex flex-col items-center">
+                        <span className="text-3xl">🔵</span>
+                        <span>Odd or Even?</span>
+                        <span className="text-xs">Ten-frame dots</span>
                       </div>
                     </Button>
                   </div>
@@ -431,13 +536,70 @@ export default function EvenOddGame({ onGameComplete, onBackToHome }: EvenOddGam
                 {gameType === "drag-baskets" && "Drag the numbers to the correct baskets"}
                 {gameType === "select-even" && "Tap all the EVEN numbers (⚽️ balls)"}
                 {gameType === "select-odd" && "Tap all the ODD numbers (🌸 flowers)"}
+                {gameType === "dot-grid" && "Is the number of dots Even or Odd?"}
               </h2>
               <div className="text-purple-700">
-                Range: 1 to {rangeMax} • {gameType.replace("-", " ")}
+                {gameType === "dot-grid"
+                  ? `Question ${dotQuestionIndex + 1} of 5 • Score: ${dotScore}`
+                  : `Range: 1 to ${rangeMax} • ${gameType.replace("-", " ")}`}
               </div>
             </div>
 
-            {gameType === "drag-baskets" ? (
+            {gameType === "dot-grid" ? (
+              <div className="space-y-6 text-center">
+                {dotRoundDone ? (
+                  <div className="p-8 bg-gradient-to-r from-indigo-100 to-purple-100 border-4 border-indigo-300 rounded-2xl">
+                    <div className="text-5xl mb-3">🏆</div>
+                    <div className="text-3xl font-bold text-indigo-700 mb-4">You scored {dotScore} / 5!</div>
+                    <div className="flex justify-center gap-4">
+                      <Button
+                        onClick={startGame}
+                        className="h-12 text-lg font-bold bg-gradient-to-r from-green-500 to-blue-600 text-white px-6 rounded-2xl shadow-lg"
+                      >
+                        Play Again
+                      </Button>
+                      <Button
+                        onClick={() => setCurrentMode("setup")}
+                        className="h-12 text-lg font-bold bg-white/60 text-indigo-800 border-2 border-indigo-300 px-6 rounded-2xl"
+                        variant="outline"
+                      >
+                        Back to Setup
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-gray-500 text-sm">Look for pairs — if one dot is left over, it's odd!</p>
+                    <TenFrames count={dotNumber} />
+                    <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto mt-6">
+                      {(["even", "odd"] as const).map((choice) => {
+                        let cardClass = "bg-white hover:bg-gray-50 border-gray-300"
+                        if (dotAnswered) {
+                          const isRight = (choice === "even") === isEven(dotNumber)
+                          if (isRight) cardClass = "bg-green-100 border-green-500"
+                          else if (choice === dotSelected) cardClass = "bg-red-100 border-red-500"
+                        }
+                        return (
+                          <button
+                            key={choice}
+                            onClick={() => handleDotAnswer(choice)}
+                            disabled={dotAnswered}
+                            className={`h-16 rounded-2xl border-4 text-xl font-bold text-gray-800 shadow transition-all ${cardClass}`}
+                          >
+                            {choice === "even" ? "Even" : "Odd"}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {dotAnswered && (
+                      <div className={`text-lg font-bold ${isEven(dotNumber) === (dotSelected === "even") ? "text-green-600" : "text-red-600"}`}>
+                        {dotNumber} is {isEven(dotNumber) ? "Even" : "Odd"}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ) : gameType === "drag-baskets" ? (
               <div className="space-y-6">
                 {/* Numbers pool */}
                 <div>

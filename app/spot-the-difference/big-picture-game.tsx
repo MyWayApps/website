@@ -1,15 +1,23 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star } from "lucide-react"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 import { pickUnseen } from "@/lib/question-history"
 import { SCENES, applyDifference, differenceTarget, type Scene, type SceneElement } from "@/lib/spot-the-difference-data"
+import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
+import type { User } from "@/lib/database-supabase"
 
 interface BigPictureGameProps {
   onBackToModes: () => void
+  user?: User | null
+  applicationId?: string
+  isConnected?: boolean
 }
 
 const ROUND_COUNT = 3
@@ -33,7 +41,7 @@ interface MissMarker {
   yPct: number
 }
 
-export default function BigPictureGame({ onBackToModes }: BigPictureGameProps) {
+export default function BigPictureGame({ onBackToModes, user, applicationId, isConnected = false }: BigPictureGameProps) {
   const [rounds, setRounds] = useState<Scene[]>(() => pickRounds())
   const [roundIndex, setRoundIndex] = useState(0)
   const [score, setScore] = useState(0)
@@ -41,10 +49,29 @@ export default function BigPictureGame({ onBackToModes }: BigPictureGameProps) {
   const [missMarker, setMissMarker] = useState<MissMarker | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [sessionComplete, setSessionComplete] = useState(false)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
 
   const scene = rounds[roundIndex]
   const elementsB = applyDifference(scene)
   const target = differenceTarget(scene)
+
+  // Persist the session score and refresh the mastery tier once the round set ends.
+  useEffect(() => {
+    if (!sessionComplete || !user || !applicationId) return
+    saveGameScore({
+      userId: user.id,
+      applicationId,
+      score,
+      maxScore: ROUND_COUNT,
+      gameData: { mode: "big-picture", roundCount: ROUND_COUNT },
+      isConnected,
+    })
+      .then(() =>
+        getActivityMasteryTier(user.id, applicationId, "spot-the-difference:big-picture").then(setMasteryTier),
+      )
+      .catch(console.error)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionComplete])
 
   const handlePlayAgain = () => {
     setRounds(pickRounds())
@@ -54,6 +81,7 @@ export default function BigPictureGame({ onBackToModes }: BigPictureGameProps) {
     setMissMarker(null)
     setShowConfetti(false)
     setSessionComplete(false)
+    setMasteryTier(null)
   }
 
   const handlePanelClick = (panel: "A" | "B", e: React.MouseEvent<HTMLDivElement>) => {
@@ -97,6 +125,11 @@ export default function BigPictureGame({ onBackToModes }: BigPictureGameProps) {
             <div className="text-6xl mb-4">🏆</div>
             <h2 className="text-4xl font-bold text-fuchsia-600 mb-4">Great Job!</h2>
             <p className="text-2xl text-gray-700 mb-6">You found {score}/{ROUND_COUNT}!</p>
+            {masteryTier && (
+              <div className="flex justify-center mb-6">
+                <MasteryBadge tier={masteryTier} showLabel />
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button
                 onClick={handlePlayAgain}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useParams } from "next/navigation"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,11 +12,20 @@ import {
   startContinuousReadingAssessment,
   type ReadingSession,
 } from "@/lib/reading-coach/web-speech-recognition"
+import { recognizeOneSentence, ensureMicrophoneAccess } from "@/lib/reading-coach/web-speech-single-utterance"
+import { isSafari } from "@/lib/reading-coach/browser-detect"
 import {
   ReadingSessionAggregator,
   type SentenceProgress,
   type SessionSummary,
 } from "@/lib/reading-coach/session-aggregator"
+import { useCurrentUser } from "@/hooks/use-current-user"
+import { getApplicationByName } from "@/lib/database-supabase"
+import type { Application } from "@/lib/database-supabase"
+import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 type Status = "idle" | "listening" | "finished"
 type WordStatus = "pending" | "correct" | "incorrect" | "tentative" | "pointer"
@@ -106,6 +115,48 @@ export default function EnglishReadingLessonPage() {
   const [error, setError] = useState<string | null>(null)
   const [micStatus, setMicStatus] = useState<string>("")
 
+  const { user, isConnected } = useCurrentUser()
+  const [app, setApp] = useState<Application | null>(null)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
+
+  useEffect(() => {
+    if (isConnected) {
+      getApplicationByName("English Reading Coach")
+        .then(setApp)
+        .catch((err) => console.error("Error loading English Reading Coach application:", err))
+    } else {
+      const appData = localStorage.getItem("mywayapps_current_app")
+      if (appData) setApp(JSON.parse(appData))
+    }
+  }, [isConnected])
+
+  // Per-lesson mastery badge on the results screen — one Applications row is
+  // shared across every passage, so the tier is scoped to this lesson's id.
+  useEffect(() => {
+    if (!summary || !user || !app) return
+    let cancelled = false
+    getActivityMasteryTier(user.id, app.id, `english-reading:${passageId}`, {
+      modeFilter: (gameData) => gameData?.lessonId === passageId,
+    }).then((tier) => {
+      if (!cancelled) setMasteryTier(tier)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [summary, user, app, passageId])
+
+  // Safari doesn't reliably support the continuous, auto-restarting session
+  // used everywhere else (background restarts have no user gesture, which
+  // Safari's stricter activation rules reject) — it gets a per-sentence
+  // tap-to-record flow instead. Computed once; the browser doesn't change mid-session.
+  const [isSafariBrowser] = useState(() => isSafari())
+  const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0)
+  const [micReady, setMicReady] = useState(false)
+  // Guards a Safari recognition result that resolves after the reader
+  // already hit "Finish" — without this, a late result could still mutate
+  // state after the summary screen is already showing.
+  const sessionActiveRef = useRef(false)
+
   const aggregatorRef = useRef<ReadingSessionAggregator | null>(null)
   const sessionRef = useRef<ReadingSession | null>(null)
 
@@ -117,9 +168,35 @@ export default function EnglishReadingLessonPage() {
     )
   }
 
+  // Shared by all three ways a session can end (auto-stop, manual stop,
+  // Safari's per-sentence "Finish Now") — records the accuracy score so
+  // this lesson's mastery badge (and any future dashboard) has evidence to
+  // work from, which this page never wrote to Supabase before.
+  const completeSession = (finalSummary: SessionSummary | null) => {
+    setSummary(finalSummary)
+    setStatus("finished")
+    if (!finalSummary || !user || !app) return
+    saveGameScore({
+      userId: user.id,
+      applicationId: app.id,
+      score: Math.round(finalSummary.accuracyScore),
+      maxScore: 100,
+      gameData: {
+        mode: "english-reading",
+        lessonId: passageId,
+        accuracyScore: finalSummary.accuracyScore,
+        completenessScore: finalSummary.completenessScore,
+        mistakeCount: finalSummary.mistakes.length,
+      },
+      isConnected,
+      subject: "English",
+    }).catch((err) => console.error("Error saving English Reading Coach score:", err))
+  }
+
   const handleStartReading = async () => {
     setError(null)
     setSummary(null)
+    setMasteryTier(null)
     setMicStatus("starting…")
     setTentativeCount(0)
     aggregatorRef.current = new ReadingSessionAggregator(passage.passage)
@@ -153,13 +230,78 @@ export default function EnglishReadingLessonPage() {
     }
   }
 
+  // Safari flow, part 1: request mic permission up front (this `await` is
+  // fine here since no recognition `.start()` call happens in this
+  // handler) and get ready to read the first sentence. The actual
+  // recognition calls happen later, directly inside each "Read this line"
+  // tap — see handleReadCurrentSentence.
+  const handleSafariStart = async () => {
+    setError(null)
+    setSummary(null)
+    setMasteryTier(null)
+    setMicStatus("starting…")
+    setTentativeCount(0)
+    setCurrentSentenceIndex(0)
+    aggregatorRef.current = new ReadingSessionAggregator(passage.passage)
+    setSentenceProgress(aggregatorRef.current.getSentenceProgress())
+
+    try {
+      await ensureMicrophoneAccess()
+      sessionActiveRef.current = true
+      setMicReady(true)
+      setMicStatus("")
+      setStatus("listening")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  // Safari flow, part 2: called directly from the "Read this line" button's
+  // onClick — recognizeOneSentence() starts listening synchronously, with
+  // no `await` in front of this call, which is what Safari requires.
+  const handleReadCurrentSentence = () => {
+    const sentence = passage.passage[currentSentenceIndex]
+    if (!sentence) return
+
+    recognizeOneSentence(sentence, "en-US", {
+      onProgress: (matchedCount) => setTentativeCount(matchedCount),
+      onStatus: (s) => setMicStatus(s),
+    })
+      .then((result) => {
+        if (!sessionActiveRef.current) return
+        aggregatorRef.current?.addUtterance(result)
+        setSentenceProgress([...(aggregatorRef.current?.getSentenceProgress() ?? [])])
+        setTentativeCount(0)
+        setMicStatus("")
+
+        const nextIndex = currentSentenceIndex + 1
+        if (nextIndex >= passage.passage.length) {
+          sessionActiveRef.current = false
+          completeSession(aggregatorRef.current?.getSummary() ?? null)
+        } else {
+          setCurrentSentenceIndex(nextIndex)
+        }
+      })
+      .catch((err) => {
+        if (!sessionActiveRef.current) return
+        setMicStatus("")
+        setError(err instanceof Error ? err.message : String(err))
+      })
+  }
+
+  // Safari flow, part 3: stop early and score whatever's been read so far.
+  const handleSafariFinish = () => {
+    sessionActiveRef.current = false
+    setMicStatus("")
+    completeSession(aggregatorRef.current?.getSummary() ?? null)
+  }
+
   const handleStopReading = async () => {
     await sessionRef.current?.stop()
     sessionRef.current = null
     setMicStatus("")
     setTentativeCount(0)
-    setSummary(aggregatorRef.current?.getSummary() ?? null)
-    setStatus("finished")
+    completeSession(aggregatorRef.current?.getSummary() ?? null)
   }
 
   const handlePlayPassage = async () => {
@@ -227,35 +369,84 @@ export default function EnglishReadingLessonPage() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-center mb-6">
-          {status !== "listening" ? (
-            <Button
-              onClick={handleStartReading}
-              className="bg-green-500 hover:bg-green-600 text-white text-xl px-8 py-6 rounded-full font-bold"
-            >
-              <Mic className="mr-2 h-6 w-6" />
-              Start Reading
-            </Button>
-          ) : (
-            <Button
-              onClick={handleStopReading}
-              className="bg-red-500 hover:bg-red-600 text-white text-xl px-8 py-6 rounded-full font-bold animate-pulse"
-            >
-              <Square className="mr-2 h-6 w-6" />
-              Stop Reading
-            </Button>
-          )}
-        </div>
-
-        {status === "listening" && (
-          <div className="text-center mb-6">
-            <div className="inline-block bg-white/70 rounded-full px-4 py-1 text-orange-800 font-semibold text-sm">
-              {micStatus === "speech-detected" && "🗣️ Speech detected"}
-              {micStatus === "processing" && "⏳ Processing…"}
-              {micStatus === "listening" && "🎤 Listening…"}
-              {!micStatus && "🎤 Starting…"}
+        {isSafariBrowser ? (
+          <>
+            <div className="flex flex-col items-center gap-3 mb-6">
+              {status !== "listening" ? (
+                <Button
+                  onClick={handleSafariStart}
+                  className="bg-green-500 hover:bg-green-600 text-white text-xl px-8 py-6 rounded-full font-bold"
+                >
+                  <Mic className="mr-2 h-6 w-6" />
+                  Start Reading
+                </Button>
+              ) : micReady ? (
+                <>
+                  <Button
+                    onClick={handleReadCurrentSentence}
+                    className="bg-green-500 hover:bg-green-600 text-white text-xl px-8 py-6 rounded-full font-bold"
+                  >
+                    <Mic className="mr-2 h-6 w-6" />
+                    Read Line {currentSentenceIndex + 1} of {passage.passage.length}
+                  </Button>
+                  <Button
+                    onClick={handleSafariFinish}
+                    className="bg-white/60 hover:bg-white/80 text-orange-900 text-sm px-4 py-2 rounded-full font-semibold"
+                    variant="outline"
+                  >
+                    <Square className="mr-2 h-4 w-4" />
+                    Finish Now
+                  </Button>
+                </>
+              ) : (
+                <div className="text-orange-800 font-semibold">🎤 Starting…</div>
+              )}
             </div>
-          </div>
+
+            {status === "listening" && micReady && (
+              <div className="text-center mb-6">
+                <div className="inline-block bg-white/70 rounded-full px-4 py-1 text-orange-800 font-semibold text-sm">
+                  {micStatus === "speech-detected" && "🗣️ Speech detected"}
+                  {micStatus === "processing" && "⏳ Processing…"}
+                  {micStatus === "listening" && "🎤 Listening…"}
+                  {!micStatus && "Tap the button above, then read the highlighted line aloud"}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex justify-center mb-6">
+              {status !== "listening" ? (
+                <Button
+                  onClick={handleStartReading}
+                  className="bg-green-500 hover:bg-green-600 text-white text-xl px-8 py-6 rounded-full font-bold"
+                >
+                  <Mic className="mr-2 h-6 w-6" />
+                  Start Reading
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleStopReading}
+                  className="bg-red-500 hover:bg-red-600 text-white text-xl px-8 py-6 rounded-full font-bold animate-pulse"
+                >
+                  <Square className="mr-2 h-6 w-6" />
+                  Stop Reading
+                </Button>
+              )}
+            </div>
+
+            {status === "listening" && (
+              <div className="text-center mb-6">
+                <div className="inline-block bg-white/70 rounded-full px-4 py-1 text-orange-800 font-semibold text-sm">
+                  {micStatus === "speech-detected" && "🗣️ Speech detected"}
+                  {micStatus === "processing" && "⏳ Processing…"}
+                  {micStatus === "listening" && "🎤 Listening…"}
+                  {!micStatus && "🎤 Starting…"}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {error && (
@@ -270,6 +461,11 @@ export default function EnglishReadingLessonPage() {
           <Card className="bg-white/90 backdrop-blur-sm shadow-2xl border-4 border-white">
             <CardContent className="p-8">
               <h2 className="text-2xl font-bold text-blue-900 mb-4">Result</h2>
+              {masteryTier && (
+                <div className="flex justify-center mb-4">
+                  <MasteryBadge tier={masteryTier} showLabel />
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <ScoreTile label="Accuracy" value={summary.accuracyScore} />
                 <ScoreTile label="Completeness" value={summary.completenessScore} />

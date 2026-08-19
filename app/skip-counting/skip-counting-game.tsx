@@ -1,11 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Star } from 'lucide-react'
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 type GameMode = "menu" | "count-by-2" | "count-by-3" | "count-by-5" | "count-by-10"
 type PlayableGameMode = Exclude<GameMode, "menu">
@@ -24,6 +27,7 @@ interface GameData {
 
 interface SkipCountingGameProps {
   user?: User | null
+  applicationId?: string
   onGameComplete?: (score: number, maxScore: number, gameData: GameData) => void
   onBackToHome?: () => void
 }
@@ -79,7 +83,7 @@ const gameData: Record<PlayableGameMode, {
   },
 }
 
-export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipCountingGameProps = {}) {
+export default function SkipCountingGame({ user, applicationId, onGameComplete, onBackToHome }: SkipCountingGameProps = {}) {
   const [currentMode, setCurrentMode] = useState<GameMode>("menu")
   const [currentIndex, setCurrentIndex] = useState(0)
   const [userInput, setUserInput] = useState("")
@@ -92,6 +96,32 @@ export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipC
     "count-by-5": 0,
     "count-by-10": 0,
   })
+  const [modeTiers, setModeTiers] = useState<Partial<Record<PlayableGameMode, MasteryTier>>>({})
+
+  // Per skip-count-number mastery badges on the menu — game_data already
+  // records which mode was played via `mode`.
+  useEffect(() => {
+    if (currentMode !== "menu" || !user || !applicationId) return
+    let cancelled = false
+
+    const loadTiers = async () => {
+      const modes = Object.keys(gameData) as PlayableGameMode[]
+      const entries = await Promise.all(
+        modes.map(async (m) => {
+          const tier = await getActivityMasteryTier(user.id, applicationId, `skip-counting:${m}`, {
+            modeFilter: (gd) => gd?.mode === m,
+          })
+          return [m, tier] as const
+        }),
+      )
+      if (!cancelled) setModeTiers(Object.fromEntries(entries))
+    }
+
+    loadTiers()
+    return () => {
+      cancelled = true
+    }
+  }, [currentMode, user, applicationId])
 
   // Audio context for sound effects
   const playSound = (frequencies: number[], isCorrect: boolean) => {
@@ -162,66 +192,57 @@ export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipC
   }
 
   const handleSubmit = () => {
-    if (currentMode === "menu") return
+    if (currentMode === "menu" || showFeedback) return
 
     const currentGame = gameData[currentMode as PlayableGameMode]
     const correctAnswer = currentGame.sequence[currentIndex]
     const userAnswer = Number.parseInt(userInput)
+    const correct = userAnswer === correctAnswer
+    const newScore = correct ? score + 1 : score
 
-    if (userAnswer === correctAnswer) {
-      setIsCorrect(true)
-      setScore(score + 1)
-      setShowFeedback(true)
+    // Single-shot: one attempt per question, then always advance — matches
+    // the answer-lock pattern used elsewhere instead of letting a wrong
+    // answer be retried indefinitely on the same question.
+    setIsCorrect(correct)
+    setShowFeedback(true)
+    correct ? playCorrectSound() : playWrongSound()
 
-      // Play correct answer sound
-      playCorrectSound()
+    setTimeout(() => {
+      if (correct) setScore(newScore)
 
-      setTimeout(() => {
-        if (currentIndex < currentGame.sequence.length - 1) {
-          setCurrentIndex(currentIndex + 1)
-          setUserInput("")
-          setShowFeedback(false)
-        } else {
-          // Game completed - play victory sound
-          setTimeout(() => {
-            playSound([523.25, 659.25, 783.99, 1046.5], true)
-          }, 500)
-
-          // Save score to database
-          if (onGameComplete) {
-            const currentPicture = getCurrentPicture(currentMode)
-            onGameComplete(score + 1, currentGame.sequence.length, {
-              mode: currentMode,
-              pictureSet: currentPicture?.name,
-              completionTime: Date.now(), // You can track actual time
-            })
-          }
-
-          setTimeout(() => {
-            if (onBackToHome) {
-              onBackToHome()
-            } else {
-              setCurrentMode("menu")
-              setCurrentIndex(0)
-              setUserInput("")
-              setShowFeedback(false)
-              setScore(0)
-            }
-          }, 2000)
-        }
-      }, 1500)
-    } else {
-      setIsCorrect(false)
-      setShowFeedback(true)
-
-      // Play wrong answer sound
-      playWrongSound()
-
-      setTimeout(() => {
-        setShowFeedback(false)
+      if (currentIndex < currentGame.sequence.length - 1) {
+        setCurrentIndex(currentIndex + 1)
         setUserInput("")
-      }, 1500)
-    }
+        setShowFeedback(false)
+      } else {
+        // Game completed - play victory sound
+        setTimeout(() => {
+          playSound([523.25, 659.25, 783.99, 1046.5], true)
+        }, 500)
+
+        // Save score to database
+        if (onGameComplete) {
+          const currentPicture = getCurrentPicture(currentMode)
+          onGameComplete(newScore, currentGame.sequence.length, {
+            mode: currentMode,
+            pictureSet: currentPicture?.name,
+            completionTime: Date.now(), // You can track actual time
+          })
+        }
+
+        setTimeout(() => {
+          if (onBackToHome) {
+            onBackToHome()
+          } else {
+            setCurrentMode("menu")
+            setCurrentIndex(0)
+            setUserInput("")
+            setShowFeedback(false)
+            setScore(0)
+          }
+        }, 2000)
+      }
+    }, 1500)
   }
 
   const getCurrentPicture = (mode: GameMode) => {
@@ -318,6 +339,7 @@ export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipC
                       <span className="text-4xl">{nextPicture.emoji}</span>
                       <span className="font-sans">{data.title}</span>
                       <span className="text-sm font-normal">{nextPicture.name}</span>
+                      {modeTiers[gameMode] && <MasteryBadge tier={modeTiers[gameMode]!} showLabel />}
                     </div>
                   </Button>
                 )
@@ -415,7 +437,7 @@ export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipC
 
                   <Button
                     onClick={handleSubmit}
-                    disabled={!userInput.trim()}
+                    disabled={!userInput.trim() || showFeedback}
                     className="bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white font-bold text-xl px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                   >
                     Check Answer! ✨
@@ -428,7 +450,7 @@ export default function SkipCountingGame({ onGameComplete, onBackToHome }: SkipC
                     className={`text-center p-6 rounded-2xl ${isCorrect ? "bg-green-100" : "bg-red-100"} border-4 ${isCorrect ? "border-green-300" : "border-red-300"}`}
                   >
                     <div className={`text-3xl font-bold ${isCorrect ? "text-green-600" : "text-red-600"} mb-2`}>
-                      {isCorrect ? "🎉 Excellent!" : "🤔 Try Again!"}
+                      {isCorrect ? "🎉 Excellent!" : "🤔 Not quite!"}
                     </div>
                     <div className="text-xl font-medium text-gray-700">
                       {isCorrect

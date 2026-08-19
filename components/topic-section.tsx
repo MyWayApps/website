@@ -1,4 +1,5 @@
 import { AppCard } from "./app-card"
+import { SubjectMasteryRollup } from "./subject-mastery-rollup"
 
 interface Application {
   id: string
@@ -28,17 +29,20 @@ interface TopicSectionProps {
   apps: Application[]
   userProgress: UserProgress
   onPlayApp: (app: Application) => void
+  /** Card-level mastery badges use this for every topic; the stacked rollup bar is Math-only for now — see plan's phased pilot rollout. */
+  userId?: string
 }
 
-export function TopicSection({ topic, apps, userProgress, onPlayApp }: TopicSectionProps) {
+export function TopicSection({ topic, apps, userProgress, onPlayApp, userId }: TopicSectionProps) {
   if (apps.length === 0) return null
 
   return (
     <div className="space-y-3">
       <h2 className="text-2xl md:text-3xl font-bold text-center text-white">{topic}</h2>
+      {topic === "Math" && userId && <SubjectMasteryRollup userId={userId} apps={apps} />}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
         {apps.map((app) => (
-          <AppCard key={app.id} app={app} userProgress={userProgress[app.id]} onPlay={onPlayApp} />
+          <AppCard key={app.id} app={app} userProgress={userProgress[app.id]} onPlay={onPlayApp} userId={userId} />
         ))}
       </div>
     </div>

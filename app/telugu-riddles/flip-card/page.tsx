@@ -7,6 +7,12 @@ import { ArrowLeft, RotateCcw, Lightbulb, CheckCircle, Volume2 } from "lucide-re
 import { teluguRiddles, TeluguRiddle } from "@/lib/telugu-riddles-data"
 import { playTeluguTTS } from "@/lib/telugu-tts"
 import { playCorrectSound } from "@/lib/feedback-audio"
+import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
+import type { User, Application } from "@/lib/database-supabase"
+import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 export default function FlipCardGame() {
   const [currentRiddleIndex, setCurrentRiddleIndex] = useState(0)
@@ -14,12 +20,60 @@ export default function FlipCardGame() {
   const [riddlesList, setRiddlesList] = useState<TeluguRiddle[]>([])
   const [score, setScore] = useState(0)
   const [showCelebration, setShowCelebration] = useState(false)
+  const [isComplete, setIsComplete] = useState(false)
+
+  // Scoring/persistence
+  const [user, setUser] = useState<User | null>(null)
+  const [app, setApp] = useState<Application | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
 
   useEffect(() => {
     // Shuffle riddles at the start
     const shuffled = [...teluguRiddles].sort(() => Math.random() - 0.5)
     setRiddlesList(shuffled)
+    initializeScoringData()
   }, [])
+
+  const initializeScoringData = async () => {
+    try {
+      const connected = await testConnection()
+      setIsConnected(connected)
+
+      if (connected) {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        let currentUser: User | null = null
+
+        if (userData) {
+          const parsedUser = JSON.parse(userData)
+          currentUser = await findOrCreateUser({
+            name: parsedUser.name,
+            email: parsedUser.email,
+            age: parsedUser.age,
+            grade: parsedUser.grade,
+          })
+        } else {
+          currentUser = await findOrCreateUser({
+            name: "Demo User",
+            email: "demo@mywayapps.com",
+            age: 8,
+            grade: "3rd Grade",
+          })
+        }
+
+        const application = await getApplicationByName("Telugu Podupu Kathalu")
+        setUser(currentUser)
+        setApp(application)
+      } else {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        const appData = localStorage.getItem("mywayapps_current_app")
+        if (userData) setUser(JSON.parse(userData))
+        if (appData) setApp(JSON.parse(appData))
+      }
+    } catch (error) {
+      console.error("Error initializing scoring data:", error)
+    }
+  }
 
   const currentRiddle = riddlesList[currentRiddleIndex]
 
@@ -51,8 +105,24 @@ export default function FlipCardGame() {
       setIsFlipped(false)
     } else {
       // Game complete
-      alert(`🎉 Game Complete! You solved all ${riddlesList.length} riddles!`)
-      handleRestart()
+      setIsComplete(true)
+      if (user && app) {
+        saveGameScore({
+          userId: user.id,
+          applicationId: app.id,
+          score,
+          maxScore: riddlesList.length,
+          subject: "Telugu",
+          gameData: { mode: "flip-card" },
+          isConnected,
+        })
+          .then(() =>
+            getActivityMasteryTier(user.id, app.id, "telugu-riddles:flip-card")
+              .then(setMasteryTier)
+              .catch((error) => console.error("Error fetching Telugu Riddles mastery tier:", error)),
+          )
+          .catch((error) => console.error("Error saving Telugu Riddles score:", error))
+      }
     }
   }
 
@@ -62,6 +132,8 @@ export default function FlipCardGame() {
     setCurrentRiddleIndex(0)
     setIsFlipped(false)
     setScore(0)
+    setIsComplete(false)
+    setMasteryTier(null)
   }
 
   const handlePlayAudio = async (text: string) => {
@@ -70,6 +142,44 @@ export default function FlipCardGame() {
     } catch (error) {
       console.log("TTS error:", error)
     }
+  }
+
+  if (isComplete) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-200 to-red-400 flex items-center justify-center p-4">
+        <Card className="bg-white/95 shadow-2xl border-4 border-white max-w-md w-full">
+          <CardContent className="p-8 text-center space-y-4">
+            <div className="text-6xl">🎉</div>
+            <h2 className="text-3xl font-bold text-orange-900">Game Complete!</h2>
+            <p className="text-xl text-orange-800">
+              You solved all {riddlesList.length} riddles! Score: {score}
+            </p>
+            {masteryTier && (
+              <div className="flex justify-center py-2">
+                <MasteryBadge tier={masteryTier} />
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
+              <Button
+                onClick={handleRestart}
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-xl px-8 py-4 rounded-full shadow-lg"
+                size="lg"
+              >
+                Play Again
+              </Button>
+              <Button
+                onClick={handleBackToMenu}
+                variant="outline"
+                className="border-2 border-orange-300 text-orange-800 font-bold text-xl px-8 py-4 rounded-full"
+                size="lg"
+              >
+                Back to Menu
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   if (!currentRiddle) {

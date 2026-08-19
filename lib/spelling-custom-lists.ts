@@ -10,6 +10,7 @@ export interface CustomWordList {
 
 const STORAGE_KEY = "spelling-game-custom-word-lists"
 const LEGACY_STORAGE_KEY = "spelling-game-custom-words"
+const DRAFT_STORAGE_KEY = "spelling-game-custom-words-draft"
 
 function splitWords(raw: string): string[] {
   return raw
@@ -74,4 +75,28 @@ export function addCustomWordList(words: string[]): CustomWordList {
 
 export function deleteCustomWordList(id: string) {
   write(readRaw().filter((l) => l.id !== id))
+}
+
+// The in-progress "Custom Words" tab (words added but not yet grouped into a
+// saved list via "Confirm Words") lived only in React state — a refresh or a
+// later visit before confirming silently lost it. Auto-persisting it here
+// means it survives regardless of whether the user ever hits Confirm.
+export function getDraftWords(): string[] {
+  if (typeof window === "undefined") return []
+  try {
+    const saved = window.localStorage.getItem(DRAFT_STORAGE_KEY)
+    return saved ? JSON.parse(saved) : []
+  } catch {
+    return []
+  }
+}
+
+export function saveDraftWords(words: string[]) {
+  if (typeof window === "undefined") return
+  window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(words))
+}
+
+export function clearDraftWords() {
+  if (typeof window === "undefined") return
+  window.localStorage.removeItem(DRAFT_STORAGE_KEY)
 }

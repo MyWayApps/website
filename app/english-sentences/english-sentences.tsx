@@ -11,6 +11,9 @@ import { pickUnseen } from "@/lib/question-history"
 import JumbledWordsGame from "./jumbled-words-game"
 import TypeSentenceGame from "./type-sentence-game"
 import ListenSentenceGame from "./listen-sentence-game"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 type SuiteMode = "menu" | "sentence-selection" | "game-selection" | "playing"
 
@@ -22,6 +25,8 @@ interface GameData {
 }
 
 interface EnglishSentencesProps {
+  userId?: string
+  applicationId?: string
   onGameComplete?: (score: number, maxScore: number, gameData: GameData) => void
   onBackToHome?: () => void
 }
@@ -52,19 +57,45 @@ const GAME_TYPES = [
   },
 ]
 
-export default function EnglishSentences({ onGameComplete, onBackToHome }: EnglishSentencesProps = {}) {
+export default function EnglishSentences({ userId, applicationId, onGameComplete, onBackToHome }: EnglishSentencesProps = {}) {
   const [currentMode, setCurrentMode] = useState<SuiteMode>("menu")
   const [customSentences, setCustomSentences] = useState<CustomSentence[]>([])
   const [newSentenceInput, setNewSentenceInput] = useState("")
   const [currentSentenceList, setCurrentSentenceList] = useState<string[]>([])
+  const [selectedSentences, setSelectedSentences] = useState<Set<string>>(new Set())
   const [selectedGame, setSelectedGame] = useState<string>("")
   const [score, setScore] = useState(0)
   const [gameStartTime, setGameStartTime] = useState(0)
+  const [gameTiers, setGameTiers] = useState<Partial<Record<string, MasteryTier>>>({})
 
   // Custom sentences live in localStorage, so load after mount (SSR has no window).
   useEffect(() => {
     setCustomSentences(getCustomSentences())
   }, [])
+
+  // Per-game-type mastery badges on the game-selection screen — game_data
+  // already records which sub-game was played via `gameType`.
+  useEffect(() => {
+    if (currentMode !== "game-selection" || !userId || !applicationId) return
+    let cancelled = false
+
+    const loadTiers = async () => {
+      const entries = await Promise.all(
+        GAME_TYPES.map(async (game) => {
+          const tier = await getActivityMasteryTier(userId, applicationId, `english-sentences:${game.id}`, {
+            modeFilter: (gameData) => gameData?.gameType === game.id,
+          })
+          return [game.id, tier] as const
+        }),
+      )
+      if (!cancelled) setGameTiers(Object.fromEntries(entries))
+    }
+
+    loadTiers()
+    return () => {
+      cancelled = true
+    }
+  }, [currentMode, userId, applicationId])
 
   const handleAddSentence = () => {
     const entry = addCustomSentence(newSentenceInput)
@@ -75,8 +106,42 @@ export default function EnglishSentences({ onGameComplete, onBackToHome }: Engli
   }
 
   const handleDeleteSentence = (id: string) => {
+    const deleted = customSentences.find((s) => s.id === id)
     deleteCustomSentence(id)
     setCustomSentences((prev) => prev.filter((s) => s.id !== id))
+    if (deleted) {
+      setSelectedSentences((prev) => {
+        const next = new Set(prev)
+        next.delete(deleted.text)
+        return next
+      })
+    }
+  }
+
+  const toggleSentenceSelection = (text: string) => {
+    setSelectedSentences((prev) => {
+      const next = new Set(prev)
+      if (next.has(text)) next.delete(text)
+      else next.add(text)
+      return next
+    })
+  }
+
+  const handleSelectOnlyMine = () => {
+    setSelectedSentences(new Set(customSentences.map((s) => s.text)))
+  }
+
+  const handleClearSelection = () => {
+    setSelectedSentences(new Set())
+  }
+
+  const shuffle = <T,>(items: T[]): T[] => {
+    const result = [...items]
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[result[i], result[j]] = [result[j], result[i]]
+    }
+    return result
   }
 
   const pickSentenceRound = (): string[] => {
@@ -100,7 +165,7 @@ export default function EnglishSentences({ onGameComplete, onBackToHome }: Engli
   }
 
   const handleConfirmSentences = () => {
-    setCurrentSentenceList(pickSentenceRound())
+    setCurrentSentenceList(selectedSentences.size > 0 ? shuffle(Array.from(selectedSentences)) : pickSentenceRound())
     setCurrentMode("game-selection")
   }
 
@@ -225,7 +290,8 @@ export default function EnglishSentences({ onGameComplete, onBackToHome }: Engli
               <div className="text-center mb-8">
                 <h2 className="text-4xl font-bold text-blue-900 mb-4 font-sans">Add / Manage Sentences</h2>
                 <p className="text-lg text-blue-800 font-medium">
-                  Add your own sentences here, or just hit Play Now from the menu — every round automatically mixes in 5 sentences you haven't seen recently.
+                  Add your own sentences, then check the ones you want to practice. Leave nothing checked (or just hit
+                  Play Now from the menu) and every round auto-picks 5 sentences you haven't seen recently.
                 </p>
               </div>
 
@@ -253,50 +319,92 @@ export default function EnglishSentences({ onGameComplete, onBackToHome }: Engli
                   {customSentences.length > 0 && (
                     <div className="max-w-xl mx-auto mt-6 space-y-2">
                       {customSentences.map((s) => (
-                        <div
+                        <label
                           key={s.id}
-                          className="flex items-center justify-between gap-3 bg-blue-50 border-2 border-blue-200 rounded-2xl px-4 py-2 text-left"
+                          className="flex items-center justify-between gap-3 bg-blue-50 border-2 border-blue-200 rounded-2xl px-4 py-2 text-left cursor-pointer"
                         >
-                          <div>
-                            <p className="text-base font-medium text-gray-800">{s.text}</p>
-                            <p className="text-xs text-gray-500">
-                              Added{" "}
-                              {new Date(s.createdAt).toLocaleDateString(undefined, {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </p>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              className="h-5 w-5 shrink-0 accent-blue-600"
+                              checked={selectedSentences.has(s.text)}
+                              onChange={() => toggleSentenceSelection(s.text)}
+                            />
+                            <div>
+                              <p className="text-base font-medium text-gray-800">{s.text}</p>
+                              <p className="text-xs text-gray-500">
+                                Added{" "}
+                                {new Date(s.createdAt).toLocaleDateString(undefined, {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </p>
+                            </div>
                           </div>
                           <button
-                            onClick={() => handleDeleteSentence(s.id)}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              handleDeleteSentence(s.id)
+                            }}
                             className="text-red-500 hover:text-red-700 font-bold shrink-0"
                             aria-label="Delete this sentence"
                           >
                             🗑
                           </button>
-                        </div>
+                        </label>
                       ))}
                     </div>
                   )}
                 </div>
 
-                {/* Ready-made sentences (informational) */}
+                {/* Ready-made sentences */}
                 <div>
                   <h3 className="text-2xl font-bold text-gray-700 mb-4 text-center">Ready-Made Sentences</h3>
                   <div className="max-w-xl mx-auto space-y-2">
                     {BUILTIN_SENTENCES.map((s) => (
-                      <div
+                      <label
                         key={s}
-                        className="bg-white/70 text-gray-800 px-4 py-2 rounded-2xl border-2 border-gray-200 text-left text-base font-medium"
+                        className="flex items-center gap-3 bg-white/70 text-gray-800 px-4 py-2 rounded-2xl border-2 border-gray-200 text-left text-base font-medium cursor-pointer"
                       >
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 shrink-0 accent-blue-600"
+                          checked={selectedSentences.has(s)}
+                          onChange={() => toggleSentenceSelection(s)}
+                        />
                         {s}
-                      </div>
+                      </label>
                     ))}
                   </div>
                 </div>
 
-                <div className="text-center">
+                <div className="text-center space-y-3">
+                  <div className="flex items-center justify-center gap-3 flex-wrap">
+                    {customSentences.length > 0 && (
+                      <Button
+                        onClick={handleSelectOnlyMine}
+                        variant="outline"
+                        className="rounded-2xl border-2 border-blue-300 text-blue-800 font-semibold"
+                      >
+                        Select Only My Sentences
+                      </Button>
+                    )}
+                    {selectedSentences.size > 0 && (
+                      <Button
+                        onClick={handleClearSelection}
+                        variant="outline"
+                        className="rounded-2xl border-2 border-gray-300 text-gray-700 font-semibold"
+                      >
+                        Clear Selection
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-sm font-medium text-blue-800">
+                    {selectedSentences.size > 0
+                      ? `${selectedSentences.size} sentence${selectedSentences.size === 1 ? "" : "s"} selected — these will be used instead of an auto-picked round.`
+                      : "No sentences selected — a round of 5 will be auto-picked."}
+                  </p>
                   <Button
                     onClick={handleConfirmSentences}
                     className="h-16 text-2xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white px-12 py-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
@@ -371,6 +479,7 @@ export default function EnglishSentences({ onGameComplete, onBackToHome }: Engli
                           <h3 className="text-xl font-bold text-gray-800 font-sans">{game.name}</h3>
                           <p className="text-sm text-gray-700 min-h-[2.5rem]">{game.description}</p>
                         </div>
+                        {gameTiers[game.id] && <MasteryBadge tier={gameTiers[game.id]!} showLabel />}
                         <Button
                           className="w-full bg-white/30 hover:bg-white/40 text-gray-800 font-bold border-2 border-white/60 hover:border-white transition-all duration-300"
                           variant="outline"

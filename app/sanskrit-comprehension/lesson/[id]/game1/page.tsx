@@ -7,8 +7,13 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Volume2, Star } from "lucide-react"
 import { getLessonById } from "@/lib/sanskrit-comprehension-data"
 import { useLanguageSpeak } from "@/hooks/use-language-speak"
+import { useCurrentUser } from "@/hooks/use-current-user"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 import { romanize } from "@/lib/transliteration"
+import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 // Sanskrit has no TTS voice of its own — questions/options are transliterated
 // to Kannada script and spoken with the Kannada voice/fallback (lib/sanskrit-tts.ts).
@@ -17,6 +22,7 @@ export default function Game1Page() {
   const lessonId = parseInt(params.id as string)
   const lesson = getLessonById(lessonId)
   const { speakNativeAsync, isSpeaking: isPlayingTTS } = useLanguageSpeak("sanskrit")
+  const { user, isConnected } = useCurrentUser()
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
@@ -24,6 +30,8 @@ export default function Game1Page() {
   const [score, setScore] = useState(0)
   const [showCelebration, setShowCelebration] = useState(false)
   const [showSadFace, setShowSadFace] = useState(false)
+  const [isComplete, setIsComplete] = useState(false)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
 
   const handleBackToLesson = () => {
     window.location.href = `/sanskrit-comprehension/lesson/${lessonId}`
@@ -57,23 +65,65 @@ export default function Game1Page() {
     }
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentQuestionIndex < lesson!.game1Questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1)
       setSelectedAnswer(null)
       setIsAnswered(false)
-    } else {
-      // Game complete
-      const percentage = Math.round((score / lesson!.game1Questions.length) * 100)
-      alert(`🎉 Game Complete!\n\nYou got ${score} out of ${lesson!.game1Questions.length} correct!\nScore: ${percentage}%`)
-      handleBackToLesson()
+      return
     }
+
+    // Game complete
+    setIsComplete(true)
+    if (!user) return
+
+    const applicationId = `sanskrit-comprehension-lesson-${lessonId}-game1`
+    await saveGameScore({
+      userId: user.id,
+      applicationId,
+      score,
+      maxScore: lesson!.game1Questions.length,
+      subject: "Sanskrit",
+      isConnected,
+    })
+
+    const tier = await getActivityMasteryTier(user.id, applicationId, `sanskrit-comprehension:${lessonId}:game1`)
+    setMasteryTier(tier)
   }
 
   if (!lesson) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-200 to-emerald-400 flex items-center justify-center">
         <div className="text-4xl font-bold text-white">Lesson not found</div>
+      </div>
+    )
+  }
+
+  if (isComplete) {
+    const percentage = Math.round((score / lesson.game1Questions.length) * 100)
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-200 to-emerald-400 flex items-center justify-center p-4">
+        <Card className="bg-white/95 shadow-2xl border-4 border-white max-w-md w-full">
+          <CardContent className="p-8 text-center space-y-4">
+            <div className="text-6xl">🎉</div>
+            <h2 className="text-3xl font-bold text-green-900">Game Complete!</h2>
+            <p className="text-xl text-green-800">
+              You got {score} out of {lesson.game1Questions.length} correct! ({percentage}%)
+            </p>
+            {masteryTier && (
+              <div className="flex justify-center py-2">
+                <MasteryBadge tier={masteryTier} />
+              </div>
+            )}
+            <Button
+              onClick={handleBackToLesson}
+              className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold text-xl px-8 py-4 rounded-full shadow-lg"
+              size="lg"
+            >
+              Back to Lesson
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }

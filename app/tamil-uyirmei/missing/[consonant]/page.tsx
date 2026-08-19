@@ -7,11 +7,20 @@ import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react"
 import { useParams } from "next/navigation"
 import { playTamilTTS } from "@/lib/tamil-tts"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { useCurrentUser } from "@/hooks/use-current-user"
+import { getApplicationByName } from "@/lib/database-supabase"
+import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 import { uyirmeiMatraSequence } from "@/lib/tamil-uyirmei-data"
 
 export default function MissingLettersGame() {
   const params = useParams()
   const consonant = decodeURIComponent(params.consonant as string)
+  const { user, isConnected } = useCurrentUser()
+  const [applicationId, setApplicationId] = useState<string | null>(null)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [score, setScore] = useState(0)
   const [gameOver, setGameOver] = useState(false)
@@ -20,9 +29,34 @@ export default function MissingLettersGame() {
   const [questions, setQuestions] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentMissingIndex, setCurrentMissingIndex] = useState<number>(0)
-  const [filledPositions, setFilledPositions] = useState<{[key: number]: string}>({})
+  const [filledPositions, setFilledPositions] = useState<{[key: number]: { value: string; correct: boolean }}>({})
   const [isWaitingForNext, setIsWaitingForNext] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
+
+  const [hadMistake, setHadMistake] = useState(false)
+
+  useEffect(() => {
+    getApplicationByName("Tamil Uyirmei").then((application) => setApplicationId(application?.id ?? null))
+  }, [])
+
+  const finishGame = async (finalScore: number) => {
+    setGameOver(true)
+    if (!user || !applicationId) return
+    await saveGameScore({
+      userId: user.id,
+      applicationId,
+      score: finalScore,
+      maxScore: 5,
+      subject: "Tamil",
+      isConnected,
+    })
+    const tier = await getActivityMasteryTier(
+      user.id,
+      applicationId,
+      `barakhadi:tamil-uyirmei:missing:${consonant}`,
+    )
+    setMasteryTier(tier)
+  }
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
@@ -105,6 +139,7 @@ export default function MissingLettersGame() {
       setSelectedAnswer(null)
       setShowResult(null)
       setShowConfetti(false)
+      setHadMistake(false)
 
       // Play TTS for the full sequence when question loads
       setTimeout(() => {
@@ -130,45 +165,42 @@ export default function MissingLettersGame() {
 
     const currentMissingPos = currentQ.missingIndices[currentMissingIndex]
     const correctAnswer = currentQ.fullSequence[currentMissingPos]
+    const correct = option === correctAnswer
+    // Any wrong pick forfeits this question's point, but we still lock the
+    // choice in and move on — no more unlimited retries per slot.
+    const mistakeSoFar = hadMistake || !correct
 
-    if (option === correctAnswer) {
-      // Correct answer
-      const newFilledPositions = { ...filledPositions, [currentMissingPos]: option }
-      setFilledPositions(newFilledPositions)
+    setIsWaitingForNext(true)
+    setHadMistake(mistakeSoFar)
+    setShowResult(correct ? "correct" : "wrong")
+    correct ? playCorrectSound() : playWrongSound()
 
-      if (currentQ.missingIndices.length === 1 || currentMissingIndex === currentQ.missingIndices.length - 1) {
-        // Single missing or last missing position - complete the question
-        setShowResult("correct")
-        setScore(score + 1)
-        setShowConfetti(true)
-        playCorrectSound()
-        setIsWaitingForNext(true)
-        setTimeout(() => {
-          setShowConfetti(false)
-          if (currentQuestion < 4) {
-            setCurrentQuestion(currentQuestion + 1)
-          } else {
-            setGameOver(true)
-          }
-        }, 4000)
-      } else {
-        // Multiple missing - move to next position
-        setCurrentMissingIndex(currentMissingIndex + 1)
-        setShowResult("correct")
-        setShowConfetti(true)
-        playCorrectSound()
-        setTimeout(() => {
-          setShowResult(null)
-          setShowConfetti(false)
-        }, 2000)
-      }
+    // Fill this slot with whatever was picked, right or wrong, styled
+    // accordingly — instead of silently substituting the correct answer.
+    const newFilledPositions = { ...filledPositions, [currentMissingPos]: { value: option, correct } }
+    setFilledPositions(newFilledPositions)
+
+    const isLastPosition =
+      currentQ.missingIndices.length === 1 || currentMissingIndex === currentQ.missingIndices.length - 1
+
+    if (isLastPosition) {
+      const newScore = mistakeSoFar ? score : score + 1
+      if (!mistakeSoFar) setShowConfetti(true)
+      setTimeout(() => {
+        setShowConfetti(false)
+        setScore(newScore)
+        if (currentQuestion < 4) {
+          setCurrentQuestion(currentQuestion + 1)
+        } else {
+          finishGame(newScore)
+        }
+      }, 4000)
     } else {
-      // Wrong answer
-      setShowResult("wrong")
-      playWrongSound()
       setTimeout(() => {
         setShowResult(null)
-      }, 1500)
+        setIsWaitingForNext(false)
+        setCurrentMissingIndex(currentMissingIndex + 1)
+      }, 2000)
     }
   }
 
@@ -188,6 +220,8 @@ export default function MissingLettersGame() {
     setFilledPositions({})
     setIsWaitingForNext(false)
     setShowConfetti(false)
+    setHadMistake(false)
+    setMasteryTier(null)
     const generatedQuestions = generateQuestions()
     setQuestions(generatedQuestions)
   }
@@ -207,6 +241,11 @@ export default function MissingLettersGame() {
           <CardContent className="p-8 text-center">
             <h1 className="text-4xl font-bold text-indigo-800 mb-4">Game Over!</h1>
             <p className="text-2xl text-indigo-600 mb-6">Your Score: {score} / 5</p>
+            {masteryTier && (
+              <div className="flex justify-center mb-4">
+                <MasteryBadge tier={masteryTier} showLabel />
+              </div>
+            )}
             <div className="flex gap-4 justify-center">
               <Button
                 onClick={handleRestart}
@@ -283,7 +322,9 @@ export default function MissingLettersGame() {
                     key={index}
                     className={`w-16 h-16 border-2 rounded-lg flex items-center justify-center text-2xl font-bold transition-all duration-300 ${
                       isFilled
-                        ? 'border-green-500 bg-green-100 text-green-800'
+                        ? filledPositions[index].correct
+                          ? 'border-green-500 bg-green-100 text-green-800'
+                          : 'border-red-500 bg-red-100 text-red-800'
                         : isCurrentMissing
                         ? 'border-dashed border-yellow-500 bg-yellow-100 text-yellow-600 animate-pulse'
                         : isMissing
@@ -291,7 +332,7 @@ export default function MissingLettersGame() {
                         : 'border-indigo-500 bg-indigo-100 text-indigo-800'
                     }`}
                   >
-                    {isFilled ? filledPositions[index] : letter}
+                    {isFilled ? filledPositions[index].value : letter}
                   </div>
                 )
               })}

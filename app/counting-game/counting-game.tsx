@@ -1,8 +1,14 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Star } from "lucide-react"
+import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
+import type { User, Application } from "@/lib/database-supabase"
+import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 interface Animal {
   id: number
@@ -43,6 +49,61 @@ export default function RabbitGame() {
   const [animalIdCounter, setAnimalIdCounter] = useState(0)
   const [level, setLevel] = useState(1)
   const [targetScore, setTargetScore] = useState(10)
+
+  // Scoring/persistence
+  const [user, setUser] = useState<User | null>(null)
+  const [app, setApp] = useState<Application | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
+
+  // Guards against a single animal being caught more than once: two rapid
+  // clicks/taps on the same animal can both fire before the setAnimals()
+  // removal re-renders, otherwise double-counting its points.
+  const caughtIdsRef = useRef<Set<number>>(new Set())
+
+  useEffect(() => {
+    initializeScoringData()
+  }, [])
+
+  const initializeScoringData = async () => {
+    try {
+      const connected = await testConnection()
+      setIsConnected(connected)
+
+      if (connected) {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        let currentUser: User | null = null
+
+        if (userData) {
+          const parsedUser = JSON.parse(userData)
+          currentUser = await findOrCreateUser({
+            name: parsedUser.name,
+            email: parsedUser.email,
+            age: parsedUser.age,
+            grade: parsedUser.grade,
+          })
+        } else {
+          currentUser = await findOrCreateUser({
+            name: "Demo User",
+            email: "demo@mywayapps.com",
+            age: 8,
+            grade: "3rd Grade",
+          })
+        }
+
+        const application = await getApplicationByName("Catch Me")
+        setUser(currentUser)
+        setApp(application)
+      } else {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        const appData = localStorage.getItem("mywayapps_current_app")
+        if (userData) setUser(JSON.parse(userData))
+        if (appData) setApp(JSON.parse(appData))
+      }
+    } catch (error) {
+      console.error("Error initializing scoring data:", error)
+    }
+  }
 
   // Create audio context for click sound
   const playClickSound = useCallback(() => {
@@ -100,8 +161,10 @@ export default function RabbitGame() {
   }, [animalIdCounter, level])
 
   const clickAnimal = (animalId: number) => {
+    if (caughtIdsRef.current.has(animalId)) return
     const animal = animals.find((a) => a.id === animalId)
     if (animal) {
+      caughtIdsRef.current.add(animalId)
       setScore((prev) => prev + animal.points)
       setAnimals((prev) => prev.filter((a) => a.id !== animalId))
       playClickSound()
@@ -109,17 +172,36 @@ export default function RabbitGame() {
   }
 
   const startGame = () => {
+    caughtIdsRef.current = new Set()
     setGameActive(true)
     setScore(0)
     setTimeLeft(60)
     setLevel(1)
     setTargetScore(10)
     setAnimals([])
+    setMasteryTier(null)
   }
 
   const endGame = () => {
     setGameActive(false)
     setAnimals([])
+
+    if (user && app) {
+      saveGameScore({
+        userId: user.id,
+        applicationId: app.id,
+        score,
+        maxScore: targetScore,
+        gameData: { level, targetScore },
+        isConnected,
+      })
+        .then(() =>
+          getActivityMasteryTier(user.id, app.id, "counting-game:default")
+            .then(setMasteryTier)
+            .catch((error) => console.error("Error fetching Catch Me mastery tier:", error)),
+        )
+        .catch((error) => console.error("Error saving Catch Me score:", error))
+    }
   }
 
   // Game timer
@@ -165,6 +247,11 @@ export default function RabbitGame() {
           <div className="bg-white rounded-lg p-8 text-center shadow-2xl">
             <h2 className="text-3xl font-bold text-orange-800 mb-4">Game Over!</h2>
             <p className="text-xl text-gray-700 mb-4">Final Score: {score}</p>
+            {masteryTier && (
+              <div className="mb-4 flex justify-center">
+                <MasteryBadge tier={masteryTier} showLabel />
+              </div>
+            )}
             <Button
               onClick={startGame}
               className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-6 rounded-lg"

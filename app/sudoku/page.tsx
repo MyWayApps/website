@@ -94,7 +94,12 @@ export default function SudokuPage() {
         </div>
       </div>
 
-      <SudokuGame user={user} onGameComplete={handleGameComplete} onBackToHome={() => router.push("/#games-section")} />
+      <SudokuGame
+        user={user}
+        applicationId={app?.id}
+        onGameComplete={handleGameComplete}
+        onBackToHome={() => router.push("/#games-section")}
+      />
     </div>
   )
 }

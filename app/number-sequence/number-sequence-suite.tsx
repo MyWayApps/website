@@ -1,10 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft } from "lucide-react"
 import type { RoundResult, TopicId } from "./types"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import { APP_SUBMODES } from "@/lib/mastery-config"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 import ForwardBackwardTopic from "./forward-backward-topic"
 import CountingShapesTopic from "./counting-shapes-topic"
 import NumberNeighborsTopic from "./number-neighbors-topic"
@@ -13,6 +17,9 @@ import WhoHasMoreTopic from "./who-has-more-topic"
 import PlaceValueTopic from "./place-value-topic"
 import NeighborGridTopic from "./neighbor-grid-topic"
 import NumberWordsTopic from "./number-words-topic"
+import ArrangeOrderTopic from "./arrange-order-topic"
+import GreatestSmallestTopic from "./greatest-smallest-topic"
+import TensOnesCountTopic from "./tens-ones-count-topic"
 
 interface TopicMeta {
   id: TopicId
@@ -79,15 +86,60 @@ const TOPICS: TopicMeta[] = [
     description: "Type the number in words — and the other way round!",
     gradient: "from-lime-400 to-emerald-600",
   },
+  {
+    id: "arrange-order",
+    label: "Arrange in Order",
+    emoji: "🔀",
+    description: "Tap numbers into increasing or decreasing order",
+    gradient: "from-orange-400 to-yellow-600",
+  },
+  {
+    id: "greatest-smallest",
+    label: "Greatest & Smallest",
+    emoji: "🔎",
+    description: "Find the greatest and smallest number in a set",
+    gradient: "from-rose-400 to-fuchsia-600",
+  },
+  {
+    id: "tens-ones-count",
+    label: "Tens & Ones Counting",
+    emoji: "📦",
+    description: "Count groups of ten plus loose ones",
+    gradient: "from-cyan-400 to-teal-600",
+  },
 ]
 
 interface NumberSequenceSuiteProps {
   onGameComplete: (result: RoundResult) => void
   onBackToHome: () => void
+  userId?: string
+  applicationId?: string
 }
 
-export default function NumberSequenceSuite({ onGameComplete, onBackToHome }: NumberSequenceSuiteProps) {
+export default function NumberSequenceSuite({ onGameComplete, onBackToHome, userId, applicationId }: NumberSequenceSuiteProps) {
   const [activeTopic, setActiveTopic] = useState<TopicId | null>(null)
+  const [topicTiers, setTopicTiers] = useState<Partial<Record<TopicId, MasteryTier>>>({})
+
+  useEffect(() => {
+    if (activeTopic !== null || !userId || !applicationId) return
+    let cancelled = false
+
+    const loadTiers = async () => {
+      const submodes = APP_SUBMODES[applicationId] ?? []
+      const entries = await Promise.all(
+        submodes.map(async (s) => {
+          const tier = await getActivityMasteryTier(userId, applicationId, s.configKey, { modeFilter: s.modeFilter })
+          return [s.id, tier] as const
+        }),
+      )
+      if (!cancelled) setTopicTiers(Object.fromEntries(entries))
+    }
+
+    loadTiers()
+    return () => {
+      cancelled = true
+    }
+  }, [activeTopic, userId, applicationId])
 
   const handleRoundComplete = (result: RoundResult) => {
     onGameComplete(result)
@@ -105,7 +157,14 @@ export default function NumberSequenceSuite({ onGameComplete, onBackToHome }: Nu
     return <NumberNeighborsTopic onRoundComplete={handleRoundComplete} onBackToTopics={handleBackToTopics} />
   }
   if (activeTopic === "number-compare") {
-    return <NumberCompareTopic onRoundComplete={handleRoundComplete} onBackToTopics={handleBackToTopics} />
+    return (
+      <NumberCompareTopic
+        onRoundComplete={handleRoundComplete}
+        onBackToTopics={handleBackToTopics}
+        userId={userId}
+        applicationId={applicationId}
+      />
+    )
   }
   if (activeTopic === "who-has-more") {
     return <WhoHasMoreTopic onRoundComplete={handleRoundComplete} onBackToTopics={handleBackToTopics} />
@@ -118,6 +177,15 @@ export default function NumberSequenceSuite({ onGameComplete, onBackToHome }: Nu
   }
   if (activeTopic === "number-words") {
     return <NumberWordsTopic onRoundComplete={handleRoundComplete} onBackToTopics={handleBackToTopics} />
+  }
+  if (activeTopic === "arrange-order") {
+    return <ArrangeOrderTopic onRoundComplete={handleRoundComplete} onBackToTopics={handleBackToTopics} />
+  }
+  if (activeTopic === "greatest-smallest") {
+    return <GreatestSmallestTopic onRoundComplete={handleRoundComplete} onBackToTopics={handleBackToTopics} />
+  }
+  if (activeTopic === "tens-ones-count") {
+    return <TensOnesCountTopic onRoundComplete={handleRoundComplete} onBackToTopics={handleBackToTopics} />
   }
 
   return (
@@ -157,6 +225,11 @@ export default function NumberSequenceSuite({ onGameComplete, onBackToHome }: Nu
                 <div className="text-5xl mb-3">{topic.emoji}</div>
                 <h3 className="text-xl font-bold mb-2">{topic.label}</h3>
                 <p className="text-sm text-white/90">{topic.description}</p>
+                {topicTiers[topic.id] && (
+                  <div className="flex justify-center mt-3">
+                    <MasteryBadge tier={topicTiers[topic.id]!} size="sm" />
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

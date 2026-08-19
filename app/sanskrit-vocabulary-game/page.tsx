@@ -13,6 +13,9 @@ import { saveGameScore } from "@/lib/scoring"
 import { useLanguageSpeak } from "@/hooks/use-language-speak"
 import { pickUnseenRandom } from "@/lib/question-history"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 // Success messages array
 const successMessages = [
@@ -77,6 +80,7 @@ export default function SanskritVocabularyGame() {
   const [app, setApp] = useState<Application | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [roundStartTime, setRoundStartTime] = useState(0)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
 
   useEffect(() => {
     setRoundStartTime(Date.now())
@@ -150,7 +154,13 @@ export default function SanskritVocabularyGame() {
           difficultyLevel: categoryId,
           gameData: { category: categoryId },
           isConnected,
-        }).catch((error) => console.error("Error saving Sanskrit Vocabulary score:", error))
+        })
+          .then(() =>
+            getActivityMasteryTier(user.id, app.id, `vocabulary-game:sanskrit`)
+              .then(setMasteryTier)
+              .catch((error) => console.error("Error fetching Sanskrit Vocabulary mastery tier:", error)),
+          )
+          .catch((error) => console.error("Error saving Sanskrit Vocabulary score:", error))
       }
       return
     }
@@ -188,7 +198,7 @@ export default function SanskritVocabularyGame() {
     } else {
       setShowResult("wrong")
       playWrongSound()
-      setTimeout(() => setShowResult(null), 1500)
+      setTimeout(() => setRound((r) => r + 1), 1500)
     }
   }
 
@@ -252,6 +262,11 @@ export default function SanskritVocabularyGame() {
             <div className="flex flex-col items-center justify-center w-full py-8">
               <div className="text-4xl font-bold text-orange-800 mb-4">🎉 Game Over!</div>
               <div className="text-2xl text-amber-900 mb-2">Your Score: {score} / {totalRounds}</div>
+              {masteryTier && (
+                <div className="mb-4">
+                  <MasteryBadge tier={masteryTier} showLabel />
+                </div>
+              )}
               <div className="text-lg text-amber-600 mb-6">
                 {score === totalRounds ? "Perfect! Amazing work!" :
                  score >= totalRounds * 0.8 ? "Great job!" :

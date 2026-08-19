@@ -7,6 +7,12 @@ import { ArrowLeft, RotateCcw, Volume2, CheckCircle, XCircle } from "lucide-reac
 import { playTeluguTTS } from "@/lib/telugu-tts"
 import { playCorrectSound, playWrongSound } from "@/lib/feedback-audio"
 import { romanize } from "@/lib/transliteration"
+import { findOrCreateUser, getApplicationByName, testConnection } from "@/lib/database-supabase"
+import type { User, Application } from "@/lib/database-supabase"
+import { saveGameScore } from "@/lib/scoring"
+import { getActivityMasteryTier } from "@/lib/mastery-evidence"
+import type { MasteryTier } from "@/lib/mastery"
+import { MasteryBadge } from "@/components/mastery-badge"
 
 // All Telugu words data organized by groups
 const teluguWordsData = {
@@ -268,6 +274,12 @@ export default function ListenPointGame() {
   const [selectedWords, setSelectedWords] = useState<string[]>([])
   const [isPlayingTTS, setIsPlayingTTS] = useState(false)
 
+  // Scoring/persistence
+  const [user, setUser] = useState<User | null>(null)
+  const [app, setApp] = useState<Application | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const [masteryTier, setMasteryTier] = useState<MasteryTier | null>(null)
+
   // localStorage functions for mastered words
   const loadMasteredWords = () => {
     if (typeof window !== 'undefined') {
@@ -356,6 +368,73 @@ export default function ListenPointGame() {
     setIsLoading(false)
   }, [])
 
+  // Initialize user/app/connection for scoring
+  useEffect(() => {
+    initializeScoringData()
+  }, [])
+
+  const initializeScoringData = async () => {
+    try {
+      const connected = await testConnection()
+      setIsConnected(connected)
+
+      if (connected) {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        let currentUser: User | null = null
+
+        if (userData) {
+          const parsedUser = JSON.parse(userData)
+          currentUser = await findOrCreateUser({
+            name: parsedUser.name,
+            email: parsedUser.email,
+            age: parsedUser.age,
+            grade: parsedUser.grade,
+          })
+        } else {
+          currentUser = await findOrCreateUser({
+            name: "Demo User",
+            email: "demo@mywayapps.com",
+            age: 8,
+            grade: "3rd Grade",
+          })
+        }
+
+        const application = await getApplicationByName("Telugu Words")
+        setUser(currentUser)
+        setApp(application)
+      } else {
+        const userData = localStorage.getItem("mywayapps_current_user")
+        const appData = localStorage.getItem("mywayapps_current_app")
+        if (userData) setUser(JSON.parse(userData))
+        if (appData) setApp(JSON.parse(appData))
+      }
+    } catch (error) {
+      console.error("Error initializing Telugu Words scoring data:", error)
+    }
+  }
+
+  // Save score and fetch mastery tier when the game ends
+  useEffect(() => {
+    if (gameOver && user && app) {
+      saveGameScore({
+        userId: user.id,
+        applicationId: app.id,
+        score,
+        maxScore: 5,
+        subject: "Telugu",
+        gameData: { mode: "listen-point" },
+        isConnected,
+      })
+        .then(() =>
+          getActivityMasteryTier(user.id, app.id, "telugu-words:listen-point")
+            .then(setMasteryTier)
+            .catch((error) => console.error("Error fetching Telugu Words mastery tier:", error)),
+        )
+        .catch((error) => console.error("Error saving Telugu Words score:", error))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameOver])
+
   // Reset state when question changes and auto-play audio
   useEffect(() => {
     if (questions[currentQuestion]) {
@@ -411,11 +490,15 @@ export default function ListenPointGame() {
         }
       }, 3000)
     } else {
-      // Wrong answer
+      // Wrong answer - registers once, then advances (no unlimited retries on the same question)
       setShowResult("wrong")
       playWrongSound()
       setTimeout(() => {
-        setShowResult(null)
+        if (currentQuestion < 4) {
+          setCurrentQuestion(currentQuestion + 1)
+        } else {
+          setGameOver(true)
+        }
       }, 1500)
     }
   }
@@ -433,6 +516,7 @@ export default function ListenPointGame() {
     setShowResult(null)
     setShowConfetti(false)
     setSelectedWords([]) // Clear selection
+    setMasteryTier(null)
     const generatedQuestions = generateQuestions()
     setQuestions(generatedQuestions)
   }
@@ -452,6 +536,11 @@ export default function ListenPointGame() {
           <CardContent className="p-8 text-center">
             <h1 className="text-4xl font-bold text-purple-800 mb-4">Game Over!</h1>
             <p className="text-2xl text-purple-600 mb-4">Your Score: {score} / 5</p>
+            {masteryTier && (
+              <div className="mb-4 flex justify-center">
+                <MasteryBadge tier={masteryTier} showLabel />
+              </div>
+            )}
             {masteredWords.length > 0 && (
               <div className="mb-6">
                 <p className="text-lg text-green-700 mb-3">Words you mastered in this game:</p>
